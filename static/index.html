@@ -45,21 +45,10 @@
 
     header {
       position: fixed;
-      top: 8px;
       right: 8px;
+      bottom: 8px;
       z-index: 1;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      padding: 0 9px;
-      border: 1px solid rgb(43 45 51 / 70%);
-      border-radius: 999px;
-      background: rgb(23 24 28 / 80%);
-      color: var(--title);
-      font-size: 12px;
-      letter-spacing: 0.01em;
       user-select: none;
-      backdrop-filter: blur(10px);
     }
 
     header p,
@@ -92,22 +81,42 @@
       background: #28c840;
     }
 
-    aside {
+    #connection-status {
+      height: 24px;
       display: flex;
       align-items: center;
       gap: 7px;
+      padding: 0 9px;
+      border: 1px solid rgb(43 45 51 / 70%);
+      border-radius: 999px;
+      background: rgb(23 24 28 / 80%);
       color: var(--muted);
+      font: inherit;
       font-size: 12px;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
     }
 
-    aside span:first-child {
+    #connection-status[data-open="false"] {
+      width: 24px;
+      justify-content: center;
+      gap: 0;
+      padding: 0;
+    }
+
+    #connection-status[data-open="false"] span:last-child {
+      display: none;
+    }
+
+    #connection-status span:first-child {
       width: 7px;
       height: 7px;
       border-radius: 999px;
       background: var(--disconnected);
     }
 
-    aside[data-connected="true"] span:first-child {
+    #connection-status[data-connected="true"] span:first-child {
       background: var(--connected);
     }
 
@@ -137,10 +146,10 @@
         <span aria-hidden="true"></span>
       </nav>
       <p>Local Web Terminal</p>
-      <aside id="connection-status" aria-live="polite" data-connected="false">
+      <button id="connection-status" type="button" aria-expanded="true" aria-live="polite" data-connected="false" data-open="true">
         <span aria-hidden="true"></span>
         <span>Disconnected</span>
-      </aside>
+      </button>
     </header>
     <section id="terminal" aria-label="Interactive shell"></section>
   </main>
@@ -210,9 +219,26 @@
       terminal.loadAddon(fitAddon);
       terminal.open(terminalElement);
 
+      const updateConnectionStatusLabel = () => {
+        const toggleAction = connectionStatus.dataset.open === 'false' ? 'show' : 'hide';
+        connectionStatus.setAttribute('aria-label', `${connectionText.textContent}. Click to ${toggleAction} connection status text.`);
+      };
+
       const setConnectionStatus = (connected, text) => {
         connectionStatus.dataset.connected = String(connected);
         connectionText.textContent = text;
+        updateConnectionStatusLabel();
+      };
+
+      const setConnectionStatusOpen = (open) => {
+        connectionStatus.dataset.open = String(open);
+        connectionStatus.setAttribute('aria-expanded', String(open));
+        updateConnectionStatusLabel();
+        terminal.focus();
+      };
+
+      const toggleConnectionStatusOpen = () => {
+        setConnectionStatusOpen(connectionStatus.dataset.open === 'false');
       };
 
       const sendResize = () => {
@@ -278,6 +304,7 @@
       };
 
       terminal.onData(sendTerminalInput);
+      connectionStatus.addEventListener('click', toggleConnectionStatusOpen);
       document.addEventListener('keydown', handleEscapeKey, true);
 
       terminal.onResize(sendResize);

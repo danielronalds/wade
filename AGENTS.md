@@ -27,8 +27,9 @@ Then open <http://127.0.0.1:8765>.
 Use `xterm.js`, not `ghostty-web`, for now. `ghostty-web` was tried, but did
 not work quite right for this POC.
 
-The terminal is full screen, with a small floating connection status in the top
-right.
+The terminal is full screen, with a small floating connection status in the
+bottom right. The status widget toggles between open text and closed dot-only
+modes when clicked.
 
 Resize handling uses the xterm fit addon. The client sends JSON control
 messages like this:
