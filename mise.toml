@@ -1,0 +1,43 @@
+[tools]
+go = "1.26.3"
+# Latest Node LTS for stability.
+node = "24.18.0"
+air = "latest"
+"go:gotest.tools/gotestsum" = "latest"
+
+[tasks.install]
+description = "Installs frontend dependencies"
+run = "npm --prefix web install"
+
+[tasks.dev]
+description = "Runs the project with live reload"
+depends = ["gen:embed"]
+run = "air"
+
+[tasks.build]
+description = "Builds the web-terminal binary"
+depends = ["gen:embed"]
+run = "go build -o .tmp/web-terminal ./cmd/web-terminal"
+
+[tasks.fmt]
+description = "Formats Go code"
+run = "go fmt ./..."
+
+[tasks."gen:embed"]
+description = "Stages embedded web assets"
+depends = ["install"]
+run = "go generate ./..."
+
+[tasks."lint:fmt"]
+description = "Checks Go formatting"
+run = "test -z $(gofmt -l .)"
+
+[tasks."lint:vet"]
+description = "Runs go vet"
+depends = ["gen:embed"]
+run = "go vet ./..."
+
+[tasks.test]
+description = "Runs tests"
+depends = ["gen:embed"]
+run = "gotestsum -- ./..."

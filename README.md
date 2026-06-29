@@ -1,22 +1,58 @@
-# Local Web Terminal POC
+# Web Terminal
 
 A browser terminal backed by a real local shell via Go, a PTY, WebSockets and
-xterm.js. The terminal emulator is vendored under `static/vendor/xterm` so the
-local shell page does not execute CDN JavaScript.
+xterm.js. npm is used to fetch xterm.js, then `go generate` stages those files
+with the static frontend so they can be embedded into the Go binary.
 
-## Run
+## Setup
 
 ```sh
-go run .
+mise install
+mise run dev
 ```
 
 Open <http://127.0.0.1:8765>.
 
-To use a different port:
+To use a different address:
 
 ```sh
-WEB_TERMINAL_ADDR=127.0.0.1:8090 go run .
+WEB_TERMINAL_ADDR=127.0.0.1:8090 mise run dev
 ```
+
+## Development
+
+```sh
+mise run dev
+```
+
+This installs frontend dependencies, stages embedded assets, and starts Air.
+Air reloads the Go server when Go, HTML, CSS or JavaScript files change.
+
+## Build
+
+```sh
+mise run build
+```
+
+This writes the binary to `.tmp/web-terminal`.
+
+## Test
+
+```sh
+mise run test
+```
+
+## Build process
+
+Static source files live in `web/static`. xterm.js files are fetched by npm into
+`web/node_modules`. `go generate ./...` copies the static source files and the
+required xterm.js files into `web/dist`, and the Go binary embeds `web/dist` with
+`go:embed`.
+
+The generated `web/dist` directory and `web/node_modules` are ignored by git.
+
+The server binds to localhost by default and only accepts same-origin WebSocket
+upgrades.
 
 ## Nerd Fonts
 
@@ -32,5 +68,3 @@ You can force a specific installed font with the `font` query parameter:
 ```text
 http://127.0.0.1:8765/?font=JetBrainsMono%20Nerd%20Font
 ```
-
-The server binds to localhost and only accepts same-origin WebSocket upgrades.

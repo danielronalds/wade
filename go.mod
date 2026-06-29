@@ -1,4 +1,4 @@
-module local-web-terminal
+module web-terminal
 
 go 1.26
 

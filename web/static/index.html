@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Web Terminal</title>
+  <link rel="stylesheet" href="/vendor/xterm/xterm.css">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/vendor/xterm/xterm.js" defer></script>
+  <script src="/vendor/xterm/addon-fit.js" defer></script>
+  <script src="/app.js" type="module"></script>
+</head>
+<body>
+  <main aria-label="Local shell terminal">
+    <header>
+      <nav aria-label="Window controls">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </nav>
+      <p>Web Terminal</p>
+      <button id="connection-status" type="button" aria-expanded="true" aria-live="polite" data-connected="false" data-open="true">
+        <span aria-hidden="true"></span>
+        <span>Disconnected</span>
+      </button>
+    </header>
+    <section id="terminal" aria-label="Interactive shell"></section>
+  </main>
+</body>
+</html>

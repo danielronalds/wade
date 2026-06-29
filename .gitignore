@@ -1,3 +1,6 @@
 .DS_Store
-local-web-terminal
+web-terminal
 *.log
+.tmp/
+web/dist/
+web/node_modules/
