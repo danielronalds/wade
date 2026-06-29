@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local Web Terminal</title>
+  <link rel="stylesheet" href="./vendor/xterm/xterm.css">
+  <script src="./vendor/xterm/xterm.js"></script>
+  <script src="./vendor/xterm/addon-fit.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --background: #111214;
+      --window: #17181c;
+      --window-edge: #2b2d33;
+      --title: #c7c9d1;
+      --muted: #85889a;
+      --connected: #28c840;
+      --disconnected: #ff5f57;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      margin: 0;
+      background: var(--window);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--window);
+    }
+
+    header {
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      z-index: 1;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      padding: 0 9px;
+      border: 1px solid rgb(43 45 51 / 70%);
+      border-radius: 999px;
+      background: rgb(23 24 28 / 80%);
+      color: var(--title);
+      font-size: 12px;
+      letter-spacing: 0.01em;
+      user-select: none;
+      backdrop-filter: blur(10px);
+    }
+
+    header p,
+    header nav {
+      display: none;
+    }
+
+    nav {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    nav span {
+      width: 12px;
+      height: 12px;
+      display: block;
+      border-radius: 999px;
+    }
+
+    nav span:nth-child(1) {
+      background: #ff5f57;
+    }
+
+    nav span:nth-child(2) {
+      background: #febc2e;
+    }
+
+    nav span:nth-child(3) {
+      background: #28c840;
+    }
+
+    aside {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    aside span:first-child {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--disconnected);
+    }
+
+    aside[data-connected="true"] span:first-child {
+      background: var(--connected);
+    }
+
+    #terminal {
+      width: 100vw;
+      height: 100vh;
+      padding: 10px 12px 14px;
+      overflow: hidden;
+    }
+
+    .xterm {
+      height: 100%;
+      padding: 2px;
+    }
+
+    .xterm-viewport {
+      scrollbar-width: thin;
+    }
+  </style>
+</head>
+<body>
+  <main aria-label="Local shell terminal">
+    <header>
+      <nav aria-label="Window controls">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </nav>
+      <p>Local Web Terminal</p>
+      <aside id="connection-status" aria-live="polite" data-connected="false">
+        <span aria-hidden="true"></span>
+        <span>Disconnected</span>
+      </aside>
+    </header>
+    <section id="terminal" aria-label="Interactive shell"></section>
+  </main>
+
+  <script>
+    (() => {
+      const terminalElement = document.getElementById('terminal');
+      const connectionStatus = document.getElementById('connection-status');
+      const connectionText = connectionStatus.querySelector('span:last-child');
+      const encoder = new TextEncoder();
+      const nerdFontStack = [
+        'JetBrainsMono Nerd Font',
+        'MesloLGS NF',
+        'FiraCode Nerd Font Mono',
+        'Hack Nerd Font Mono',
+        'Symbols Nerd Font Mono',
+        'SFMono-Regular',
+        'Menlo',
+        'Monaco',
+        'Consolas',
+        'monospace'
+      ];
+      const queryFont = new URLSearchParams(window.location.search).get('font');
+      const fontFamily = [queryFont, ...nerdFontStack]
+        .filter(Boolean)
+        .map((font) => font === 'monospace' ? font : `"${font.replace(/["\\]/g, '')}"`)
+        .join(', ');
+
+      let socket;
+
+      const terminal = new Terminal({
+        cursorBlink: true,
+        cursorStyle: 'block',
+        customGlyphs: true,
+        fontFamily,
+        fontSize: 14,
+        letterSpacing: 0,
+        lineHeight: 1,
+        rescaleOverlappingGlyphs: true,
+        scrollback: 10000,
+        theme: {
+          background: '#17181c',
+          foreground: '#f8f8f2',
+          cursor: '#f8f8f0',
+          cursorAccent: '#17181c',
+          selectionBackground: '#45475a',
+          black: '#21222c',
+          red: '#ff5555',
+          green: '#50fa7b',
+          yellow: '#f1fa8c',
+          blue: '#bd93f9',
+          magenta: '#ff79c6',
+          cyan: '#8be9fd',
+          white: '#f8f8f2',
+          brightBlack: '#6272a4',
+          brightRed: '#ff6e6e',
+          brightGreen: '#69ff94',
+          brightYellow: '#ffffa5',
+          brightBlue: '#d6acff',
+          brightMagenta: '#ff92df',
+          brightCyan: '#a4ffff',
+          brightWhite: '#ffffff'
+        }
+      });
+
+      const fitAddon = new FitAddon.FitAddon();
+      terminal.loadAddon(fitAddon);
+      terminal.open(terminalElement);
+
+      const setConnectionStatus = (connected, text) => {
+        connectionStatus.dataset.connected = String(connected);
+        connectionText.textContent = text;
+      };
+
+      const sendResize = () => {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          return;
+        }
+
+        socket.send(JSON.stringify({
+          type: 'resize',
+          cols: terminal.cols,
+          rows: terminal.rows
+        }));
+      };
+
+      const fitAndResize = () => {
+        fitAddon.fit();
+        sendResize();
+      };
+
+      const sendTerminalInput = (data) => {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          return;
+        }
+
+        socket.send(encoder.encode(data));
+      };
+
+      const handleEscapeKey = (event) => {
+        if (event.key !== 'Escape') {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        sendTerminalInput('\x1b');
+        terminal.focus();
+      };
+
+      const connectWebSocket = () => {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
+        socket.binaryType = 'arraybuffer';
+
+        socket.addEventListener('open', () => {
+          setConnectionStatus(true, 'Connected');
+          fitAndResize();
+          terminal.focus();
+        });
+
+        socket.addEventListener('message', (event) => {
+          terminal.write(new Uint8Array(event.data));
+        });
+
+        socket.addEventListener('close', () => {
+          setConnectionStatus(false, 'Disconnected');
+          terminal.write('\r\nConnection closed.\r\n');
+        });
+
+        socket.addEventListener('error', () => {
+          setConnectionStatus(false, 'Error');
+          terminal.write('\r\nConnection error.\r\n');
+        });
+      };
+
+      terminal.onData(sendTerminalInput);
+      document.addEventListener('keydown', handleEscapeKey, true);
+
+      terminal.onResize(sendResize);
+      new ResizeObserver(fitAndResize).observe(terminalElement);
+      window.addEventListener('resize', fitAndResize);
+
+      fitAndResize();
+      setConnectionStatus(false, 'Connecting');
+      connectWebSocket();
+    })();
+  </script>
+</body>
+</html>
