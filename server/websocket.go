@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"web-terminal/terminal"
+	terminalmanager "web-terminal/terminal/manager"
 
 	"github.com/gorilla/websocket"
 )
@@ -20,6 +20,13 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	projectSession, err := s.terminals.GetOrStart(projectPath, projectPath)
+	if err != nil {
+		log.Printf("pty start failed: %v", err)
+		http.Error(w, "failed to start terminal", http.StatusInternalServerError)
+		return
+	}
+
 	connection, err := websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("websocket upgrade failed: %v", err)
@@ -27,44 +34,33 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 	}
 	defer connection.Close()
 
-	session, err := terminal.Start(s.configuration.Shell, projectPath, terminal.Size{Cols: 80, Rows: 24})
-	if err != nil {
-		log.Printf("pty start failed: %v", err)
-		return
-	}
-	defer session.Close()
+	client := projectSession.Attach()
+	defer client.Close()
 
 	done := make(chan struct{}, 2)
 
 	go func() {
-		streamTerminalToWebSocket(connection, session)
+		streamTerminalToWebSocket(connection, client)
 		done <- struct{}{}
 	}()
 
 	go func() {
-		streamWebSocketToTerminal(connection, session)
+		streamWebSocketToTerminal(connection, projectSession)
 		done <- struct{}{}
 	}()
 
 	<-done
 }
 
-func streamTerminalToWebSocket(connection *websocket.Conn, session *terminal.Session) {
-	buffer := make([]byte, 4096)
-
-	for {
-		bytesRead, err := session.Read(buffer)
-		if err != nil {
-			return
-		}
-
-		if err := connection.WriteMessage(websocket.BinaryMessage, buffer[:bytesRead]); err != nil {
+func streamTerminalToWebSocket(connection *websocket.Conn, client *terminalmanager.Client) {
+	for data := range client.Output() {
+		if err := connection.WriteMessage(websocket.BinaryMessage, data); err != nil {
 			return
 		}
 	}
 }
 
-func streamWebSocketToTerminal(connection *websocket.Conn, session *terminal.Session) {
+func streamWebSocketToTerminal(connection *websocket.Conn, session *terminalmanager.ProjectSession) {
 	for {
 		messageType, data, err := connection.ReadMessage()
 		if err != nil {

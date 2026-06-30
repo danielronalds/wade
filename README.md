@@ -36,6 +36,9 @@ http://editor.localhost:8765/web-terminal
 The project name is resolved against the configured project directories. For
 now, those directories are hard-coded from the local Projman config.
 
+Project terminals are kept alive for the lifetime of the server. Reopening a
+project reconnects to the existing shell session rather than starting a new one.
+
 ## Development
 
 ```sh
