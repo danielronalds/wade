@@ -190,26 +190,8 @@ export const useTerminalSession = ({
     focusTerminal();
   };
 
-  const isTerminalKeyboardEvent = (event: KeyboardEvent) => {
-    const element = terminalElement.value;
-
-    return Boolean(element && event.composedPath().includes(element));
-  };
-
-  const handleTerminalKeyEvent = (event: KeyboardEvent) => {
-    if (!isActive.value || event.type !== 'keydown' || event.key !== 'Escape') {
-      return true;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    sendEscapeKey();
-
-    return false;
-  };
-
   const handleEscapeKey = (event: KeyboardEvent) => {
-    if (!isActive.value || event.key !== 'Escape' || isTerminalKeyboardEvent(event)) {
+    if (!isActive.value || event.key !== 'Escape') {
       return;
     }
 
@@ -300,7 +282,6 @@ export const useTerminalSession = ({
     }
 
     terminal = createTerminal();
-    terminal.attachCustomKeyEventHandler(handleTerminalKeyEvent);
     fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
     terminal.open(terminalElement.value);
