@@ -7,6 +7,13 @@ type Disposable = {
   dispose: () => void;
 };
 
+type TerminalSessionOptions = {
+  projectName: string;
+  terminalName: string;
+  terminalElement: Ref<HTMLElement | null>;
+  isActive: Readonly<Ref<boolean>>;
+};
+
 const encoder = new TextEncoder();
 const embeddedFontFamily = 'WebTerminalJetBrainsMonoNerdFont';
 const nerdFontStack = [
@@ -83,7 +90,12 @@ const createTerminal = () => new Terminal({
   }
 });
 
-export const useTerminalSession = (projectName: string, terminalElement: Ref<HTMLElement | null>) => {
+export const useTerminalSession = ({
+  projectName,
+  terminalName,
+  terminalElement,
+  isActive
+}: TerminalSessionOptions) => {
   const { recordRecentProject } = useRecentProjects();
   const isConnected = ref(false);
   const connectionStatusText = ref('Disconnected');
@@ -113,8 +125,10 @@ export const useTerminalSession = (projectName: string, terminalElement: Ref<HTM
     }));
   };
 
+  const isTerminalVisible = () => Boolean(terminalElement.value?.getClientRects().length);
+
   const fitAndResize = () => {
-    if (!fitAddon) {
+    if (!fitAddon || !isTerminalVisible()) {
       return;
     }
 
@@ -131,6 +145,10 @@ export const useTerminalSession = (projectName: string, terminalElement: Ref<HTM
   };
 
   const focusTerminal = () => {
+    if (!isActive.value) {
+      return;
+    }
+
     terminal?.focus();
   };
 
@@ -146,7 +164,7 @@ export const useTerminalSession = (projectName: string, terminalElement: Ref<HTM
   };
 
   const handleTerminalKeyEvent = (event: KeyboardEvent) => {
-    if (event.type !== 'keydown' || event.key !== 'Escape') {
+    if (!isActive.value || event.type !== 'keydown' || event.key !== 'Escape') {
       return true;
     }
 
@@ -158,7 +176,7 @@ export const useTerminalSession = (projectName: string, terminalElement: Ref<HTM
   };
 
   const handleEscapeKey = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape' || isTerminalKeyboardEvent(event)) {
+    if (!isActive.value || event.key !== 'Escape' || isTerminalKeyboardEvent(event)) {
       return;
     }
 
@@ -169,7 +187,7 @@ export const useTerminalSession = (projectName: string, terminalElement: Ref<HTM
 
   const connectWebSocket = () => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const params = new URLSearchParams({ project: projectName });
+    const params = new URLSearchParams({ project: projectName, terminal: terminalName });
     socket = new WebSocket(`${protocol}//${window.location.host}/ws?${params}`);
     socket.binaryType = 'arraybuffer';
 
@@ -261,6 +279,7 @@ export const useTerminalSession = (projectName: string, terminalElement: Ref<HTM
   return {
     connectionStatusText: readonly(connectionStatusText),
     isConnected: readonly(isConnected),
+    fitAndResize,
     focusTerminal,
     start,
     stop

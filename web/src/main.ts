@@ -5,7 +5,7 @@ import { createApp } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import App from './App.vue';
 import HomeView from './views/HomeView.vue';
-import TerminalView from './views/TerminalView.vue';
+import ProjectView from './views/ProjectView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -18,7 +18,7 @@ const router = createRouter({
     {
       path: '/:projectName',
       name: 'project',
-      component: TerminalView,
+      component: ProjectView,
       props: (route) => ({
         projectName: String(route.params.projectName)
       })
