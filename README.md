@@ -11,7 +11,10 @@ mise install
 mise run dev
 ```
 
-Open <http://127.0.0.1:8765>.
+Open <http://editor-dev.localhost:8765>.
+
+Air sets `WEB_TERMINAL_DEV=1`, which makes the development server use
+`editor-dev.localhost`. The normal binary uses `editor.localhost` by default.
 
 To use a different address:
 
@@ -34,7 +37,8 @@ Air reloads the Go server when Go, HTML, CSS, JavaScript or font files change.
 mise run build
 ```
 
-This writes the binary to `.tmp/web-terminal`.
+This writes the binary to `.tmp/web-terminal`. Running that binary directly uses
+<http://editor.localhost:8765> by default.
 
 ## Test
 
