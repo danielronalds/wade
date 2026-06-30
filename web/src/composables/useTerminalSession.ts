@@ -132,15 +132,37 @@ export const useTerminalSession = (projectName: string, terminalElement: Ref<HTM
     terminal?.focus();
   };
 
-  const handleEscapeKey = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape') {
-      return;
+  const sendEscapeKey = () => {
+    sendTerminalInput('\x1b');
+    focusTerminal();
+  };
+
+  const isTerminalKeyboardEvent = (event: KeyboardEvent) => {
+    const element = terminalElement.value;
+
+    return Boolean(element && event.composedPath().includes(element));
+  };
+
+  const handleTerminalKeyEvent = (event: KeyboardEvent) => {
+    if (event.type !== 'keydown' || event.key !== 'Escape') {
+      return true;
     }
 
     event.preventDefault();
     event.stopPropagation();
-    sendTerminalInput('\x1b');
-    focusTerminal();
+    sendEscapeKey();
+
+    return false;
+  };
+
+  const handleEscapeKey = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || isTerminalKeyboardEvent(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    sendEscapeKey();
   };
 
   const connectWebSocket = () => {
@@ -218,6 +240,7 @@ export const useTerminalSession = (projectName: string, terminalElement: Ref<HTM
     }
 
     terminal = createTerminal();
+    terminal.attachCustomKeyEventHandler(handleTerminalKeyEvent);
     fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
     terminal.open(terminalElement.value);
