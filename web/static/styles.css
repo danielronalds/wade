@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "WebTerminalJetBrainsMonoNerdFont";
+  src: url("/fonts/JetBrainsMonoNerdFontMono-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
 :root {
   color-scheme: dark;
   --background: #111214;

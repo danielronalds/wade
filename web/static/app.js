@@ -7,7 +7,10 @@ if (!terminalElement || !connectionStatus || !connectionText) {
 }
 
 const encoder = new TextEncoder();
+const embeddedFontFamily = 'WebTerminalJetBrainsMonoNerdFont';
 const nerdFontStack = [
+  embeddedFontFamily,
+  'JetBrainsMono Nerd Font Mono',
   'JetBrainsMono Nerd Font',
   'MesloLGS NF',
   'FiraCode Nerd Font Mono',
@@ -26,6 +29,17 @@ const fontFamily = [queryFont, ...nerdFontStack]
   .join(', ');
 
 let socket;
+
+const waitForEmbeddedFont = async () => {
+  if (!document.fonts) {
+    return;
+  }
+
+  await document.fonts.load(`14px "${embeddedFontFamily}"`);
+  await document.fonts.ready;
+};
+
+await waitForEmbeddedFont();
 
 const terminal = new Terminal({
   cursorBlink: true,
