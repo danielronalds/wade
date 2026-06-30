@@ -21,6 +21,17 @@ func terminalSessionKey(projectPath string, terminalName string) string {
 	return projectPath + "\x00" + terminalName
 }
 
+func (s *Server) handleTerminalReload(w http.ResponseWriter, r *http.Request) {
+	projectPath, err := s.projects.Path(r.URL.Query().Get("project"))
+	if err != nil {
+		http.Error(w, "project not found", http.StatusNotFound)
+		return
+	}
+
+	s.terminals.CloseSession(terminalSessionKey(projectPath, r.URL.Query().Get("terminal")))
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 	projectPath, err := s.projects.Path(r.URL.Query().Get("project"))
 	if err != nil {

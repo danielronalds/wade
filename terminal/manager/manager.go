@@ -36,6 +36,19 @@ func (m *Manager) GetOrStart(key string, directory string) (*ProjectSession, err
 	return session, nil
 }
 
+func (m *Manager) CloseSession(key string) bool {
+	m.mu.Lock()
+	session, ok := m.sessions[key]
+	m.mu.Unlock()
+
+	if !ok || session.IsClosed() {
+		return false
+	}
+
+	session.Close()
+	return true
+}
+
 func (m *Manager) remove(key string, session *ProjectSession) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

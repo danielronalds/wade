@@ -28,6 +28,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 	}
 
 	server.mux.HandleFunc("GET /ws", server.handleTerminal)
+	server.mux.HandleFunc("POST /api/terminal/reload", server.handleTerminalReload)
 	server.mux.Handle("GET /api/project", handlers.NewProject(server.projects))
 	server.mux.Handle("GET /api/projects", handlers.NewProjects(server.projects))
 	server.mux.Handle("GET /static/", http.FileServer(http.FS(staticFiles)))

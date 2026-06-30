@@ -4,11 +4,11 @@ import ProjectSidebar from '../components/ProjectSidebar.vue';
 import ServerTab from '../components/ServerTab.vue';
 import TerminalTab from '../components/TerminalTab.vue';
 import TerminalTopbar from '../components/TerminalTopbar.vue';
-import { ProjectTabs, type ProjectTab } from '../projectTabs';
+import { ProjectTabs, type ProjectTab } from '../types/projectTabs';
 import {
   createDisconnectedTerminalConnectionStatus,
   type TerminalConnectionStatus
-} from '../terminalConnectionStatus';
+} from '../types/terminalConnectionStatus';
 
 defineProps<{
   projectName: string;

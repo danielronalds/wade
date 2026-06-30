@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Server, SquareTerminal } from '@lucide/vue';
 import type { Component } from 'vue';
-import { ProjectTabs, type ProjectTab } from '../projectTabs';
+import { ProjectTabs, type ProjectTab } from '../types/projectTabs';
 
 const props = defineProps<{
   activeTab: ProjectTab;

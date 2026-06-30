@@ -106,7 +106,12 @@ export const useTerminalSession = ({
   let resizeObserver: ResizeObserver | undefined;
   let terminalDataDisposable: Disposable | undefined;
   let terminalResizeDisposable: Disposable | undefined;
+  let isReloading = false;
   let isStopped = true;
+  let reloadingRun: number | undefined;
+  let sessionRun = 0;
+
+  const isSessionRunActive = (run: number) => !isStopped && sessionRun === run;
 
   const setConnectionStatus = (connected: boolean, text: string) => {
     isConnected.value = connected;
@@ -185,14 +190,15 @@ export const useTerminalSession = ({
     sendEscapeKey();
   };
 
-  const connectWebSocket = () => {
+  const connectWebSocket = (run: number) => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const params = new URLSearchParams({ project: projectName, terminal: terminalName });
-    socket = new WebSocket(`${protocol}//${window.location.host}/ws?${params}`);
-    socket.binaryType = 'arraybuffer';
+    const connection = new WebSocket(`${protocol}//${window.location.host}/ws?${params}`);
+    socket = connection;
+    connection.binaryType = 'arraybuffer';
 
-    socket.addEventListener('open', () => {
-      if (isStopped) {
+    connection.addEventListener('open', () => {
+      if (!isSessionRunActive(run)) {
         return;
       }
 
@@ -202,16 +208,16 @@ export const useTerminalSession = ({
       focusTerminal();
     });
 
-    socket.addEventListener('message', (event) => {
-      if (isStopped || !terminal) {
+    connection.addEventListener('message', (event) => {
+      if (!isSessionRunActive(run) || !terminal) {
         return;
       }
 
       terminal.write(new Uint8Array(event.data));
     });
 
-    socket.addEventListener('close', () => {
-      if (isStopped) {
+    connection.addEventListener('close', () => {
+      if (!isSessionRunActive(run) || reloadingRun === run) {
         return;
       }
 
@@ -219,8 +225,8 @@ export const useTerminalSession = ({
       terminal?.write('\r\nConnection closed.\r\n');
     });
 
-    socket.addEventListener('error', () => {
-      if (isStopped) {
+    connection.addEventListener('error', () => {
+      if (!isSessionRunActive(run) || reloadingRun === run) {
         return;
       }
 
@@ -231,6 +237,7 @@ export const useTerminalSession = ({
 
   const stop = () => {
     isStopped = true;
+    sessionRun += 1;
     terminalDataDisposable?.dispose();
     terminalResizeDisposable?.dispose();
     resizeObserver?.disconnect();
@@ -250,12 +257,14 @@ export const useTerminalSession = ({
   const start = async () => {
     stop();
     isStopped = false;
+    sessionRun += 1;
+    const run = sessionRun;
     setConnectionStatus(false, 'Connecting');
     document.title = `WADE - ${projectName}`;
 
     await waitForEmbeddedFont();
 
-    if (isStopped || !terminalElement.value) {
+    if (!isSessionRunActive(run) || !terminalElement.value) {
       return;
     }
 
@@ -273,7 +282,48 @@ export const useTerminalSession = ({
     document.addEventListener('keydown', handleEscapeKey, true);
 
     fitAndResize();
-    connectWebSocket();
+    connectWebSocket(run);
+  };
+
+  const closeRemoteTerminal = async () => {
+    const params = new URLSearchParams({ project: projectName, terminal: terminalName });
+    const response = await fetch(`/api/terminal/reload?${params}`, { method: 'POST' });
+
+    if (!response.ok) {
+      throw new Error('Failed to reload terminal');
+    }
+  };
+
+  const reload = async () => {
+    if (isReloading || isStopped) {
+      return;
+    }
+
+    isReloading = true;
+    const run = sessionRun;
+    reloadingRun = run;
+    setConnectionStatus(false, 'Connecting');
+
+    try {
+      await closeRemoteTerminal();
+
+      if (!isSessionRunActive(run)) {
+        return;
+      }
+
+      await start();
+    } catch {
+      if (isSessionRunActive(run)) {
+        setConnectionStatus(false, 'Error');
+        terminal?.write('\r\nReload failed.\r\n');
+      }
+    } finally {
+      if (reloadingRun === run) {
+        reloadingRun = undefined;
+      }
+
+      isReloading = false;
+    }
   };
 
   return {
@@ -281,6 +331,7 @@ export const useTerminalSession = ({
     isConnected: readonly(isConnected),
     fitAndResize,
     focusTerminal,
+    reload,
     start,
     stop
   };

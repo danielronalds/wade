@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useProjectTerminalTab } from '../composables/useProjectTerminalTab';
-import { ProjectTabs } from '../projectTabs';
-import type { TerminalConnectionStatus } from '../terminalConnectionStatus';
+import { ProjectTabs } from '../types/projectTabs';
+import type { TerminalConnectionStatus } from '../types/terminalConnectionStatus';
 
 const props = defineProps<{
   projectName: string;

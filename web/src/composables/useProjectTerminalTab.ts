@@ -1,5 +1,5 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
-import type { TerminalConnectionStatus } from '../terminalConnectionStatus';
+import type { TerminalConnectionStatus } from '../types/terminalConnectionStatus';
 import { useTerminalSession } from './useTerminalSession';
 
 type ProjectTerminalTabOptions = {
@@ -41,6 +41,11 @@ export const useProjectTerminalTab = ({
     terminalSession.focusTerminal();
   };
 
+  const reloadTerminal = async () => {
+    await terminalSession.reload();
+    await fitAndFocusTerminal();
+  };
+
   watch([terminalSession.connectionStatusText, terminalSession.isConnected], () => {
     publishConnectionStatus();
   }, { immediate: true });
@@ -63,6 +68,7 @@ export const useProjectTerminalTab = ({
   });
 
   return {
+    reloadTerminal,
     terminalElement
   };
 };
