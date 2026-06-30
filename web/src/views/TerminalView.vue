@@ -3,6 +3,8 @@ import { GitBranch } from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useProjectDetails } from '../composables/useProjectDetails';
+import GitHubIcon from '../icons/GitHubIcon.vue';
+import LinearIcon from '../icons/LinearIcon.vue';
 import { useTerminalSession } from '../composables/useTerminalSession';
 
 const props = defineProps<{
@@ -14,7 +16,9 @@ const isConnectionStatusOpen = ref(true);
 const {
   gitBranch,
   isLoading: isProjectDetailsLoading,
-  loadProjectDetails
+  linearTicketUrl,
+  loadProjectDetails,
+  pullRequestUrl
 } = useProjectDetails(props.projectName);
 const {
   connectionStatusText,
@@ -25,6 +29,14 @@ const {
 } = useTerminalSession(props.projectName, terminalElement);
 
 const projectDisplayName = computed(() => props.projectName.split('-feature')[0] || props.projectName);
+const isLinearTicketButtonDisabled = computed(() => isProjectDetailsLoading.value || linearTicketUrl.value === '');
+const isPullRequestButtonDisabled = computed(() => isProjectDetailsLoading.value || pullRequestUrl.value === '');
+const linearTicketButtonTitle = computed(() => isProjectDetailsLoading.value
+  ? 'Loading Linear ticket'
+  : linearTicketUrl.value === '' ? 'No Linear ticket found' : 'Open Linear ticket');
+const pullRequestButtonTitle = computed(() => isProjectDetailsLoading.value
+  ? 'Loading pull request'
+  : pullRequestUrl.value === '' ? 'No pull request found' : 'Open pull request');
 const connectionStatusToggleAction = computed(() => isConnectionStatusOpen.value ? 'hide' : 'show');
 const connectionStatusLabel = computed(() => `${connectionStatusText.value}. Click to ${connectionStatusToggleAction.value} connection status text.`);
 const gitBranchLabel = computed(() => {
@@ -34,6 +46,22 @@ const gitBranchLabel = computed(() => {
 
   return gitBranch.value || 'No branch';
 });
+
+const openExternalUrl = (url: string) => {
+  if (url === '') {
+    return;
+  }
+
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+const openLinearTicket = () => {
+  openExternalUrl(linearTicketUrl.value);
+};
+
+const openPullRequest = () => {
+  openExternalUrl(pullRequestUrl.value);
+};
 
 const toggleConnectionStatusOpen = () => {
   isConnectionStatusOpen.value = !isConnectionStatusOpen.value;
@@ -61,6 +89,28 @@ onBeforeUnmount(() => {
           <span>{{ gitBranchLabel }}</span>
         </span>
       </h1>
+      <nav id="project-actions" aria-label="Project links">
+        <button
+          class="project-action"
+          type="button"
+          :disabled="isLinearTicketButtonDisabled"
+          :title="linearTicketButtonTitle"
+          @click="openLinearTicket"
+        >
+          <LinearIcon class="brand-icon" aria-hidden="true" />
+          <span>Ticket</span>
+        </button>
+        <button
+          class="project-action"
+          type="button"
+          :disabled="isPullRequestButtonDisabled"
+          :title="pullRequestButtonTitle"
+          @click="openPullRequest"
+        >
+          <GitHubIcon class="brand-icon" aria-hidden="true" />
+          <span>PR</span>
+        </button>
+      </nav>
     </header>
     <button
       id="connection-status"
@@ -157,6 +207,47 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+#project-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-action {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid rgb(248 248 242 / 45%);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.project-action:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.project-action:not(:disabled):hover,
+.project-action:not(:disabled):focus-visible {
+  background: rgb(248 248 242 / 10%);
+}
+
+.brand-icon {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+  fill: currentColor;
 }
 
 #connection-status {

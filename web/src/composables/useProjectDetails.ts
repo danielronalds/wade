@@ -3,6 +3,8 @@ import { readonly, ref } from 'vue';
 type ProjectDetails = {
   name: string;
   gitBranch: string;
+  linearTicketUrl: string;
+  pullRequestUrl: string;
 };
 
 const isProjectDetails = (value: unknown): value is ProjectDetails => {
@@ -12,11 +14,16 @@ const isProjectDetails = (value: unknown): value is ProjectDetails => {
 
   const details = value as Partial<ProjectDetails>;
 
-  return typeof details.name === 'string' && typeof details.gitBranch === 'string';
+  return typeof details.name === 'string'
+    && typeof details.gitBranch === 'string'
+    && typeof details.linearTicketUrl === 'string'
+    && typeof details.pullRequestUrl === 'string';
 };
 
 export const useProjectDetails = (projectName: string) => {
   const gitBranch = ref('');
+  const linearTicketUrl = ref('');
+  const pullRequestUrl = ref('');
   const isLoading = ref(false);
   const error = ref('');
 
@@ -39,9 +46,13 @@ export const useProjectDetails = (projectName: string) => {
       }
 
       gitBranch.value = details.gitBranch;
+      linearTicketUrl.value = details.linearTicketUrl;
+      pullRequestUrl.value = details.pullRequestUrl;
     } catch (requestError) {
       error.value = requestError instanceof Error ? requestError.message : 'Project details request failed';
       gitBranch.value = '';
+      linearTicketUrl.value = '';
+      pullRequestUrl.value = '';
     } finally {
       isLoading.value = false;
     }
@@ -51,6 +62,8 @@ export const useProjectDetails = (projectName: string) => {
     error: readonly(error),
     gitBranch: readonly(gitBranch),
     isLoading: readonly(isLoading),
+    linearTicketUrl: readonly(linearTicketUrl),
+    pullRequestUrl: readonly(pullRequestUrl),
     loadProjectDetails
   };
 };

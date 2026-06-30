@@ -1,12 +1,8 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
-	"os/exec"
-	"strings"
-	"time"
 
 	"web-terminal/project"
 )
@@ -16,8 +12,10 @@ type Project struct {
 }
 
 type projectResponse struct {
-	Name      string `json:"name"`
-	GitBranch string `json:"gitBranch"`
+	Name            string `json:"name"`
+	GitBranch       string `json:"gitBranch"`
+	LinearTicketURL string `json:"linearTicketUrl"`
+	PullRequestURL  string `json:"pullRequestUrl"`
 }
 
 func NewProject(projects project.Store) Project {
@@ -32,21 +30,13 @@ func (h Project) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metadata := project.Details(projectPath)
+
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(projectResponse{
-		Name:      projectName,
-		GitBranch: currentGitBranch(projectPath),
+		Name:            projectName,
+		GitBranch:       metadata.GitBranch,
+		LinearTicketURL: metadata.LinearTicketURL,
+		PullRequestURL:  metadata.PullRequestURL,
 	})
-}
-
-func currentGitBranch(projectPath string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	output, err := exec.CommandContext(ctx, "git", "-C", projectPath, "branch", "--show-current").Output()
-	if err != nil {
-		return ""
-	}
-
-	return strings.TrimSpace(string(output))
 }
