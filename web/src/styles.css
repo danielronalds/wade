@@ -1,0 +1,39 @@
+@font-face {
+  font-family: "WebTerminalJetBrainsMonoNerdFont";
+  src: url("/static/fonts/JetBrainsMonoNerdFontMono-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+:root {
+  color-scheme: dark;
+  --window: #17181c;
+  --text: #f8f8f2;
+  --muted: #85889a;
+  --connected: #28c840;
+  --disconnected: #ff5f57;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  background: var(--window);
+  color: var(--text);
+  font-family: "WebTerminalJetBrainsMonoNerdFont", "JetBrainsMono Nerd Font Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+[hidden] {
+  display: none !important;
+}

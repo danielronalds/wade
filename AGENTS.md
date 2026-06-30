@@ -8,8 +8,8 @@ The backend is a Go HTTP server bound to localhost. It creates a PTY with
 `github.com/creack/pty` and streams bytes over WebSockets with
 `github.com/gorilla/websocket`.
 
-The frontend lives in `static/index.html` and uses vendored `xterm.js` files
-from `static/vendor/xterm`. Avoid CDN JavaScript for the local shell page.
+The frontend lives in `web/src`, uses Vue 3 and TypeScript, and is bundled with
+esbuild into `web/dist`. Avoid CDN JavaScript for the local shell page.
 
 The default address is `127.0.0.1:8765`. Override it with
 `WEB_TERMINAL_ADDR`.
@@ -17,7 +17,7 @@ The default address is `127.0.0.1:8765`. Override it with
 ## Running
 
 ```sh
-go run .
+mise run dev
 ```
 
 Then open <http://127.0.0.1:8765>.
@@ -69,26 +69,19 @@ be wider than xterm's fixed cells. xterm also avoids rescaling Nerd Font and
 Powerline glyphs. Keep this in mind before changing font options. `lineHeight`
 is currently set to `1`.
 
-## Vendored frontend dependencies
+## Frontend dependencies
 
-The required xterm files are vendored under `static/vendor/xterm`:
-
-- `xterm.js`
-- `xterm.js.map`
-- `xterm.css`
-- `addon-fit.js`
-- `addon-fit.js.map`
-- licence files
-
-To update them, use `npm pack @xterm/xterm @xterm/addon-fit`, extract the
-packages, and copy the built files from `lib` and `css`.
+Frontend dependencies are installed with npm in `web/node_modules`.
+`go generate ./...` runs `npm run build` from `web`, which typechecks with
+`vue-tsc` and bundles with esbuild. The generated `web/dist` directory is
+embedded into the Go binary.
 
 ## Validation
 
 Run:
 
 ```sh
-go test ./...
+mise run test
 ```
 
 For a smoke test, run the app on a temporary port, curl the static files, then

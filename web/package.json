@@ -1,8 +1,22 @@
 {
   "name": "web-terminal",
   "private": true,
+  "scripts": {
+    "build": "npm run typecheck && node build.mjs",
+    "typecheck": "vue-tsc --noEmit"
+  },
   "dependencies": {
+    "@vueuse/core": "^14.3.0",
     "@xterm/addon-fit": "0.10.0",
-    "@xterm/xterm": "5.5.0"
+    "@xterm/xterm": "5.5.0",
+    "vue": "^3.5.39",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@types/web-bluetooth": "^0.0.21",
+    "@vue/compiler-sfc": "^3.5.39",
+    "esbuild": "^0.28.1",
+    "typescript": "^6.0.3",
+    "vue-tsc": "^3.3.5"
   }
 }

@@ -16,7 +16,7 @@ tmp_dir = ".tmp"
   full_bin = "WEB_TERMINAL_DEV=1 ./.tmp/web-terminal"
   ignore_dangerous_root_dir = false
   include_dir = []
-  include_ext = ["go", "html", "css", "js", "json", "toml", "md", "ttf", "woff", "woff2"]
+  include_ext = ["go", "html", "css", "js", "mjs", "ts", "vue", "json", "toml", "md", "ttf", "woff", "woff2"]
   include_file = []
   kill_delay = "0s"
   log = "build-errors.log"

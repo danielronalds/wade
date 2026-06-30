@@ -1,8 +1,9 @@
 # Web Terminal
 
 A browser terminal backed by a real local shell via Go, a PTY, WebSockets and
-xterm.js. npm is used to fetch xterm.js, then `go generate` stages those files
-with the static frontend so they can be embedded into the Go binary.
+xterm.js. The frontend is Vue 3 and TypeScript, bundled with esbuild. The
+`go generate` command builds the frontend into `web/dist` so it can be embedded
+into the Go binary.
 
 ## Setup
 
@@ -45,8 +46,9 @@ project reconnects to the existing shell session rather than starting a new one.
 mise run dev
 ```
 
-This installs frontend dependencies, stages embedded assets, and starts Air.
-Air reloads the Go server when Go, HTML, CSS, JavaScript or font files change.
+This installs frontend dependencies, builds embedded assets, and starts Air.
+Air reloads the Go server when Go, HTML, CSS, JavaScript, TypeScript, Vue or
+font files change.
 
 ## Build
 
@@ -65,10 +67,14 @@ mise run test
 
 ## Build process
 
-Static source files live in `web/static`. xterm.js files are fetched by npm into
-`web/node_modules`. `go generate ./...` copies the static source files and the
-required xterm.js files into `web/dist`, and the Go binary embeds `web/dist`
-with `go:embed`.
+Vue and TypeScript source files live in `web/src`. Static public assets live in
+`web/static`. xterm.js, Vue and the frontend build tools are fetched by npm into
+`web/node_modules`.
+
+`go generate ./...` runs `npm run build` in `web`. That typechecks with
+`vue-tsc`, bundles the frontend with esbuild into `web/dist`, and the Go binary
+embeds `web/dist` with `go:embed`. There is no Vite dev server. Go serves the
+built assets.
 
 The generated `web/dist` directory and `web/node_modules` are ignored by git.
 
