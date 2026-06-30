@@ -1,8 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"web-terminal/terminal"
@@ -17,15 +19,22 @@ const (
 )
 
 type Config struct {
-	Address string
-	Shell   string
+	Address     string
+	ProjectDirs []string
+	Shell       string
 }
 
-func Load() Config {
-	return Config{
-		Address: envOrDefault(addressEnv, defaultAddress(os.Getenv(devModeEnv))),
-		Shell:   terminal.ResolveShell(os.Getenv("SHELL")),
+func Load() (Config, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return Config{}, fmt.Errorf("getting home directory: %w", err)
 	}
+
+	return Config{
+		Address:     envOrDefault(addressEnv, defaultAddress(os.Getenv(devModeEnv))),
+		ProjectDirs: defaultProjectDirs(homeDir),
+		Shell:       terminal.ResolveShell(os.Getenv("SHELL")),
+	}, nil
 }
 
 func defaultAddress(devMode string) string {
@@ -34,6 +43,16 @@ func defaultAddress(devMode string) string {
 	}
 
 	return net.JoinHostPort(runHost, defaultPort)
+}
+
+func defaultProjectDirs(homeDir string) []string {
+	// TODO: Discover these from ~/.config/projman/config.json.
+	return []string{
+		filepath.Join(homeDir, "Personal"),
+		filepath.Join(homeDir, "Work"),
+		filepath.Join(homeDir, ".config"),
+		filepath.Join(homeDir, "signinsolutions"),
+	}
 }
 
 func isEnabled(value string) bool {

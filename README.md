@@ -22,6 +22,20 @@ To use a different address:
 WEB_TERMINAL_ADDR=127.0.0.1:8090 mise run dev
 ```
 
+## Projects
+
+The root path shows the five most recently opened projects from browser
+`localStorage`.
+
+Open a project terminal with:
+
+```text
+http://editor.localhost:8765/web-terminal
+```
+
+The project name is resolved against the configured project directories. For
+now, those directories are hard-coded from the local Projman config.
+
 ## Development
 
 ```sh

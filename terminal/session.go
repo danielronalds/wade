@@ -17,8 +17,9 @@ type Session struct {
 	terminal *os.File
 }
 
-func Start(shell string, size Size) (*Session, error) {
+func Start(shell string, directory string, size Size) (*Session, error) {
 	command := exec.Command(shell)
+	command.Dir = directory
 	command.Env = append(os.Environ(), "TERM=xterm-256color", "COLORTERM=truecolor")
 
 	terminalFile, err := pty.StartWithSize(command, &pty.Winsize{Cols: size.Cols, Rows: size.Rows})

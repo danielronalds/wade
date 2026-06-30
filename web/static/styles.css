@@ -1,6 +1,6 @@
 @font-face {
   font-family: "WebTerminalJetBrainsMonoNerdFont";
-  src: url("/fonts/JetBrainsMonoNerdFontMono-Regular.ttf") format("truetype");
+  src: url("/static/fonts/JetBrainsMonoNerdFontMono-Regular.ttf") format("truetype");
   font-style: normal;
   font-weight: 400;
   font-display: block;
@@ -12,6 +12,7 @@
   --window: #17181c;
   --window-edge: #2b2d33;
   --title: #c7c9d1;
+  --text: #f8f8f2;
   --muted: #85889a;
   --connected: #28c840;
   --disconnected: #ff5f57;
@@ -31,17 +32,61 @@ body {
 body {
   margin: 0;
   background: var(--window);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  font-family: "WebTerminalJetBrainsMonoNerdFont", "JetBrainsMono Nerd Font Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-main {
+main,
+#terminal-view {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
   background: var(--window);
 }
 
-header {
+[hidden] {
+  display: none !important;
+}
+
+#home-view {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  gap: 24px;
+  place-content: center;
+  place-items: center;
+  padding: 24px;
+  color: var(--text);
+}
+
+#home-title {
+  margin: 0;
+  font-size: clamp(48px, 12vw, 120px);
+  line-height: 1;
+}
+
+#home-view nav {
+  justify-self: start;
+}
+
+#recent-projects,
+#empty-projects {
+  margin: 0;
+}
+
+#recent-projects {
+  text-align: left;
+}
+
+#recent-projects a {
+  color: var(--text);
+}
+
+#empty-projects {
+  text-align: center;
+}
+
+#terminal-view > header {
   position: fixed;
   right: 8px;
   bottom: 8px;
@@ -49,33 +94,32 @@ header {
   user-select: none;
 }
 
-header p,
-header nav {
+#terminal-view > header p,
+#terminal-view > header nav {
   display: none;
 }
 
-nav {
-  display: flex;
+#terminal-view > header nav {
   gap: 8px;
   align-items: center;
 }
 
-nav span {
+#terminal-view > header nav span {
   width: 12px;
   height: 12px;
   display: block;
   border-radius: 999px;
 }
 
-nav span:nth-child(1) {
+#terminal-view > header nav span:nth-child(1) {
   background: #ff5f57;
 }
 
-nav span:nth-child(2) {
+#terminal-view > header nav span:nth-child(2) {
   background: #febc2e;
 }
 
-nav span:nth-child(3) {
+#terminal-view > header nav span:nth-child(3) {
   background: #28c840;
 }
 

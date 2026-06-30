@@ -14,8 +14,9 @@ var websocketUpgrader = websocket.Upgrader{
 }
 
 func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	projectPath, err := s.projects.Path(r.URL.Query().Get("project"))
+	if err != nil {
+		http.Error(w, "project not found", http.StatusNotFound)
 		return
 	}
 
@@ -26,7 +27,7 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 	}
 	defer connection.Close()
 
-	session, err := terminal.Start(s.configuration.Shell, terminal.Size{Cols: 80, Rows: 24})
+	session, err := terminal.Start(s.configuration.Shell, projectPath, terminal.Size{Cols: 80, Rows: 24})
 	if err != nil {
 		log.Printf("pty start failed: %v", err)
 		return

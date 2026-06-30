@@ -10,7 +10,10 @@ import (
 )
 
 func main() {
-	configuration := config.Load()
+	configuration, err := config.Load()
+	if err != nil {
+		log.Fatalf("failed to load configuration: %v", err)
+	}
 
 	staticFiles, err := web.Files()
 	if err != nil {
