@@ -1,6 +1,7 @@
 import { readonly, type Ref, ref } from 'vue';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { WebglAddon } from '@xterm/addon-webgl';
 import { useRecentProjects } from './useRecentProjects';
 
 type Disposable = {
@@ -103,6 +104,8 @@ export const useTerminalSession = ({
   let socket: WebSocket | undefined;
   let terminal: Terminal | undefined;
   let fitAddon: FitAddon | undefined;
+  let webglAddon: WebglAddon | undefined;
+  let webglContextLossDisposable: Disposable | undefined;
   let resizeObserver: ResizeObserver | undefined;
   let terminalDataDisposable: Disposable | undefined;
   let terminalResizeDisposable: Disposable | undefined;
@@ -139,6 +142,31 @@ export const useTerminalSession = ({
 
     fitAddon.fit();
     sendResize();
+  };
+
+  const disposeWebglAddon = () => {
+    webglContextLossDisposable?.dispose();
+    webglAddon?.dispose();
+    webglContextLossDisposable = undefined;
+    webglAddon = undefined;
+  };
+
+  const loadWebglAddon = (activeTerminal: Terminal) => {
+    let addon: WebglAddon | undefined;
+    let contextLossDisposable: Disposable | undefined;
+
+    try {
+      addon = new WebglAddon();
+      contextLossDisposable = addon.onContextLoss(disposeWebglAddon);
+      activeTerminal.loadAddon(addon);
+    } catch {
+      contextLossDisposable?.dispose();
+      addon?.dispose();
+      return;
+    }
+
+    webglAddon = addon;
+    webglContextLossDisposable = contextLossDisposable;
   };
 
   const sendTerminalInput = (data: string) => {
@@ -241,6 +269,7 @@ export const useTerminalSession = ({
     terminalDataDisposable?.dispose();
     terminalResizeDisposable?.dispose();
     resizeObserver?.disconnect();
+    disposeWebglAddon();
     window.removeEventListener('resize', fitAndResize);
     document.removeEventListener('keydown', handleEscapeKey, true);
     socket?.close();
@@ -249,6 +278,8 @@ export const useTerminalSession = ({
     socket = undefined;
     terminal = undefined;
     fitAddon = undefined;
+    webglAddon = undefined;
+    webglContextLossDisposable = undefined;
     resizeObserver = undefined;
     terminalDataDisposable = undefined;
     terminalResizeDisposable = undefined;
@@ -273,6 +304,7 @@ export const useTerminalSession = ({
     fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
     terminal.open(terminalElement.value);
+    loadWebglAddon(terminal);
 
     terminalDataDisposable = terminal.onData(sendTerminalInput);
     terminalResizeDisposable = terminal.onResize(sendResize);
