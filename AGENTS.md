@@ -2,16 +2,19 @@
 
 ## Project
 
-This is a quick Go POC for a local browser terminal backed by a real shell.
+WADE is a Web-based Agentic Development Environment. It is a local-first
+browser workspace for agentic coding sessions, backed by real project shells
+through Go, PTYs, WebSockets and xterm.js.
 
-The backend is a Go HTTP server bound to localhost. It creates a PTY with
+The backend is a Go HTTP server bound to localhost. It creates PTYs with
 `github.com/creack/pty` and streams bytes over WebSockets with
 `github.com/gorilla/websocket`.
 
 The frontend lives in `web/src`, uses Vue 3 and TypeScript, and is bundled with
 esbuild into `web/dist`. Avoid CDN JavaScript for the local shell page.
 
-The default address is `127.0.0.1:8765`. Override it with
+`mise run dev` serves WADE at `editor-dev.localhost:8090`. A directly built
+binary uses `editor.localhost:8765` by default. Override either with
 `WEB_TERMINAL_ADDR`.
 
 ## Running
@@ -20,16 +23,34 @@ The default address is `127.0.0.1:8765`. Override it with
 mise run dev
 ```
 
-Then open <http://127.0.0.1:8765>.
+Then open <http://editor-dev.localhost:8090>.
+
+## Product intent
+
+WADE has moved beyond a simple browser terminal. Treat it as a small local
+development environment for project-based agent work.
+
+This project should be keyboard driven. Mouse interactions can exist, but the
+primary workflow should be fast from the keyboard, especially project search,
+tab switching, pane switching and terminal focus.
+
+Key product ideas:
+
+- The home screen shows recent projects and lets the user search all projects
+  from the keyboard.
+- Project pages keep agent, miscellaneous and server shells close together.
+- Terminal sessions persist for the lifetime of the server.
+- Project metadata should reduce context switching, such as branch, Linear
+  ticket and pull request links.
+- The app should stay local-first and avoid exposing shells to other origins.
 
 ## Terminal behaviour
 
 Use `xterm.js`, not `ghostty-web`, for now. `ghostty-web` was tried, but did
-not work quite right for this POC.
+not work quite right for this app.
 
-The terminal is full screen, with a small floating connection status in the
-bottom right. The status widget toggles between open text and closed dot-only
-modes when clicked.
+The project screen has a topbar, a sidebar, and terminal tabs. The Terminal tab
+contains Agent and Misc panes. The Server tab contains one terminal.
 
 Resize handling uses the xterm fit addon. The client sends JSON control
 messages like this:
@@ -42,22 +63,27 @@ The server treats text WebSocket messages as control messages and binary
 messages as terminal input.
 
 Escape needs special handling. The frontend captures document `keydown` events
-in the capture phase and sends raw `\x1b` to the PTY. This works around Escape
-not reliably reaching the shell through normal xterm input handling.
+in the capture phase for the active terminal and sends raw `\x1b` to the PTY.
+This keeps Escape reliable before xterm or browser focus handling can consume
+it.
+
+## Keyboard shortcuts
+
+Keyboard shortcuts are part of the product design, not just convenience helpers.
+When adding UI, prefer a clear keyboard path and predictable focus behaviour.
+
+- `Ctrl + S`: open the project command palette.
+- `Ctrl + B`, then `1`: switch to the Terminal tab.
+- `Ctrl + B`, then `2`: switch to the Server tab.
+- `Ctrl + B`, then `o`: switch to the next terminal pane in the active tab.
 
 ## Nerd Fonts
 
 Nerd Font support is configured through the xterm `fontFamily` option. The
-frontend has a Nerd Font-first stack and supports a `font` query parameter:
+frontend bundles JetBrains Mono Nerd Font and supports a `font` query parameter:
 
 ```text
-http://127.0.0.1:8765/?font=JetBrainsMono%20Nerd%20Font%20Mono
-```
-
-Install a local Nerd Font if icons do not render:
-
-```sh
-brew install --cask font-jetbrains-mono-nerd-font
+http://editor-dev.localhost:8090/?font=JetBrainsMono%20Nerd%20Font%20Mono
 ```
 
 xterm renders text on a canvas, so computed CSS on `.xterm` may show the page
@@ -85,5 +111,5 @@ mise run test
 ```
 
 For a smoke test, run the app on a temporary port, curl the static files, then
-kill the process. Check that no stale `go run .` or `local-web-terminal`
-processes remain on test ports.
+kill the process. Check that no stale `go run .` or `web-terminal` processes
+remain on test ports.
