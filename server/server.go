@@ -3,11 +3,10 @@ package server
 import (
 	"io/fs"
 	"net/http"
-	"path"
-	"strings"
 
 	"web-terminal/config"
 	"web-terminal/project"
+	"web-terminal/server/handlers"
 	terminalmanager "web-terminal/terminal/manager"
 )
 
@@ -29,8 +28,9 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 	}
 
 	server.mux.HandleFunc("GET /ws", server.handleTerminal)
+	server.mux.Handle("GET /api/project", handlers.NewProject(server.projects))
 	server.mux.Handle("GET /static/", http.FileServer(http.FS(staticFiles)))
-	server.mux.HandleFunc("GET /", server.handlePage)
+	server.mux.Handle("GET /", handlers.NewPage(server.staticFiles))
 
 	return server
 }
@@ -41,18 +41,4 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) Close() {
 	s.terminals.Close()
-}
-
-func (s *Server) handlePage(w http.ResponseWriter, r *http.Request) {
-	requestedPath := strings.TrimPrefix(path.Clean("/"+r.URL.Path), "/")
-	if requestedPath == "" || isProjectPagePath(requestedPath) {
-		http.ServeFileFS(w, r, s.staticFiles, "index.html")
-		return
-	}
-
-	http.NotFound(w, r)
-}
-
-func isProjectPagePath(requestedPath string) bool {
-	return requestedPath != "" && !strings.Contains(requestedPath, "/")
 }
