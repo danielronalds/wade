@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 )
 
 type Store struct {
@@ -13,6 +14,44 @@ type Store struct {
 
 func NewStore(directories []string) Store {
 	return Store{directories: directories}
+}
+
+func (s Store) Names() ([]string, error) {
+	seenProjects := make(map[string]struct{})
+	projectNames := make([]string, 0)
+
+	for _, directory := range s.directories {
+		if directory == "" {
+			return nil, errors.New("invalid project directory")
+		}
+
+		entries, err := os.ReadDir(directory)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+
+			return nil, err
+		}
+
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+
+			projectName := entry.Name()
+			if _, exists := seenProjects[projectName]; exists {
+				continue
+			}
+
+			seenProjects[projectName] = struct{}{}
+			projectNames = append(projectNames, projectName)
+		}
+	}
+
+	sort.Strings(projectNames)
+
+	return projectNames, nil
 }
 
 func (s Store) Path(name string) (string, error) {

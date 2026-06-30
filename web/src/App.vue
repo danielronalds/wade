@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router';
+import CommandPalette from './components/CommandPalette.vue';
 </script>
 
 <template>
@@ -7,6 +8,7 @@ import { RouterView } from 'vue-router';
     <RouterView v-slot="{ Component, route }">
       <component :is="Component" :key="route.fullPath" />
     </RouterView>
+    <CommandPalette />
   </main>
 </template>
 
