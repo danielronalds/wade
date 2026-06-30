@@ -14,11 +14,24 @@ const emit = defineEmits<{
 }>();
 
 const isActive = computed(() => props.isActive);
-const { terminalElement } = useProjectTerminalTab({
+const { focusTerminal, terminalElement } = useProjectTerminalTab({
   projectName: props.projectName,
   terminalName: ProjectTabs.Server,
   isActive,
   onConnectionStatusChange: (status) => emit('connectionStatusChange', status)
+});
+
+const focusActiveTerminal = async () => {
+  await focusTerminal();
+};
+
+const switchToNextTerminal = async () => {
+  await focusTerminal();
+};
+
+defineExpose({
+  focusActiveTerminal,
+  switchToNextTerminal
 });
 </script>
 

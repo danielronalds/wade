@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, nextTick, reactive, ref } from 'vue';
 import ProjectSidebar from '../components/ProjectSidebar.vue';
 import ServerTab from '../components/ServerTab.vue';
 import TerminalTab from '../components/TerminalTab.vue';
 import TerminalTopbar from '../components/TerminalTopbar.vue';
-import { ProjectTabs, type ProjectTab } from '../types/projectTabs';
+import { useProjectKeyboardShortcuts } from '../composables/useProjectKeyboardShortcuts';
+import { ProjectTabs, projectTabs, type ProjectTab } from '../types/projectTabs';
 import {
   createDisconnectedTerminalConnectionStatus,
   type TerminalConnectionStatus
@@ -14,20 +15,55 @@ defineProps<{
   projectName: string;
 }>();
 
+type ProjectScreenComponent = {
+  focusActiveTerminal: () => Promise<void>;
+  switchToNextTerminal: () => Promise<void>;
+};
+
 const activeTab = ref<ProjectTab>(ProjectTabs.Terminal);
+const terminalTab = ref<ProjectScreenComponent | null>(null);
+const serverTab = ref<ProjectScreenComponent | null>(null);
 const connectionStatuses = reactive<Record<ProjectTab, TerminalConnectionStatus>>({
   [ProjectTabs.Terminal]: createDisconnectedTerminalConnectionStatus(),
   [ProjectTabs.Server]: createDisconnectedTerminalConnectionStatus()
 });
 const activeConnectionStatus = computed(() => connectionStatuses[activeTab.value]);
 
+const getActiveProjectScreen = () => activeTab.value === ProjectTabs.Server
+  ? serverTab.value
+  : terminalTab.value;
+
+const focusActiveProjectScreen = async () => {
+  await nextTick();
+  await getActiveProjectScreen()?.focusActiveTerminal();
+};
+
 const selectTab = (tab: ProjectTab) => {
   activeTab.value = tab;
+  void focusActiveProjectScreen();
+};
+
+const selectTabBySlot = (slot: number) => {
+  const tab = projectTabs[slot - 1];
+  if (!tab) {
+    return;
+  }
+
+  selectTab(tab);
+};
+
+const switchToNextTerminal = () => {
+  void getActiveProjectScreen()?.switchToNextTerminal();
 };
 
 const updateConnectionStatus = (tab: ProjectTab, status: TerminalConnectionStatus) => {
   connectionStatuses[tab] = status;
 };
+
+useProjectKeyboardShortcuts({
+  selectTabBySlot,
+  switchToNextTerminal
+});
 </script>
 
 <template>
@@ -41,12 +77,14 @@ const updateConnectionStatus = (tab: ProjectTab, status: TerminalConnectionStatu
       <ProjectSidebar :active-tab="activeTab" @select-tab="selectTab" />
       <section id="project-screens">
         <TerminalTab
+          ref="terminalTab"
           v-show="activeTab === ProjectTabs.Terminal"
           :project-name="projectName"
           :is-active="activeTab === ProjectTabs.Terminal"
           @connection-status-change="updateConnectionStatus(ProjectTabs.Terminal, $event)"
         />
         <ServerTab
+          ref="serverTab"
           v-show="activeTab === ProjectTabs.Server"
           :project-name="projectName"
           :is-active="activeTab === ProjectTabs.Server"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
-import { TerminalPanes, type TerminalPaneId } from '../types/terminalPanes';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
+import { TerminalPanes, terminalPanes, type TerminalPaneId } from '../types/terminalPanes';
 import {
   combineTerminalConnectionStatuses,
   createDisconnectedTerminalConnectionStatus,
@@ -17,7 +17,13 @@ const emit = defineEmits<{
   connectionStatusChange: [status: TerminalConnectionStatus];
 }>();
 
+type TerminalPaneComponent = {
+  focusTerminal: () => Promise<void>;
+};
+
 const activePane = ref<TerminalPaneId>(TerminalPanes.Agent);
+const agentPane = ref<TerminalPaneComponent | null>(null);
+const miscPane = ref<TerminalPaneComponent | null>(null);
 const connectionStatuses = reactive<Record<TerminalPaneId, TerminalConnectionStatus>>({
   [TerminalPanes.Agent]: createDisconnectedTerminalConnectionStatus(),
   [TerminalPanes.Misc]: createDisconnectedTerminalConnectionStatus()
@@ -37,14 +43,39 @@ const updateConnectionStatus = (pane: TerminalPaneId, status: TerminalConnection
   connectionStatuses[pane] = status;
 };
 
+const getActivePaneComponent = () => activePane.value === TerminalPanes.Misc
+  ? miscPane.value
+  : agentPane.value;
+
+const focusActiveTerminal = async () => {
+  if (!props.isActive) {
+    return;
+  }
+
+  await nextTick();
+  await getActivePaneComponent()?.focusTerminal();
+};
+
+const switchToNextTerminal = async () => {
+  const activePaneIndex = terminalPanes.indexOf(activePane.value);
+  activePane.value = terminalPanes[(activePaneIndex + 1) % terminalPanes.length];
+  await focusActiveTerminal();
+};
+
 watch(combinedConnectionStatus, (status) => {
   emit('connectionStatusChange', status);
 }, { immediate: true });
+
+defineExpose({
+  focusActiveTerminal,
+  switchToNextTerminal
+});
 </script>
 
 <template>
   <section id="terminal-tab" aria-label="Terminal screens">
     <TerminalPane
+      ref="agentPane"
       class="agent-pane"
       :project-name="projectName"
       :terminal-name="TerminalPanes.Agent"
@@ -54,6 +85,7 @@ watch(combinedConnectionStatus, (status) => {
       @connection-status-change="updateConnectionStatus(TerminalPanes.Agent, $event)"
     />
     <TerminalPane
+      ref="miscPane"
       :project-name="projectName"
       :terminal-name="TerminalPanes.Misc"
       label="Misc"

@@ -17,7 +17,7 @@ const emit = defineEmits<{
 }>();
 
 const isActive = computed(() => props.isActive);
-const { reloadTerminal, terminalElement } = useProjectTerminalTab({
+const { focusTerminal, reloadTerminal, terminalElement } = useProjectTerminalTab({
   projectName: props.projectName,
   terminalName: props.terminalName,
   isActive,
@@ -31,6 +31,10 @@ const activate = () => {
 const reload = () => {
   void reloadTerminal();
 };
+
+defineExpose({
+  focusTerminal
+});
 </script>
 
 <template>

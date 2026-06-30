@@ -68,6 +68,7 @@ export const useProjectTerminalTab = ({
   });
 
   return {
+    focusTerminal: fitAndFocusTerminal,
     reloadTerminal,
     terminalElement
   };
