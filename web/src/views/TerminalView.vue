@@ -158,6 +158,7 @@ onBeforeUnmount(() => {
   margin: 0;
   align-items: center;
   gap: 14px;
+  font-weight: 400;
 }
 
 #brand {

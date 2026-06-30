@@ -52,6 +52,8 @@ const createTerminal = () => new Terminal({
   customGlyphs: true,
   fontFamily: getFontFamily(),
   fontSize: 14,
+  fontWeight: 400,
+  fontWeightBold: 400,
   letterSpacing: 0,
   lineHeight: 1,
   rescaleOverlappingGlyphs: true,
