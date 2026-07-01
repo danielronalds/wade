@@ -24,15 +24,18 @@ type Metadata struct {
 	GitBranch       string
 	LinearTicketURL string
 	PullRequestURL  string
+	GitHubURL       string
 }
 
 func Details(projectPath string) Metadata {
 	gitBranch := currentGitBranch(projectPath)
+	repo := githubRepo(projectPath)
 
 	return Metadata{
 		GitBranch:       gitBranch,
 		LinearTicketURL: linearTicketURL(gitBranch),
-		PullRequestURL:  pullRequestURL(projectPath, gitBranch),
+		PullRequestURL:  pullRequestURL(repo, gitBranch),
+		GitHubURL:       githubURL(repo),
 	}
 }
 
@@ -54,13 +57,8 @@ func linearTicketURL(gitBranch string) string {
 	return fmt.Sprintf("https://linear.app/%s/issue/%s", linearWorkspace, strings.ToUpper(matches[1]))
 }
 
-func pullRequestURL(projectPath string, gitBranch string) string {
-	if gitBranch == "" {
-		return ""
-	}
-
-	repo := githubRepo(projectPath)
-	if repo == "" {
+func pullRequestURL(repo string, gitBranch string) string {
+	if gitBranch == "" || repo == "" {
 		return ""
 	}
 
@@ -91,6 +89,18 @@ func githubRepo(projectPath string) string {
 	}
 
 	return parseGitHubRepo(remoteURL)
+}
+
+func githubURL(repo string) string {
+	if repo == "" {
+		return ""
+	}
+
+	if strings.Count(repo, "/") == 1 {
+		return fmt.Sprintf("https://github.com/%s", repo)
+	}
+
+	return fmt.Sprintf("https://%s", repo)
 }
 
 func parseGitHubRepo(remoteURL string) string {

@@ -38,6 +38,8 @@ Key product ideas:
 
 - The home screen shows recent projects and lets the user search all projects
   from the keyboard.
+- The general command palette should expose project actions without requiring
+  mouse interaction.
 - Project pages keep agent, miscellaneous and server shells close together.
 - Terminal sessions persist for the lifetime of the server.
 - Project metadata should reduce context switching, such as branch, Linear
@@ -72,6 +74,7 @@ it.
 Keyboard shortcuts are part of the product design, not just convenience helpers.
 When adding UI, prefer a clear keyboard path and predictable focus behaviour.
 
+- `Ctrl + P`: open the general command palette.
 - `Ctrl + S`: open the project command palette.
 - `Ctrl + B`, then `1`: switch to the Terminal tab.
 - `Ctrl + B`, then `2`: switch to the Server tab.

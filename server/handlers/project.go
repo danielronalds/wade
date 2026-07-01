@@ -16,6 +16,7 @@ type projectResponse struct {
 	GitBranch       string `json:"gitBranch"`
 	LinearTicketURL string `json:"linearTicketUrl"`
 	PullRequestURL  string `json:"pullRequestUrl"`
+	GitHubURL       string `json:"githubUrl"`
 }
 
 func NewProject(projects project.Store) Project {
@@ -38,5 +39,6 @@ func (h Project) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		GitBranch:       metadata.GitBranch,
 		LinearTicketURL: metadata.LinearTicketURL,
 		PullRequestURL:  metadata.PullRequestURL,
+		GitHubURL:       metadata.GitHubURL,
 	})
 }

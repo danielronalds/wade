@@ -1,13 +1,14 @@
 import { readonly, ref } from 'vue';
 
-type ProjectDetails = {
+export type ProjectDetails = {
   name: string;
   gitBranch: string;
   linearTicketUrl: string;
   pullRequestUrl: string;
+  githubUrl: string;
 };
 
-const isProjectDetails = (value: unknown): value is ProjectDetails => {
+export const isProjectDetails = (value: unknown): value is ProjectDetails => {
   if (!value || typeof value !== 'object') {
     return false;
   }
@@ -17,13 +18,15 @@ const isProjectDetails = (value: unknown): value is ProjectDetails => {
   return typeof details.name === 'string'
     && typeof details.gitBranch === 'string'
     && typeof details.linearTicketUrl === 'string'
-    && typeof details.pullRequestUrl === 'string';
+    && typeof details.pullRequestUrl === 'string'
+    && typeof details.githubUrl === 'string';
 };
 
 export const useProjectDetails = (projectName: string) => {
   const gitBranch = ref('');
   const linearTicketUrl = ref('');
   const pullRequestUrl = ref('');
+  const githubUrl = ref('');
   const isLoading = ref(false);
   const error = ref('');
 
@@ -48,11 +51,13 @@ export const useProjectDetails = (projectName: string) => {
       gitBranch.value = details.gitBranch;
       linearTicketUrl.value = details.linearTicketUrl;
       pullRequestUrl.value = details.pullRequestUrl;
+      githubUrl.value = details.githubUrl;
     } catch (requestError) {
       error.value = requestError instanceof Error ? requestError.message : 'Project details request failed';
       gitBranch.value = '';
       linearTicketUrl.value = '';
       pullRequestUrl.value = '';
+      githubUrl.value = '';
     } finally {
       isLoading.value = false;
     }
@@ -60,6 +65,7 @@ export const useProjectDetails = (projectName: string) => {
 
   return {
     error: readonly(error),
+    githubUrl: readonly(githubUrl),
     gitBranch: readonly(gitBranch),
     isLoading: readonly(isLoading),
     linearTicketUrl: readonly(linearTicketUrl),

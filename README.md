@@ -14,8 +14,8 @@ tab switching, pane switching and terminal focus.
 
 ## What it provides
 
-- A keyboard-first home screen with recent projects and a project command
-  palette.
+- A keyboard-first home screen with recent projects, a project command palette
+  and a general command palette.
 - Project discovery from local development directories.
 - Persistent project terminal sessions for the lifetime of the server.
 - Agent and Misc terminal panes for project work.
@@ -67,6 +67,7 @@ starting a new one.
 Keyboard shortcuts are a core part of WADE's interaction model. New workflows
 should prefer shortcuts and predictable focus behaviour over mouse-only flows.
 
+- `Ctrl + P`: open the general command palette.
 - `Ctrl + S`: open the project command palette.
 - `Ctrl + B`, then `1`: switch to the Terminal tab.
 - `Ctrl + B`, then `2`: switch to the Server tab.

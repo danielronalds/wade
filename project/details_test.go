@@ -27,6 +27,35 @@ func TestLinearTicketURL(t *testing.T) {
 	}
 }
 
+func TestGitHubURL(t *testing.T) {
+	tests := map[string]struct {
+		repo string
+		want string
+	}{
+		"github repo": {
+			repo: "signinsolutions/web-terminal",
+			want: "https://github.com/signinsolutions/web-terminal",
+		},
+		"enterprise repo": {
+			repo: "git.example.com/signinsolutions/web-terminal",
+			want: "https://git.example.com/signinsolutions/web-terminal",
+		},
+		"empty repo": {
+			repo: "",
+			want: "",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := githubURL(test.repo)
+			if got != test.want {
+				t.Fatalf("got %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
 func TestParseGitHubRepo(t *testing.T) {
 	tests := map[string]struct {
 		remoteURL string

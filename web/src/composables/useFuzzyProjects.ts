@@ -5,6 +5,12 @@ export type ProjectMatch = {
   score: number;
 };
 
+export type FuzzyMatch<T> = {
+  item: T;
+  label: string;
+  score: number;
+};
+
 type SequentialMatch = {
   consecutiveMatches: number;
   firstMatchIndex: number;
@@ -51,24 +57,24 @@ const findSequentialMatch = (candidate: string, query: string): SequentialMatch 
   return undefined;
 };
 
-const scoreProject = (projectName: string, rawQuery: string): ProjectMatch | undefined => {
+const scoreLabel = <T>(item: T, label: string, rawQuery: string): FuzzyMatch<T> | undefined => {
   const query = rawQuery.trim().toLowerCase();
   if (query === '') {
-    return { projectName, score: 0 };
+    return { item, label, score: 0 };
   }
 
-  const candidate = projectName.toLowerCase();
+  const candidate = label.toLowerCase();
   if (candidate === query) {
-    return { projectName, score: 100000 - projectName.length };
+    return { item, label, score: 100000 - label.length };
   }
 
   if (candidate.startsWith(query)) {
-    return { projectName, score: 90000 - projectName.length };
+    return { item, label, score: 90000 - label.length };
   }
 
   const substringIndex = candidate.indexOf(query);
   if (substringIndex !== -1) {
-    return { projectName, score: 80000 - (substringIndex * 100) - projectName.length };
+    return { item, label, score: 80000 - (substringIndex * 100) - label.length };
   }
 
   const sequentialMatch = findSequentialMatch(candidate, query);
@@ -77,26 +83,43 @@ const scoreProject = (projectName: string, rawQuery: string): ProjectMatch | und
   }
 
   return {
-    projectName,
+    item,
+    label,
     score: 70000
       + (sequentialMatch.consecutiveMatches * 25)
       - (sequentialMatch.gapPenalty * 10)
       - (sequentialMatch.firstMatchIndex * 20)
-      - projectName.length
+      - label.length
   };
 };
 
-export const useFuzzyProjects = (projects: Ref<readonly string[]>, query: Ref<string>) => {
-  const matchingProjects = computed(() => projects.value
-    .map((projectName) => scoreProject(projectName, query.value))
-    .filter((match): match is ProjectMatch => Boolean(match))
+export const useFuzzyItems = <T>(
+  items: Ref<readonly T[]>,
+  query: Ref<string>,
+  getLabel: (item: T) => string
+) => {
+  const matchingItems = computed(() => items.value
+    .map((item) => scoreLabel(item, getLabel(item), query.value))
+    .filter((match): match is FuzzyMatch<T> => Boolean(match))
     .sort((firstMatch, secondMatch) => {
       if (firstMatch.score !== secondMatch.score) {
         return secondMatch.score - firstMatch.score;
       }
 
-      return firstMatch.projectName.localeCompare(secondMatch.projectName);
+      return firstMatch.label.localeCompare(secondMatch.label);
     }));
+
+  return {
+    matchingItems: readonly(matchingItems)
+  };
+};
+
+export const useFuzzyProjects = (projects: Ref<readonly string[]>, query: Ref<string>) => {
+  const { matchingItems } = useFuzzyItems(projects, query, (projectName) => projectName);
+  const matchingProjects = computed(() => matchingItems.value.map((match) => ({
+    projectName: match.item,
+    score: match.score
+  })));
 
   return {
     matchingProjects: readonly(matchingProjects)
