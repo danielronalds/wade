@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useFuzzyItems } from '../../composables/useFuzzyProjects';
 import { isProjectDetails, type ProjectDetails } from '../../composables/useProjectDetails';
+import { dispatchStartReviewEvent } from '../../events/startReview';
 import PaletteShell from './PaletteShell.vue';
 import type { PaletteResult } from './types';
 
@@ -42,6 +43,19 @@ const openExternalUrl = (url: string) => {
   window.open(url, '_blank', 'noopener,noreferrer');
 };
 
+const closePaletteWithoutRestoringFocus = () => {
+  emit('close', false);
+};
+
+const startReview = () => {
+  if (currentProjectName.value === '') {
+    return;
+  }
+
+  closePaletteWithoutRestoringFocus();
+  dispatchStartReviewEvent(currentProjectName.value);
+};
+
 const createExternalCommand = (
   id: string,
   label: string,
@@ -63,6 +77,13 @@ const commandDefinitions = computed<PaletteResult[]>(() => [
     actionLabel: 'Open picker',
     isDisabled: false,
     run: () => emit('openProjectPicker')
+  },
+  {
+    id: 'start-review',
+    label: 'Start Review',
+    actionLabel: currentProjectName.value === '' ? 'No project open' : 'Open review tab',
+    isDisabled: currentProjectName.value === '',
+    run: startReview
   },
   createExternalCommand(
     'open-linear-ticket',

@@ -5,26 +5,23 @@ import ReviewTab from '../components/ReviewTab.vue';
 import ServerTab from '../components/ServerTab.vue';
 import TerminalTab from '../components/TerminalTab.vue';
 import TerminalTopbar from '../components/TerminalTopbar.vue';
+import { useProjectEventHandlers } from '../composables/useProjectEventHandlers';
 import { useProjectKeyboardShortcuts } from '../composables/useProjectKeyboardShortcuts';
+import type { ProjectScreenComponent, ReviewScreenComponent } from '../types/projectScreens';
 import { ProjectTabs, projectTabs, type ProjectTab } from '../types/projectTabs';
 import {
   createDisconnectedTerminalConnectionStatus,
   type TerminalConnectionStatus
 } from '../types/terminalConnectionStatus';
 
-defineProps<{
+const props = defineProps<{
   projectName: string;
 }>();
-
-type ProjectScreenComponent = {
-  focusActiveTerminal: () => Promise<void>;
-  switchToNextTerminal: () => Promise<void>;
-};
 
 const activeTab = ref<ProjectTab>(ProjectTabs.Terminal);
 const terminalTab = ref<ProjectScreenComponent | null>(null);
 const serverTab = ref<ProjectScreenComponent | null>(null);
-const reviewTab = ref<ProjectScreenComponent | null>(null);
+const reviewTab = ref<ReviewScreenComponent | null>(null);
 const connectionStatuses = reactive<Record<ProjectTab, TerminalConnectionStatus>>({
   [ProjectTabs.Terminal]: createDisconnectedTerminalConnectionStatus(),
   [ProjectTabs.Server]: createDisconnectedTerminalConnectionStatus(),
@@ -77,6 +74,18 @@ const selectTerminalTab = () => {
 const updateConnectionStatus = (tab: ProjectTab, status: TerminalConnectionStatus) => {
   connectionStatuses[tab] = status;
 };
+
+const startReviewFromCommandPalette = async () => {
+  activeTab.value = ProjectTabs.Review;
+  await nextTick();
+  await reviewTab.value?.startReview();
+  await reviewTab.value?.focusActiveTerminal();
+};
+
+useProjectEventHandlers({
+  getProjectName: () => props.projectName,
+  startReview: startReviewFromCommandPalette
+});
 
 useProjectKeyboardShortcuts({
   selectTabBySlot,

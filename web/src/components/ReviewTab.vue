@@ -842,6 +842,7 @@ watch(() => props.isActive, (isActive) => {
 
 defineExpose({
   focusActiveTerminal,
+  startReview,
   switchToNextTerminal
 });
 </script>
