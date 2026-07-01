@@ -45,8 +45,16 @@ export const useRecentProjects = createSharedComposable(() => {
     storedRecentProjects.value = nextRecentProjects;
   };
 
+  const removeUnavailableRecentProjects = (availableProjects: readonly string[]) => {
+    const availableProjectNames = new Set(availableProjects);
+    const nextRecentProjects = recentProjects.value.filter((project) => availableProjectNames.has(project));
+
+    storedRecentProjects.value = nextRecentProjects;
+  };
+
   return {
     recentProjects: readonly(recentProjects),
-    recordRecentProject
+    recordRecentProject,
+    removeUnavailableRecentProjects
   };
 });

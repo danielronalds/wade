@@ -48,32 +48,43 @@ export const useProjects = createSharedComposable(() => {
 
   const projects = computed(() => normaliseProjects(storedProjects.value));
 
-  const syncProjects = async () => {
-    if (isSyncing.value) {
-      return;
+  let syncRequest: Promise<string[] | undefined> | undefined;
+
+  const syncProjects = () => {
+    if (syncRequest) {
+      return syncRequest;
     }
 
     isSyncing.value = true;
     error.value = '';
 
-    try {
-      const response = await fetch('/api/projects');
+    syncRequest = (async () => {
+      try {
+        const response = await fetch('/api/projects');
 
-      if (!response.ok) {
-        throw new Error(`Projects request failed with ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`Projects request failed with ${response.status}`);
+        }
+
+        const projectsResponse: unknown = await response.json();
+        if (!isProjectsResponse(projectsResponse)) {
+          throw new Error('Projects response was invalid');
+        }
+
+        const nextProjects = normaliseProjects(projectsResponse.projects);
+        storedProjects.value = nextProjects;
+
+        return nextProjects;
+      } catch (requestError) {
+        error.value = requestError instanceof Error ? requestError.message : 'Projects request failed';
+        return undefined;
+      } finally {
+        isSyncing.value = false;
+        syncRequest = undefined;
       }
+    })();
 
-      const projectsResponse: unknown = await response.json();
-      if (!isProjectsResponse(projectsResponse)) {
-        throw new Error('Projects response was invalid');
-      }
-
-      storedProjects.value = normaliseProjects(projectsResponse.projects);
-    } catch (requestError) {
-      error.value = requestError instanceof Error ? requestError.message : 'Projects request failed';
-    } finally {
-      isSyncing.value = false;
-    }
+    return syncRequest;
   };
 
   return {

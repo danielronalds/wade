@@ -1,12 +1,24 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useProjects } from '../composables/useProjects';
 import { useRecentProjects } from '../composables/useRecentProjects';
 
-const { recentProjects } = useRecentProjects();
+const { syncProjects } = useProjects();
+const { recentProjects, removeUnavailableRecentProjects } = useRecentProjects();
+
+const syncRecentProjects = async () => {
+  const availableProjects = await syncProjects();
+  if (!availableProjects) {
+    return;
+  }
+
+  removeUnavailableRecentProjects(availableProjects);
+};
 
 onMounted(() => {
   document.title = 'WADE';
+  void syncRecentProjects();
 });
 </script>
 
