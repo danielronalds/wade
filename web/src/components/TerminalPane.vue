@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { RefreshCw } from '@lucide/vue';
 import { computed } from 'vue';
 import { useProjectTerminalTab } from '../composables/useProjectTerminalTab';
+import TerminalHeader from './TerminalHeader.vue';
 import type { TerminalConnectionStatus } from '../types/terminalConnectionStatus';
 
 const props = defineProps<{
@@ -17,7 +17,12 @@ const emit = defineEmits<{
 }>();
 
 const isActive = computed(() => props.isActive);
-const { focusTerminal, reloadTerminal, terminalElement } = useProjectTerminalTab({
+const {
+  focusTerminal,
+  reloadTerminal,
+  scrollTerminalToBottom,
+  terminalElement
+} = useProjectTerminalTab({
   projectName: props.projectName,
   terminalName: props.terminalName,
   isActive,
@@ -26,6 +31,10 @@ const { focusTerminal, reloadTerminal, terminalElement } = useProjectTerminalTab
 
 const activate = () => {
   emit('activate');
+};
+
+const scrollToBottom = () => {
+  void scrollTerminalToBottom();
 };
 
 const reload = () => {
@@ -45,18 +54,12 @@ defineExpose({
     @focusin="activate"
     @pointerdown.capture="activate"
   >
-    <header class="terminal-pane-header">
-      <h2>{{ label }}</h2>
-      <button
-        class="reload-terminal"
-        type="button"
-        :aria-label="`Reload ${label} terminal`"
-        :title="`Reload ${label} terminal`"
-        @click.stop="reload"
-      >
-        <RefreshCw :size="14" :stroke-width="1.7" aria-hidden="true" />
-      </button>
-    </header>
+    <TerminalHeader
+      :label="label"
+      :is-active="isActive"
+      @scroll-to-bottom="scrollToBottom"
+      @reload="reload"
+    />
     <section ref="terminalElement" class="terminal-screen" :aria-label="`${label} shell`"></section>
   </section>
 </template>
@@ -69,44 +72,5 @@ defineExpose({
   grid-template-rows: 28px minmax(0, 1fr);
   overflow: hidden;
   background: var(--window);
-}
-
-.terminal-pane-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 0 8px 0 12px;
-  border-bottom: 1px solid rgb(248 248 242 / 45%);
-  color: var(--muted);
-  user-select: none;
-}
-
-.terminal-pane[data-active="true"] .terminal-pane-header {
-  color: var(--text);
-}
-
-h2 {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1;
-}
-
-.reload-terminal {
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-.reload-terminal:hover,
-.reload-terminal:focus-visible {
-  color: var(--text);
 }
 </style>

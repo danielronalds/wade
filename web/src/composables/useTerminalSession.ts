@@ -185,6 +185,11 @@ export const useTerminalSession = ({
     terminal?.focus();
   };
 
+  const scrollToBottom = () => {
+    terminal?.scrollToBottom();
+    focusTerminal();
+  };
+
   const sendEscapeKey = () => {
     sendTerminalInput('\x1b');
     focusTerminal();
@@ -345,6 +350,7 @@ export const useTerminalSession = ({
     fitAndResize,
     focusTerminal,
     reload,
+    scrollToBottom,
     start,
     stop
   };

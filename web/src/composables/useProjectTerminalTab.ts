@@ -46,6 +46,11 @@ export const useProjectTerminalTab = ({
     await fitAndFocusTerminal();
   };
 
+  const scrollTerminalToBottom = async () => {
+    await nextTick();
+    terminalSession.scrollToBottom();
+  };
+
   watch([terminalSession.connectionStatusText, terminalSession.isConnected], () => {
     publishConnectionStatus();
   }, { immediate: true });
@@ -70,6 +75,7 @@ export const useProjectTerminalTab = ({
   return {
     focusTerminal: fitAndFocusTerminal,
     reloadTerminal,
+    scrollTerminalToBottom,
     terminalElement
   };
 };
