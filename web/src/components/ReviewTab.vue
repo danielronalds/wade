@@ -1,5 +1,17 @@
 <!-- NOTE: Vibecoded and not suppppppper reviewed -->
 <script setup lang="ts">
+import {
+  Check,
+  Columns2,
+  EyeOff,
+  ListCollapse,
+  MessageSquarePlus,
+  NotebookPen,
+  Rows2,
+  Send,
+  TextWrap,
+  X
+} from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { pasteIntoAgentTerminal } from '../composables/useAgentTerminalInput';
 import type {
@@ -73,6 +85,8 @@ const draftCommentKind = ref<ReviewCommentKind>('feedback');
 const isOverallNoteOpen = ref(false);
 const overallNoteDraft = ref('');
 const hideUnchanged = ref(false);
+const renderSideBySide = ref(true);
+const wrapLines = ref(true);
 const isSendingPrompt = ref(false);
 const startButton = ref<HTMLButtonElement | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
@@ -309,7 +323,10 @@ const trimmedComments = computed(() => comments.value
   .map((comment) => ({ ...comment, body: comment.body.trim() }))
   .filter((comment) => comment.body.length > 0));
 const canFinishReview = computed(() => !isSendingPrompt.value && (trimmedComments.value.length > 0 || overallComment.value.trim().length > 0));
+const reviewScrollKey = computed(() => activeFileId.value ? `${activeScope.value}:${activeFileId.value}` : '');
 const hideUnchangedButtonLabel = computed(() => hideUnchanged.value ? 'Show full file' : 'Show changed areas only');
+const renderSideBySideButtonLabel = computed(() => renderSideBySide.value ? 'Use inline diff' : 'Use side-by-side diff');
+const wrapLinesButtonLabel = computed(() => wrapLines.value ? 'Disable line wrap' : 'Enable line wrap');
 const draftCommentTitle = computed(() => {
   if (!draftComment.value) {
     return '';
@@ -361,6 +378,18 @@ const toggleHideUnchanged = () => {
   }
 
   hideUnchanged.value = !hideUnchanged.value;
+};
+
+const toggleRenderSideBySide = () => {
+  if (!activeComparison.value) {
+    return;
+  }
+
+  renderSideBySide.value = !renderSideBySide.value;
+};
+
+const toggleWrapLines = () => {
+  wrapLines.value = !wrapLines.value;
 };
 
 const toggleDirectoryCollapsed = (directoryPath: string) => {
@@ -479,6 +508,8 @@ const resetReview = async () => {
   comments.value = [];
   overallComment.value = '';
   hideUnchanged.value = false;
+  renderSideBySide.value = true;
+  wrapLines.value = true;
   draftComment.value = null;
   isOverallNoteOpen.value = false;
   await nextTick();
@@ -516,6 +547,8 @@ const startReview = async () => {
   comments.value = [];
   overallComment.value = '';
   hideUnchanged.value = false;
+  renderSideBySide.value = true;
+  wrapLines.value = true;
 
   try {
     const params = new URLSearchParams({ project: props.projectName });
@@ -910,18 +943,39 @@ defineExpose({
             <p>Click a line number to comment. Use j/k or arrows for files, r to mark reviewed, / to search.</p>
           </section>
           <section class="review-header-actions" aria-label="Review actions">
-            <button type="button" @click="openOverallNote">Overall note</button>
-            <button type="button" :disabled="!activeFile" @click="openFileComment">Add file comment</button>
-            <button type="button" :disabled="!activeComparison" :data-active="String(hideUnchanged)" @click="toggleHideUnchanged">
-              {{ hideUnchangedButtonLabel }}
-            </button>
-            <button type="button" :disabled="!activeFile" :data-active="String(isActiveFileReviewed)" @click="toggleActiveFileReviewed">
-              {{ isActiveFileReviewed ? 'Reviewed' : 'Mark reviewed' }}
-            </button>
-            <button type="button" @click="resetReview">Cancel review</button>
-            <button type="button" :disabled="!canFinishReview" @click="finishReview">
-              {{ isSendingPrompt ? 'Sending review' : 'Finish review' }}
-            </button>
+            <section class="review-action-group" aria-label="Comment actions">
+              <button class="review-icon-button" type="button" title="Overall note" aria-label="Overall note" @click="openOverallNote">
+                <NotebookPen :size="15" :stroke-width="1.8" aria-hidden="true" />
+              </button>
+              <button class="review-icon-button" type="button" :disabled="!activeFile" title="Add file comment" aria-label="Add file comment" @click="openFileComment">
+                <MessageSquarePlus :size="15" :stroke-width="1.8" aria-hidden="true" />
+              </button>
+            </section>
+            <section class="review-action-group" aria-label="Editor view actions">
+              <button class="review-icon-button" type="button" :disabled="!activeComparison" :data-active="String(hideUnchanged)" :title="hideUnchangedButtonLabel" :aria-label="hideUnchangedButtonLabel" @click="toggleHideUnchanged">
+                <ListCollapse v-if="hideUnchanged" :size="15" :stroke-width="1.8" aria-hidden="true" />
+                <EyeOff v-else :size="15" :stroke-width="1.8" aria-hidden="true" />
+              </button>
+              <button class="review-icon-button" type="button" :data-active="String(wrapLines)" :title="wrapLinesButtonLabel" :aria-label="wrapLinesButtonLabel" @click="toggleWrapLines">
+                <TextWrap :size="15" :stroke-width="1.8" aria-hidden="true" />
+              </button>
+              <button class="review-icon-button" type="button" :disabled="!activeComparison" :data-active="String(renderSideBySide)" :title="renderSideBySideButtonLabel" :aria-label="renderSideBySideButtonLabel" @click="toggleRenderSideBySide">
+                <Columns2 v-if="renderSideBySide" :size="15" :stroke-width="1.8" aria-hidden="true" />
+                <Rows2 v-else :size="15" :stroke-width="1.8" aria-hidden="true" />
+              </button>
+              <button class="review-icon-button" type="button" :disabled="!activeFile" :data-active="String(isActiveFileReviewed)" :title="isActiveFileReviewed ? 'Mark not reviewed' : 'Mark reviewed'" :aria-label="isActiveFileReviewed ? 'Mark not reviewed' : 'Mark reviewed'" @click="toggleActiveFileReviewed">
+                <Check :size="15" :stroke-width="1.8" aria-hidden="true" />
+              </button>
+            </section>
+            <section class="review-action-group" aria-label="Review lifecycle actions">
+              <button class="review-icon-button" type="button" title="Cancel review" aria-label="Cancel review" @click="resetReview">
+                <X :size="15" :stroke-width="1.8" aria-hidden="true" />
+              </button>
+              <button class="review-finish-button" type="button" :disabled="!canFinishReview" @click="finishReview">
+                <Send :size="14" :stroke-width="1.8" aria-hidden="true" />
+                <span>{{ isSendingPrompt ? 'Sending' : 'Finish' }}</span>
+              </button>
+            </section>
           </section>
         </header>
         <p
@@ -949,6 +1003,9 @@ defineExpose({
           :hide-unchanged="hideUnchanged"
           :is-diff="Boolean(activeComparison)"
           :is-loading="isActiveFileLoading"
+          :render-side-by-side="renderSideBySide"
+          :scroll-key="reviewScrollKey"
+          :wrap-lines="wrapLines"
           @add-line-comment="addLineComment"
           @delete-comment="deleteComment"
           @toggle-comment-kind="toggleCommentKind"
@@ -1288,7 +1345,7 @@ button:not(:disabled):focus-visible {
   border-bottom: 1px solid var(--text);
 }
 
-.review-file-header section:first-child {
+.review-file-header > section:first-child {
   min-width: 0;
   display: grid;
   gap: 5px;
@@ -1311,14 +1368,37 @@ button:not(:disabled):focus-visible {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.review-action-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.review-action-group + .review-action-group {
+  padding-left: 10px;
+  border-left: 1px solid rgb(248 248 242 / 35%);
 }
 
 .review-header-actions button {
   height: 30px;
-  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   border-radius: 0;
   font-size: 12px;
+}
+
+.review-icon-button {
+  width: 30px;
+  padding: 0;
+}
+
+.review-finish-button {
+  padding: 0 11px;
 }
 
 .review-header-actions button[data-active="true"] {

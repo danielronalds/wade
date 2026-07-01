@@ -29,7 +29,12 @@ type ViewZoneAccessor = {
 type MonacoCodeEditor = {
   changeViewZones: (callback: (accessor: ViewZoneAccessor) => void) => void;
   deltaDecorations: (oldDecorations: string[], newDecorations: Array<Record<string, unknown>>) => string[];
+  getScrollLeft: () => number;
+  getScrollTop: () => number;
   onMouseDown: (callback: (event: MonacoMouseEvent) => void) => Disposable;
+  setScrollLeft: (scrollLeft: number) => void;
+  setScrollTop: (scrollTop: number) => void;
+  updateOptions: (options: Record<string, unknown>) => void;
 };
 
 type MonacoEditor = {
@@ -68,6 +73,13 @@ type ActiveViewZone = {
   editor: MonacoCodeEditor;
 };
 
+type ScrollPosition = {
+  originalLeft: number;
+  originalTop: number;
+  modifiedLeft: number;
+  modifiedTop: number;
+};
+
 declare global {
   interface Window {
     MonacoEnvironment?: {
@@ -85,6 +97,9 @@ const props = defineProps<{
   hideUnchanged: boolean;
   isDiff: boolean;
   isLoading: boolean;
+  renderSideBySide: boolean;
+  scrollKey: string;
+  wrapLines: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -109,6 +124,8 @@ let mouseDisposables: Disposable[] = [];
 let originalDecorations: string[] = [];
 let modifiedDecorations: string[] = [];
 let activeViewZones: ActiveViewZone[] = [];
+let mountedScrollKey = '';
+const scrollPositions = new Map<string, ScrollPosition>();
 
 const placeholderText = computed(() => {
   if (hasEditorError.value) {
@@ -241,7 +258,8 @@ const scheduleEditorLayout = () => {
 };
 
 const editorReviewOptions = () => ({
-  renderSideBySide: props.isDiff,
+  renderSideBySide: props.isDiff && props.renderSideBySide,
+  diffWordWrap: props.wrapLines ? 'on' : 'off',
   hideUnchangedRegions: {
     enabled: props.isDiff && props.hideUnchanged,
     contextLineCount: 4,
@@ -256,7 +274,50 @@ const applyEditorReviewOptions = () => {
   }
 
   editor.updateOptions(editorReviewOptions());
+  editor.getOriginalEditor().updateOptions({ wordWrap: props.wrapLines ? 'on' : 'off' });
+  editor.getModifiedEditor().updateOptions({ wordWrap: props.wrapLines ? 'on' : 'off' });
   scheduleEditorLayout();
+};
+
+const saveScrollPosition = () => {
+  if (!editor || mountedScrollKey === '') {
+    return;
+  }
+
+  const originalEditor = editor.getOriginalEditor();
+  const modifiedEditor = editor.getModifiedEditor();
+  scrollPositions.set(mountedScrollKey, {
+    originalLeft: originalEditor.getScrollLeft(),
+    originalTop: originalEditor.getScrollTop(),
+    modifiedLeft: modifiedEditor.getScrollLeft(),
+    modifiedTop: modifiedEditor.getScrollTop()
+  });
+};
+
+const restoreScrollPosition = () => {
+  if (!editor || props.scrollKey === '') {
+    return;
+  }
+
+  const position = scrollPositions.get(props.scrollKey);
+  if (!position) {
+    return;
+  }
+
+  const originalEditor = editor.getOriginalEditor();
+  const modifiedEditor = editor.getModifiedEditor();
+  originalEditor.setScrollLeft(position.originalLeft);
+  originalEditor.setScrollTop(position.originalTop);
+  modifiedEditor.setScrollLeft(position.modifiedLeft);
+  modifiedEditor.setScrollTop(position.modifiedTop);
+};
+
+const scheduleScrollRestore = () => {
+  requestAnimationFrame(() => {
+    restoreScrollPosition();
+    setTimeout(restoreScrollPosition, 50);
+    setTimeout(restoreScrollPosition, 150);
+  });
 };
 
 const inlineComments = () => props.comments.filter((comment) => comment.side !== 'file' && comment.startLine != null);
@@ -496,7 +557,10 @@ const mountContents = () => {
     return;
   }
 
+  saveScrollPosition();
+
   if (!props.contents) {
+    mountedScrollKey = '';
     clearEditorModel();
     return;
   }
@@ -511,11 +575,15 @@ const mountContents = () => {
   originalModel = nextOriginalModel;
   modifiedModel = nextModifiedModel;
   editor.setModel({ original: nextOriginalModel, modified: nextModifiedModel });
+  mountedScrollKey = props.scrollKey;
   previousOriginalModel?.dispose();
   previousModifiedModel?.dispose();
   applyEditorReviewOptions();
   syncInlineReviewUI();
-  nextTick(scheduleEditorLayout);
+  nextTick(() => {
+    scheduleEditorLayout();
+    scheduleScrollRestore();
+  });
 };
 
 const isLineCommentTarget = (targetType: number) => {
@@ -595,11 +663,11 @@ const createEditor = async () => {
   }
 };
 
-watch(() => [props.contents, props.filePath] as const, () => {
+watch(() => [props.contents, props.filePath, props.scrollKey] as const, () => {
   mountContents();
 });
 
-watch(() => [props.hideUnchanged, props.isDiff] as const, () => {
+watch(() => [props.hideUnchanged, props.isDiff, props.renderSideBySide, props.wrapLines] as const, () => {
   applyEditorReviewOptions();
 });
 
@@ -612,6 +680,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  saveScrollPosition();
   resizeObserver?.disconnect();
   mouseDisposables.forEach((disposable) => disposable.dispose());
   clearEditorModel();
