@@ -6,16 +6,9 @@ import { isProjectDetails, type ProjectDetails } from '../../composables/useProj
 import PaletteShell from './PaletteShell.vue';
 import type { PaletteResult } from './types';
 
-type CommandDefinition = {
-  id: string;
-  label: string;
-  actionLabel: string;
-  unavailableLabel: string;
-  url: string;
-};
-
 const emit = defineEmits<{
   close: [restoreFocus?: boolean];
+  openProjectPicker: [];
 }>();
 
 const route = useRoute();
@@ -40,28 +33,58 @@ const unavailableCommandLabel = (fallback: string) => {
   return fallback;
 };
 
-const commandDefinitions = computed<CommandDefinition[]>(() => [
-  {
-    id: 'open-linear-ticket',
-    label: 'Open Linear Ticket',
-    actionLabel: 'Open ticket',
-    unavailableLabel: unavailableCommandLabel('No ticket found'),
-    url: projectDetails.value?.linearTicketUrl ?? ''
-  },
-  {
-    id: 'open-pr',
-    label: 'Open PR',
-    actionLabel: 'Open PR',
-    unavailableLabel: unavailableCommandLabel('No PR found'),
-    url: projectDetails.value?.pullRequestUrl ?? ''
-  },
-  {
-    id: 'open-github-page',
-    label: 'Open Github Page',
-    actionLabel: 'Open page',
-    unavailableLabel: unavailableCommandLabel('No GitHub remote'),
-    url: projectDetails.value?.githubUrl ?? ''
+const openExternalUrl = (url: string) => {
+  if (url === '') {
+    return;
   }
+
+  emit('close');
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+const createExternalCommand = (
+  id: string,
+  label: string,
+  actionLabel: string,
+  unavailableLabel: string,
+  url: string
+): PaletteResult => ({
+  id,
+  label,
+  actionLabel: url === '' ? unavailableLabel : actionLabel,
+  isDisabled: url === '',
+  run: () => openExternalUrl(url)
+});
+
+const commandDefinitions = computed<PaletteResult[]>(() => [
+  {
+    id: 'open-project-picker',
+    label: 'Open Project Picker',
+    actionLabel: 'Open picker',
+    isDisabled: false,
+    run: () => emit('openProjectPicker')
+  },
+  createExternalCommand(
+    'open-linear-ticket',
+    'Open Linear Ticket',
+    'Open ticket',
+    unavailableCommandLabel('No ticket found'),
+    projectDetails.value?.linearTicketUrl ?? ''
+  ),
+  createExternalCommand(
+    'open-pr',
+    'Open PR',
+    'Open PR',
+    unavailableCommandLabel('No PR found'),
+    projectDetails.value?.pullRequestUrl ?? ''
+  ),
+  createExternalCommand(
+    'open-github-page',
+    'Open Github Page',
+    'Open page',
+    unavailableCommandLabel('No GitHub remote'),
+    projectDetails.value?.githubUrl ?? ''
+  )
 ]);
 
 const { matchingItems: matchingCommands } = useFuzzyItems(
@@ -78,21 +101,9 @@ const paletteSummary = computed(() => {
   return isProjectDetailsLoading.value ? `Loading ${currentProjectName.value}` : currentProjectName.value;
 });
 
-const openExternalUrl = (url: string) => {
-  if (url === '') {
-    return;
-  }
-
-  emit('close');
-  window.open(url, '_blank', 'noopener,noreferrer');
-};
-
 const paletteResults = computed<PaletteResult[]>(() => matchingCommands.value.map((match) => ({
-  id: `command:${match.item.id}`,
-  label: match.item.label,
-  actionLabel: match.item.url === '' ? match.item.unavailableLabel : match.item.actionLabel,
-  isDisabled: match.item.url === '',
-  run: () => openExternalUrl(match.item.url)
+  ...match.item,
+  id: `command:${match.item.id}`
 })));
 
 const loadCurrentProjectDetails = async () => {

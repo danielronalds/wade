@@ -89,5 +89,6 @@ onBeforeUnmount(() => {
   <GeneralCommandPalette
     v-if="activePalette === PaletteModes.Commands"
     @close="closePalette"
+    @open-project-picker="openPalette(PaletteModes.Projects)"
   />
 </template>
