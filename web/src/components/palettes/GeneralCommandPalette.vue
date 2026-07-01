@@ -3,6 +3,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useFuzzyItems } from '../../composables/useFuzzyProjects';
 import { isProjectDetails, type ProjectDetails } from '../../composables/useProjectDetails';
+import { useProjects } from '../../composables/useProjects';
+import { useRecentProjects } from '../../composables/useRecentProjects';
 import { dispatchStartReviewEvent } from '../../events/startReview';
 import PaletteShell from './PaletteShell.vue';
 import type { PaletteResult } from './types';
@@ -13,6 +15,8 @@ const emit = defineEmits<{
 }>();
 
 const route = useRoute();
+const { syncProjects } = useProjects();
+const { removeUnavailableRecentProjects } = useRecentProjects();
 const query = ref('');
 const projectDetails = ref<ProjectDetails | undefined>();
 const isProjectDetailsLoading = ref(false);
@@ -56,6 +60,24 @@ const startReview = () => {
   dispatchStartReviewEvent(currentProjectName.value);
 };
 
+const reloadConfig = async () => {
+  try {
+    const response = await fetch('/api/config/reload', { method: 'POST' });
+    if (!response.ok) {
+      throw new Error(`Config reload failed with ${response.status}`);
+    }
+
+    const availableProjects = await syncProjects();
+    if (availableProjects) {
+      removeUnavailableRecentProjects(availableProjects);
+    }
+  } catch (error) {
+    console.error(error);
+  } finally {
+    emit('close');
+  }
+};
+
 const createExternalCommand = (
   id: string,
   label: string,
@@ -84,6 +106,15 @@ const commandDefinitions = computed<PaletteResult[]>(() => [
     actionLabel: currentProjectName.value === '' ? 'No project open' : 'Open review tab',
     isDisabled: currentProjectName.value === '',
     run: startReview
+  },
+  {
+    id: 'reload-config',
+    label: 'Reload Config',
+    actionLabel: 'Reload config',
+    isDisabled: false,
+    run: () => {
+      void reloadConfig();
+    }
   },
   createExternalCommand(
     'open-linear-ticket',

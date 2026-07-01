@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"wade/terminal"
@@ -18,25 +17,38 @@ const (
 	runHost     = "editor.localhost"
 )
 
+// Config is the resolved runtime configuration used by the server.
 type Config struct {
 	Address     string
 	ProjectDirs []string
 	Shell       string
 }
 
+// Load resolves runtime configuration from settings and environment variables.
 func Load() (Config, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return Config{}, fmt.Errorf("getting home directory: %w", err)
 	}
 
+	settings, err := LoadSettings()
+	if err != nil {
+		return Config{}, err
+	}
+
+	projectDirs, err := resolveProjectDirectories(homeDir, settings.ProjectDirectories)
+	if err != nil {
+		return Config{}, err
+	}
+
 	return Config{
 		Address:     envOrDefault(addressEnv, defaultAddress(os.Getenv(devModeEnv))),
-		ProjectDirs: defaultProjectDirs(homeDir),
+		ProjectDirs: projectDirs,
 		Shell:       terminal.ResolveShell(os.Getenv("SHELL")),
 	}, nil
 }
 
+// defaultAddress chooses the local host used for dev or normal runs.
 func defaultAddress(devMode string) string {
 	if isEnabled(devMode) {
 		return net.JoinHostPort(devHost, defaultPort)
@@ -45,16 +57,7 @@ func defaultAddress(devMode string) string {
 	return net.JoinHostPort(runHost, defaultPort)
 }
 
-func defaultProjectDirs(homeDir string) []string {
-	// TODO: Discover these from ~/.config/projman/config.json.
-	return []string{
-		filepath.Join(homeDir, "Personal"),
-		filepath.Join(homeDir, "Work"),
-		filepath.Join(homeDir, ".config"),
-		filepath.Join(homeDir, "signinsolutions"),
-	}
-}
-
+// isEnabled treats common disabled strings as false and anything else as true.
 func isEnabled(value string) bool {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "", "0", "false", "no":
@@ -64,6 +67,7 @@ func isEnabled(value string) bool {
 	}
 }
 
+// envOrDefault returns an environment value when present, otherwise fallback.
 func envOrDefault(name string, fallback string) string {
 	value := os.Getenv(name)
 	if value == "" {

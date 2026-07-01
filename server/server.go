@@ -10,24 +10,25 @@ import (
 	terminalmanager "wade/terminal/manager"
 )
 
+// Server owns HTTP routing and long-lived runtime state.
 type Server struct {
-	configuration config.Config
-	projects      project.Store
-	staticFiles   fs.FS
-	terminals     *terminalmanager.Manager
-	mux           *http.ServeMux
+	projects    project.Store
+	staticFiles fs.FS
+	terminals   *terminalmanager.Manager
+	mux         *http.ServeMux
 }
 
+// New wires handlers to shared project and terminal state.
 func New(configuration config.Config, staticFiles fs.FS) *Server {
 	server := &Server{
-		configuration: configuration,
-		projects:      project.NewStore(configuration.ProjectDirs),
-		staticFiles:   staticFiles,
-		terminals:     terminalmanager.New(configuration.Shell),
-		mux:           http.NewServeMux(),
+		projects:    project.NewStore(configuration.ProjectDirs),
+		staticFiles: staticFiles,
+		terminals:   terminalmanager.New(configuration.Shell),
+		mux:         http.NewServeMux(),
 	}
 
 	server.mux.HandleFunc("GET /ws", server.handleTerminal)
+	server.mux.HandleFunc("POST /api/config/reload", server.handleConfigReload)
 	server.mux.HandleFunc("POST /api/terminal/reload", server.handleTerminalReload)
 	server.mux.Handle("GET /api/project", handlers.NewProject(server.projects))
 	server.mux.Handle("GET /api/projects", handlers.NewProjects(server.projects))
@@ -39,10 +40,12 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 	return server
 }
 
+// ServeHTTP delegates requests to the server mux.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
+// Close stops terminal sessions.
 func (s *Server) Close() {
 	s.terminals.Close()
 }

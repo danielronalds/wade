@@ -55,8 +55,23 @@ Project pages use the project name as the path:
 http://editor-dev.localhost:8090/wade
 ```
 
-The project name is resolved against the configured project directories. For
-now, those directories are hard-coded from the local Projman shape.
+The project name is resolved against project directories from
+`~/.config/wade/config.json`. WADE creates this file on first server start if it
+does not exist:
+
+```json
+{
+  "projectDirectories": [
+    "~/Personal",
+    "~/Work"
+  ]
+}
+```
+
+Project directories can use `~` or absolute paths. Missing directories are
+allowed and are skipped during discovery. After editing the config, run
+`Reload Config` from the general command palette to apply project directory
+changes without restarting WADE.
 
 Project terminal sessions are kept alive for the lifetime of the server.
 Reopening a project reconnects to the existing shell session rather than
