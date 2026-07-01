@@ -136,6 +136,11 @@ const writeIndexHtml = () => writeFile(join(distDir, 'index.html'), `<!doctype h
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>WADE</title>
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon" sizes="any">
+  <link rel="icon" href="/static/favicon-32x32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="/static/favicon-16x16.png" type="image/png" sizes="16x16">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="manifest" href="/static/site.webmanifest">
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/app.js" type="module"></script>
 </head>
@@ -148,7 +153,7 @@ const writeIndexHtml = () => writeFile(join(distDir, 'index.html'), `<!doctype h
 const main = async () => {
   await rm(distDir, { recursive: true, force: true });
   await mkdir(staticDir, { recursive: true });
-  await cp(join(root, 'static/fonts'), join(staticDir, 'fonts'), { recursive: true });
+  await cp(join(root, 'static'), staticDir, { recursive: true });
 
   await esbuild.build({
     entryPoints: [join(root, 'src/main.ts')],
