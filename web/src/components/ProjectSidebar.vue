@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Server, SquareTerminal } from '@lucide/vue';
+import { FileSearch, Server, SquareTerminal } from '@lucide/vue';
 import type { Component } from 'vue';
 import { ProjectTabs, type ProjectTab } from '../types/projectTabs';
 
@@ -25,6 +25,11 @@ const tabs: Array<{
     id: ProjectTabs.Server,
     label: 'Server',
     icon: Server
+  },
+  {
+    id: ProjectTabs.Review,
+    label: 'Review',
+    icon: FileSearch
   }
 ];
 

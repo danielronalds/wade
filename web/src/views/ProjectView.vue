@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref } from 'vue';
 import ProjectSidebar from '../components/ProjectSidebar.vue';
+import ReviewTab from '../components/ReviewTab.vue';
 import ServerTab from '../components/ServerTab.vue';
 import TerminalTab from '../components/TerminalTab.vue';
 import TerminalTopbar from '../components/TerminalTopbar.vue';
@@ -23,15 +24,28 @@ type ProjectScreenComponent = {
 const activeTab = ref<ProjectTab>(ProjectTabs.Terminal);
 const terminalTab = ref<ProjectScreenComponent | null>(null);
 const serverTab = ref<ProjectScreenComponent | null>(null);
+const reviewTab = ref<ProjectScreenComponent | null>(null);
 const connectionStatuses = reactive<Record<ProjectTab, TerminalConnectionStatus>>({
   [ProjectTabs.Terminal]: createDisconnectedTerminalConnectionStatus(),
-  [ProjectTabs.Server]: createDisconnectedTerminalConnectionStatus()
+  [ProjectTabs.Server]: createDisconnectedTerminalConnectionStatus(),
+  [ProjectTabs.Review]: {
+    connectionStatusText: 'Review',
+    isConnected: true
+  }
 });
 const activeConnectionStatus = computed(() => connectionStatuses[activeTab.value]);
 
-const getActiveProjectScreen = () => activeTab.value === ProjectTabs.Server
-  ? serverTab.value
-  : terminalTab.value;
+const getActiveProjectScreen = () => {
+  if (activeTab.value === ProjectTabs.Server) {
+    return serverTab.value;
+  }
+
+  if (activeTab.value === ProjectTabs.Review) {
+    return reviewTab.value;
+  }
+
+  return terminalTab.value;
+};
 
 const focusActiveProjectScreen = async () => {
   await nextTick();
@@ -54,6 +68,10 @@ const selectTabBySlot = (slot: number) => {
 
 const switchToNextTerminal = () => {
   void getActiveProjectScreen()?.switchToNextTerminal();
+};
+
+const selectTerminalTab = () => {
+  selectTab(ProjectTabs.Terminal);
 };
 
 const updateConnectionStatus = (tab: ProjectTab, status: TerminalConnectionStatus) => {
@@ -89,6 +107,13 @@ useProjectKeyboardShortcuts({
           :project-name="projectName"
           :is-active="activeTab === ProjectTabs.Server"
           @connection-status-change="updateConnectionStatus(ProjectTabs.Server, $event)"
+        />
+        <ReviewTab
+          ref="reviewTab"
+          v-show="activeTab === ProjectTabs.Review"
+          :project-name="projectName"
+          :is-active="activeTab === ProjectTabs.Review"
+          @request-terminal-tab="selectTerminalTab"
         />
       </section>
     </section>

@@ -154,6 +154,8 @@ const main = async () => {
   await rm(distDir, { recursive: true, force: true });
   await mkdir(staticDir, { recursive: true });
   await cp(join(root, 'static'), staticDir, { recursive: true });
+  await mkdir(join(staticDir, 'monaco'), { recursive: true });
+  await cp(join(root, 'node_modules', 'monaco-editor', 'min', 'vs'), join(staticDir, 'monaco', 'vs'), { recursive: true });
 
   await esbuild.build({
     entryPoints: [join(root, 'src/main.ts')],
