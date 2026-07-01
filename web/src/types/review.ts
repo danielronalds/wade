@@ -33,3 +33,18 @@ export interface ReviewFileContents {
   originalContent: string;
   modifiedContent: string;
 }
+
+export type CommentSide = 'original' | 'modified' | 'file';
+
+export type ReviewCommentKind = 'feedback' | 'question';
+
+export interface ReviewComment {
+  id: string;
+  fileId: string;
+  scope: ReviewScope;
+  side: CommentSide;
+  kind: ReviewCommentKind;
+  startLine: number | null;
+  endLine: number | null;
+  body: string;
+}
