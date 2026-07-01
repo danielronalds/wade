@@ -4,10 +4,10 @@ import (
 	"io/fs"
 	"net/http"
 
-	"web-terminal/config"
-	"web-terminal/project"
-	"web-terminal/server/handlers"
-	terminalmanager "web-terminal/terminal/manager"
+	"wade/config"
+	"wade/project"
+	"wade/server/handlers"
+	terminalmanager "wade/terminal/manager"
 )
 
 type Server struct {

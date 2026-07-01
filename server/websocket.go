@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	terminalmanager "web-terminal/terminal/manager"
+	terminalmanager "wade/terminal/manager"
 
 	"github.com/gorilla/websocket"
 )

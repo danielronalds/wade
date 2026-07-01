@@ -33,12 +33,12 @@ func TestGitHubURL(t *testing.T) {
 		want string
 	}{
 		"github repo": {
-			repo: "signinsolutions/web-terminal",
-			want: "https://github.com/signinsolutions/web-terminal",
+			repo: "danielronalds/wade",
+			want: "https://github.com/danielronalds/wade",
 		},
 		"enterprise repo": {
-			repo: "git.example.com/signinsolutions/web-terminal",
-			want: "https://git.example.com/signinsolutions/web-terminal",
+			repo: "git.example.com/signinsolutions/wade",
+			want: "https://git.example.com/signinsolutions/wade",
 		},
 		"empty repo": {
 			repo: "",
@@ -62,23 +62,23 @@ func TestParseGitHubRepo(t *testing.T) {
 		want      string
 	}{
 		"github ssh": {
-			remoteURL: "git@github.com:signinsolutions/web-terminal.git",
-			want:      "signinsolutions/web-terminal",
+			remoteURL: "git@github.com:danielronalds/wade.git",
+			want:      "danielronalds/wade",
 		},
 		"github https": {
-			remoteURL: "https://github.com/signinsolutions/web-terminal.git",
-			want:      "signinsolutions/web-terminal",
+			remoteURL: "https://github.com/danielronalds/wade.git",
+			want:      "danielronalds/wade",
 		},
 		"github ssh url": {
-			remoteURL: "ssh://git@github.com/signinsolutions/web-terminal.git",
-			want:      "signinsolutions/web-terminal",
+			remoteURL: "ssh://git@github.com/danielronalds/wade.git",
+			want:      "danielronalds/wade",
 		},
 		"enterprise ssh": {
-			remoteURL: "git@git.example.com:signinsolutions/web-terminal.git",
-			want:      "git.example.com/signinsolutions/web-terminal",
+			remoteURL: "git@git.example.com:signinsolutions/wade.git",
+			want:      "git.example.com/signinsolutions/wade",
 		},
 		"unsupported remote": {
-			remoteURL: "file:///tmp/web-terminal",
+			remoteURL: "file:///tmp/wade",
 			want:      "",
 		},
 	}

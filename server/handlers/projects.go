@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"web-terminal/project"
+	"wade/project"
 )
 
 type Projects struct {

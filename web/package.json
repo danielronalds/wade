@@ -1,5 +1,5 @@
 {
-  "name": "web-terminal",
+  "name": "wade",
   "private": true,
   "scripts": {
     "build": "npm run typecheck && node build.mjs",

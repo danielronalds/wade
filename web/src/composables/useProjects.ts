@@ -5,7 +5,7 @@ type ProjectsResponse = {
   projects: string[];
 };
 
-const projectsStorageKey = 'web-terminal:projects';
+const projectsStorageKey = 'wade:projects';
 
 const normaliseProjects = (projects: unknown): string[] => {
   if (!Array.isArray(projects)) {

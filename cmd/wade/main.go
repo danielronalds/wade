@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"web-terminal/config"
-	"web-terminal/server"
-	"web-terminal/web"
+	"wade/config"
+	"wade/server"
+	"wade/web"
 )
 
 func main() {

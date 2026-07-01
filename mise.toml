@@ -12,13 +12,13 @@ run = "npm --prefix web install"
 [tasks.dev]
 description = "Runs the project with live reload"
 depends = ["gen:embed"]
-env = { WEB_TERMINAL_ADDR = "editor-dev.localhost:8090" }
+env = { WADE_ADDR = "editor-dev.localhost:8090" }
 run = "air"
 
 [tasks.build]
-description = "Builds the web-terminal binary"
+description = "Builds the wade binary"
 depends = ["gen:embed"]
-run = "go build -o .tmp/web-terminal ./cmd/web-terminal"
+run = "go build -o .tmp/wade ./cmd/wade"
 
 [tasks.fmt]
 description = "Formats Go code"

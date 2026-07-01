@@ -1,7 +1,7 @@
 import { createSharedComposable, useStorage } from '@vueuse/core';
 import { computed, readonly } from 'vue';
 
-const recentProjectsStorageKey = 'web-terminal:recent-projects';
+const recentProjectsStorageKey = 'wade:recent-projects';
 const recentProjectsLimit = 5;
 
 const normaliseRecentProjects = (projects: unknown): string[] => {

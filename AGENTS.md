@@ -15,7 +15,7 @@ esbuild into `web/dist`. Avoid CDN JavaScript for the local shell page.
 
 `mise run dev` serves WADE at `editor-dev.localhost:8090`. A directly built
 binary uses `editor.localhost:8765` by default. Override either with
-`WEB_TERMINAL_ADDR`.
+`WADE_ADDR`.
 
 ## Running
 
@@ -114,5 +114,5 @@ mise run test
 ```
 
 For a smoke test, run the app on a temporary port, curl the static files, then
-kill the process. Check that no stale `go run .` or `web-terminal` processes
-remain on test ports.
+kill the process. Check that no stale `go run .` or `wade` processes remain on
+test ports.

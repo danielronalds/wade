@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"web-terminal/terminal"
+	"wade/terminal"
 )
 
 const (
-	addressEnv  = "WEB_TERMINAL_ADDR"
-	devModeEnv  = "WEB_TERMINAL_DEV"
+	addressEnv  = "WADE_ADDR"
+	devModeEnv  = "WADE_DEV"
 	defaultPort = "8765"
 	devHost     = "editor-dev.localhost"
 	runHost     = "editor.localhost"

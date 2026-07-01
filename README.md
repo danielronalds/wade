@@ -33,14 +33,14 @@ mise run dev
 
 Open <http://editor-dev.localhost:8090>.
 
-`mise run dev` sets `WEB_TERMINAL_ADDR=editor-dev.localhost:8090` and starts
-Air. Air sets `WEB_TERMINAL_DEV=1` for the running binary. A directly built
-binary uses <http://editor.localhost:8765> by default.
+`mise run dev` sets `WADE_ADDR=editor-dev.localhost:8090` and starts Air. Air
+sets `WADE_DEV=1` for the running binary. A directly built binary uses
+<http://editor.localhost:8765> by default.
 
 To use a different address:
 
 ```sh
-WEB_TERMINAL_ADDR=127.0.0.1:8090 mise run dev
+WADE_ADDR=127.0.0.1:8090 mise run dev
 ```
 
 ## Projects
@@ -52,7 +52,7 @@ projects WADE can see.
 Project pages use the project name as the path:
 
 ```text
-http://editor-dev.localhost:8090/web-terminal
+http://editor-dev.localhost:8090/wade
 ```
 
 The project name is resolved against the configured project directories. For
@@ -103,8 +103,8 @@ JSON, TOML, Markdown or font files change.
 mise run build
 ```
 
-This writes the binary to `.tmp/web-terminal`. Running that binary directly
-uses <http://editor.localhost:8765> by default.
+This writes the binary to `.tmp/wade`. Running that binary directly uses
+<http://editor.localhost:8765> by default.
 
 ## Test
 
@@ -113,8 +113,8 @@ mise run test
 ```
 
 For a smoke test, run the app on a temporary port, curl the static files, then
-kill the process. Check that no stale `go run .` or `web-terminal` processes
-remain on test ports.
+kill the process. Check that no stale `go run .` or `wade` processes remain on
+test ports.
 
 ## Build process
 

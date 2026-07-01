@@ -1,4 +1,4 @@
-module web-terminal
+module wade
 
 go 1.26
 
