@@ -82,6 +82,7 @@ const props = defineProps<{
   comments: ReviewComment[];
   contents: ReviewFileContents | null;
   filePath: string;
+  hideUnchanged: boolean;
   isDiff: boolean;
   isLoading: boolean;
 }>();
@@ -237,6 +238,25 @@ const scheduleEditorLayout = () => {
     setTimeout(layoutEditor, 50);
     setTimeout(layoutEditor, 150);
   });
+};
+
+const editorReviewOptions = () => ({
+  renderSideBySide: props.isDiff,
+  hideUnchangedRegions: {
+    enabled: props.isDiff && props.hideUnchanged,
+    contextLineCount: 4,
+    minimumLineCount: 2,
+    revealLineCount: 12
+  }
+});
+
+const applyEditorReviewOptions = () => {
+  if (!editor) {
+    return;
+  }
+
+  editor.updateOptions(editorReviewOptions());
+  scheduleEditorLayout();
 };
 
 const inlineComments = () => props.comments.filter((comment) => comment.side !== 'file' && comment.startLine != null);
@@ -493,7 +513,7 @@ const mountContents = () => {
   editor.setModel({ original: nextOriginalModel, modified: nextModifiedModel });
   previousOriginalModel?.dispose();
   previousModifiedModel?.dispose();
-  editor.updateOptions({ renderSideBySide: props.isDiff });
+  applyEditorReviewOptions();
   syncInlineReviewUI();
   nextTick(scheduleEditorLayout);
 };
@@ -553,7 +573,7 @@ const createEditor = async () => {
       automaticLayout: true,
       readOnly: true,
       originalEditable: false,
-      renderSideBySide: props.isDiff,
+      ...editorReviewOptions(),
       scrollBeyondLastLine: false,
       lineNumbersMinChars: 4,
       minimap: { enabled: true, renderCharacters: false },
@@ -575,8 +595,12 @@ const createEditor = async () => {
   }
 };
 
-watch(() => [props.contents, props.filePath, props.isDiff] as const, () => {
+watch(() => [props.contents, props.filePath] as const, () => {
   mountContents();
+});
+
+watch(() => [props.hideUnchanged, props.isDiff] as const, () => {
+  applyEditorReviewOptions();
 });
 
 watch(commentSignature, () => {

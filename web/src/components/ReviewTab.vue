@@ -72,6 +72,7 @@ const draftCommentBody = ref('');
 const draftCommentKind = ref<ReviewCommentKind>('feedback');
 const isOverallNoteOpen = ref(false);
 const overallNoteDraft = ref('');
+const hideUnchanged = ref(false);
 const isSendingPrompt = ref(false);
 const startButton = ref<HTMLButtonElement | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
@@ -308,6 +309,7 @@ const trimmedComments = computed(() => comments.value
   .map((comment) => ({ ...comment, body: comment.body.trim() }))
   .filter((comment) => comment.body.length > 0));
 const canFinishReview = computed(() => !isSendingPrompt.value && (trimmedComments.value.length > 0 || overallComment.value.trim().length > 0));
+const hideUnchangedButtonLabel = computed(() => hideUnchanged.value ? 'Show full file' : 'Show changed areas only');
 const draftCommentTitle = computed(() => {
   if (!draftComment.value) {
     return '';
@@ -351,6 +353,14 @@ const toggleActiveFileReviewed = () => {
     ...reviewedFiles.value,
     [file.id]: !isFileReviewed(file)
   };
+};
+
+const toggleHideUnchanged = () => {
+  if (!activeComparison.value) {
+    return;
+  }
+
+  hideUnchanged.value = !hideUnchanged.value;
 };
 
 const toggleDirectoryCollapsed = (directoryPath: string) => {
@@ -468,6 +478,7 @@ const resetReview = async () => {
   collapsedDirectories.value = {};
   comments.value = [];
   overallComment.value = '';
+  hideUnchanged.value = false;
   draftComment.value = null;
   isOverallNoteOpen.value = false;
   await nextTick();
@@ -504,6 +515,7 @@ const startReview = async () => {
   collapsedDirectories.value = {};
   comments.value = [];
   overallComment.value = '';
+  hideUnchanged.value = false;
 
   try {
     const params = new URLSearchParams({ project: props.projectName });
@@ -900,6 +912,9 @@ defineExpose({
           <section class="review-header-actions" aria-label="Review actions">
             <button type="button" @click="openOverallNote">Overall note</button>
             <button type="button" :disabled="!activeFile" @click="openFileComment">Add file comment</button>
+            <button type="button" :disabled="!activeComparison" :data-active="String(hideUnchanged)" @click="toggleHideUnchanged">
+              {{ hideUnchangedButtonLabel }}
+            </button>
             <button type="button" :disabled="!activeFile" :data-active="String(isActiveFileReviewed)" @click="toggleActiveFileReviewed">
               {{ isActiveFileReviewed ? 'Reviewed' : 'Mark reviewed' }}
             </button>
@@ -931,6 +946,7 @@ defineExpose({
           :comments="activeFileInlineComments"
           :contents="activeContents"
           :file-path="activeFilePath"
+          :hide-unchanged="hideUnchanged"
           :is-diff="Boolean(activeComparison)"
           :is-loading="isActiveFileLoading"
           @add-line-comment="addLineComment"
