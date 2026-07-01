@@ -15,6 +15,7 @@ const props = defineProps<{
 const {
   gitBranch,
   isLoading: isProjectDetailsLoading,
+  githubUrl,
   linearTicketUrl,
   loadProjectDetails,
   pullRequestUrl
@@ -23,12 +24,16 @@ const {
 const projectDisplayName = computed(() => props.projectName.split('-feature')[0] || props.projectName);
 const isLinearTicketButtonDisabled = computed(() => isProjectDetailsLoading.value || linearTicketUrl.value === '');
 const isPullRequestButtonDisabled = computed(() => isProjectDetailsLoading.value || pullRequestUrl.value === '');
+const isGitHubButtonDisabled = computed(() => isProjectDetailsLoading.value || githubUrl.value === '');
 const linearTicketButtonTitle = computed(() => isProjectDetailsLoading.value
   ? 'Loading Linear ticket'
   : linearTicketUrl.value === '' ? 'No Linear ticket found' : 'Open Linear ticket');
 const pullRequestButtonTitle = computed(() => isProjectDetailsLoading.value
   ? 'Loading pull request'
   : pullRequestUrl.value === '' ? 'No pull request found' : 'Open pull request');
+const gitHubButtonTitle = computed(() => isProjectDetailsLoading.value
+  ? 'Loading GitHub page'
+  : githubUrl.value === '' ? 'No GitHub remote found' : 'Open GitHub page');
 const gitBranchLabel = computed(() => {
   if (isProjectDetailsLoading.value) {
     return 'Loading branch';
@@ -51,6 +56,10 @@ const openLinearTicket = () => {
 
 const openPullRequest = () => {
   openExternalUrl(pullRequestUrl.value);
+};
+
+const openGitHubPage = () => {
+  openExternalUrl(githubUrl.value);
 };
 
 onMounted(() => {
@@ -88,6 +97,16 @@ onMounted(() => {
       >
         <GitHubIcon class="brand-icon" aria-hidden="true" />
         <span>PR</span>
+      </button>
+      <button
+        class="project-action"
+        type="button"
+        :disabled="isGitHubButtonDisabled"
+        :title="gitHubButtonTitle"
+        @click="openGitHubPage"
+      >
+        <GitHubIcon class="brand-icon" aria-hidden="true" />
+        <span>GitHub</span>
       </button>
       <span
         id="connection-status"
