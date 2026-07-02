@@ -8,6 +8,7 @@ import (
 	"wade/project"
 	"wade/server/handlers"
 	terminalmanager "wade/terminal/manager"
+	"wade/worktree"
 )
 
 // Server owns HTTP routing and long-lived runtime state.
@@ -28,16 +29,27 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 	}
 
 	configHandler := handlers.NewConfig()
+	worktreeService := worktree.NewService()
+	worktreesHandler := handlers.NewWorktrees(server.projects, worktreeService, server.terminals)
 
 	server.mux.HandleFunc("GET /ws", server.handleTerminal)
+	server.mux.HandleFunc("POST /api/terminal/reload", server.handleTerminalReload)
+
 	server.mux.Handle("GET /api/config", configHandler)
 	server.mux.Handle("POST /api/config", configHandler)
 	server.mux.HandleFunc("POST /api/config/reload", server.handleConfigReload)
-	server.mux.HandleFunc("POST /api/terminal/reload", server.handleTerminalReload)
+
 	server.mux.Handle("GET /api/project", handlers.NewProject(server.projects))
 	server.mux.Handle("GET /api/projects", handlers.NewProjects(server.projects))
+
+	server.mux.HandleFunc("GET /api/worktrees", worktreesHandler.ListWorktrees)
+	server.mux.HandleFunc("POST /api/worktrees", worktreesHandler.CreateWorktree)
+	server.mux.HandleFunc("DELETE /api/worktrees", worktreesHandler.RemoveWorktree)
+	server.mux.HandleFunc("GET /api/worktrees/remote-branches", worktreesHandler.ListRemoteBranches)
+
 	server.mux.Handle("GET /api/review", handlers.NewReview(server.projects))
 	server.mux.Handle("POST /api/review/file", handlers.NewReviewFile(server.projects))
+
 	server.mux.Handle("GET /static/", http.FileServer(http.FS(staticFiles)))
 	server.mux.Handle("GET /", handlers.NewPage(server.staticFiles))
 

@@ -1,6 +1,9 @@
 package manager
 
-import "sync"
+import (
+	"strings"
+	"sync"
+)
 
 const agentTerminalName = "agent"
 
@@ -59,6 +62,24 @@ func (m *Manager) CloseSession(key string) bool {
 
 	session.Close()
 	return true
+}
+
+func (m *Manager) CloseSessionsForDirectory(directory string) int {
+	m.mu.Lock()
+	sessions := make([]*ProjectSession, 0)
+	prefix := directory + "\x00"
+	for key, session := range m.sessions {
+		if strings.HasPrefix(key, prefix) && !session.IsClosed() {
+			sessions = append(sessions, session)
+		}
+	}
+	m.mu.Unlock()
+
+	for _, session := range sessions {
+		session.Close()
+	}
+
+	return len(sessions)
 }
 
 func (m *Manager) remove(key string, session *ProjectSession) {
