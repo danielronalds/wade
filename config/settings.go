@@ -6,17 +6,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
+
+const defaultAgentPaneCommand = "pi -c"
 
 // Settings is the editable user configuration stored on disk.
 type Settings struct {
 	ProjectDirectories []string `json:"projectDirectories"`
+	AgentPaneCommand   string   `json:"agentPaneCommand"`
 	path               string
 	raw                map[string]json.RawMessage
 }
 
 type settingsFile struct {
 	ProjectDirectories *[]string `json:"projectDirectories"`
+	AgentPaneCommand   *string   `json:"agentPaneCommand"`
+	LegacyAgentCommand *string   `json:"agentCommand"`
 }
 
 // LoadSettings reads the settings file, creating it with defaults when missing.
@@ -43,6 +49,15 @@ func LoadSettings() (Settings, error) {
 	return parseSettings(path, contents)
 }
 
+// ValidateAgentPaneCommand checks that the configured agent pane command is usable.
+func ValidateAgentPaneCommand(command string) error {
+	if strings.TrimSpace(command) == "" {
+		return errors.New("agent pane command cannot be empty")
+	}
+
+	return nil
+}
+
 // FilePath returns the current user's WADE settings file path.
 func FilePath() (string, error) {
 	homeDir, err := os.UserHomeDir()
@@ -65,7 +80,14 @@ func (s Settings) Save() error {
 		return fmt.Errorf("encoding project directories: %w", err)
 	}
 
+	agentPaneCommand, err := json.Marshal(s.AgentPaneCommand)
+	if err != nil {
+		return fmt.Errorf("encoding agent pane command: %w", err)
+	}
+
+	delete(raw, "agentCommand")
 	raw["projectDirectories"] = projectDirectories
+	raw["agentPaneCommand"] = agentPaneCommand
 
 	return writeJSON(s.path, raw)
 }
@@ -74,6 +96,7 @@ func (s Settings) Save() error {
 func defaultSettings(path string) Settings {
 	return Settings{
 		ProjectDirectories: []string{"~/Personal", "~/Work"},
+		AgentPaneCommand:   defaultAgentPaneCommand,
 		path:               path,
 		raw:                make(map[string]json.RawMessage),
 	}
@@ -95,6 +118,11 @@ func parseSettings(path string, contents []byte) (Settings, error) {
 	settings.raw = raw
 	if file.ProjectDirectories != nil {
 		settings.ProjectDirectories = *file.ProjectDirectories
+	}
+	if file.AgentPaneCommand != nil {
+		settings.AgentPaneCommand = *file.AgentPaneCommand
+	} else if file.LegacyAgentCommand != nil {
+		settings.AgentPaneCommand = *file.LegacyAgentCommand
 	}
 
 	return settings, nil

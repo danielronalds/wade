@@ -23,7 +23,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 	server := &Server{
 		projects:    project.NewStore(configuration.ProjectDirs),
 		staticFiles: staticFiles,
-		terminals:   terminalmanager.New(configuration.Shell),
+		terminals:   terminalmanager.New(configuration.Shell, configuration.AgentPaneCommand),
 		mux:         http.NewServeMux(),
 	}
 

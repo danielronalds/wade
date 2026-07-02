@@ -18,7 +18,22 @@ type Session struct {
 }
 
 func Start(shell string, directory string, size Size) (*Session, error) {
-	command := exec.Command(shell)
+	return start(interactiveShell(shell), directory, size)
+}
+
+func StartShellCommand(shell string, directory string, command string, size Size) (*Session, error) {
+	return start(shellCommand(shell, command), directory, size)
+}
+
+func interactiveShell(shell string) *exec.Cmd {
+	return exec.Command(shell)
+}
+
+func shellCommand(shell string, command string) *exec.Cmd {
+	return exec.Command(shell, "-lc", command)
+}
+
+func start(command *exec.Cmd, directory string, size Size) (*Session, error) {
 	command.Dir = directory
 	command.Env = append(os.Environ(), "TERM=xterm-256color", "COLORTERM=truecolor")
 

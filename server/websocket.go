@@ -39,7 +39,8 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projectSession, err := s.terminals.GetOrStart(terminalSessionKey(projectPath, r.URL.Query().Get("terminal")), projectPath)
+	terminalName := r.URL.Query().Get("terminal")
+	projectSession, err := s.terminals.GetOrStart(terminalSessionKey(projectPath, terminalName), terminalName, projectPath)
 	if err != nil {
 		log.Printf("pty start failed: %v", err)
 		http.Error(w, "failed to start terminal", http.StatusInternalServerError)

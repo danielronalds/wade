@@ -1,158 +1,27 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useProjects } from '../composables/useProjects';
-import { useRecentProjects } from '../composables/useRecentProjects';
+import { useSettingsForm } from '../composables/useSettingsForm';
 
-type SettingsResponse = {
-  projectDirectories: string[];
-};
-
-const { syncProjects } = useProjects();
-const { removeUnavailableRecentProjects } = useRecentProjects();
-
-const projectDirectories = ref<string[]>([]);
-const savedProjectDirectories = ref<string[]>([]);
-const isLoading = ref(false);
-const isSaving = ref(false);
-const error = ref('');
-const statusMessage = ref('');
-
-const normaliseProjectDirectories = (directories: readonly string[]) => directories.map((directory) => directory.trim());
-
-const isSettingsResponse = (value: unknown): value is SettingsResponse => {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const response = value as Partial<SettingsResponse>;
-
-  return Array.isArray(response.projectDirectories)
-    && response.projectDirectories.every((directory) => typeof directory === 'string');
-};
-
-const isValidProjectDirectory = (directory: string) => {
-  const trimmedDirectory = directory.trim();
-
-  return trimmedDirectory === '~'
-    || trimmedDirectory.startsWith('~/')
-    || trimmedDirectory.startsWith('/');
-};
-
-const normalisedProjectDirectories = computed(() => normaliseProjectDirectories(projectDirectories.value));
-const hasInvalidProjectDirectories = computed(() => projectDirectories.value.some(
-  (directory) => !isValidProjectDirectory(directory)
-));
-const hasChanges = computed(() => JSON.stringify(normalisedProjectDirectories.value)
-  !== JSON.stringify(savedProjectDirectories.value));
-const canSave = computed(() => !isLoading.value
-  && !isSaving.value
-  && hasChanges.value
-  && !hasInvalidProjectDirectories.value);
-
-const loadSettings = async () => {
-  isLoading.value = true;
-  error.value = '';
-  statusMessage.value = '';
-
-  try {
-    const response = await fetch('/api/config');
-    if (!response.ok) {
-      throw new Error(`Settings request failed with ${response.status}`);
-    }
-
-    const settings: unknown = await response.json();
-    if (!isSettingsResponse(settings)) {
-      throw new Error('Settings response was invalid');
-    }
-
-    projectDirectories.value = [...settings.projectDirectories];
-    savedProjectDirectories.value = normaliseProjectDirectories(settings.projectDirectories);
-  } catch (requestError) {
-    error.value = requestError instanceof Error ? requestError.message : 'Settings request failed';
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-const updateProjectDirectory = (index: number, event: Event) => {
-  if (!(event.target instanceof HTMLInputElement)) {
-    return;
-  }
-
-  const nextDirectory = event.target.value;
-  projectDirectories.value = projectDirectories.value.map((directory, directoryIndex) => (
-    directoryIndex === index ? nextDirectory : directory
-  ));
-};
-
-const addProjectDirectory = async () => {
-  projectDirectories.value = [...projectDirectories.value, ''];
-  statusMessage.value = '';
-  error.value = '';
-
-  await nextTick();
-  document.getElementById(`project-directory-${projectDirectories.value.length - 1}`)?.focus();
-};
-
-const removeProjectDirectory = (index: number) => {
-  projectDirectories.value = projectDirectories.value.filter((_, directoryIndex) => directoryIndex !== index);
-  statusMessage.value = '';
-  error.value = '';
-};
-
-const reloadConfig = async () => {
-  const response = await fetch('/api/config/reload', { method: 'POST' });
-  if (!response.ok) {
-    throw new Error(`Config reload failed with ${response.status}`);
-  }
-};
-
-const refreshProjects = async () => {
-  const availableProjects = await syncProjects();
-  if (availableProjects) {
-    removeUnavailableRecentProjects(availableProjects);
-  }
-};
-
-const saveSettings = async () => {
-  if (!canSave.value) {
-    return;
-  }
-
-  isSaving.value = true;
-  error.value = '';
-  statusMessage.value = '';
-
-  try {
-    const nextProjectDirectories = normalisedProjectDirectories.value;
-    const response = await fetch('/api/config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectDirectories: nextProjectDirectories })
-    });
-
-    if (!response.ok) {
-      const message = await response.text();
-      throw new Error(message.trim() || `Settings save failed with ${response.status}`);
-    }
-
-    await reloadConfig();
-    await refreshProjects();
-
-    projectDirectories.value = [...nextProjectDirectories];
-    savedProjectDirectories.value = [...nextProjectDirectories];
-    statusMessage.value = 'Settings saved';
-  } catch (saveError) {
-    error.value = saveError instanceof Error ? saveError.message : 'Settings save failed';
-  } finally {
-    isSaving.value = false;
-  }
-};
+const {
+  form,
+  isLoading,
+  isSaving,
+  error,
+  statusMessage,
+  hasInvalidProjectDirectories,
+  hasInvalidAgentPaneCommand,
+  canSave,
+  isValidProjectDirectory,
+  updateProjectDirectory,
+  addProjectDirectory,
+  removeProjectDirectory,
+  updateAgentPaneCommand,
+  submit
+} = useSettingsForm();
 
 onMounted(() => {
   document.title = 'WADE - Settings';
-  void loadSettings();
 });
 </script>
 
@@ -172,7 +41,7 @@ onMounted(() => {
     </header>
 
     <section id="settings-content" aria-label="Settings form">
-      <form id="settings-form" @submit.prevent="saveSettings">
+      <form id="settings-form" @submit.prevent="submit">
         <section id="project-directories-section" aria-labelledby="project-directories-title">
           <header class="settings-section-header">
             <section>
@@ -185,7 +54,7 @@ onMounted(() => {
           <p v-if="isLoading" class="settings-message">Loading settings</p>
 
           <ul v-else id="project-directories-list" aria-label="Project directories">
-            <li v-for="(directory, index) in projectDirectories" :key="index" class="project-directory-row">
+            <li v-for="(directory, index) in form.projectDirectories" :key="index" class="project-directory-row">
               <label :for="`project-directory-${index}`">Directory {{ index + 1 }}</label>
               <input
                 :id="`project-directory-${index}`"
@@ -201,14 +70,40 @@ onMounted(() => {
             </li>
           </ul>
 
-          <p v-if="!isLoading && projectDirectories.length === 0" class="settings-message">
+          <p v-if="!isLoading && form.projectDirectories.length === 0" class="settings-message">
             No project directories configured.
           </p>
         </section>
 
+        <section id="agent-pane-command-section" aria-labelledby="agent-pane-command-title">
+          <header class="settings-section-header">
+            <section>
+              <h2 id="agent-pane-command-title">Agent Pane command</h2>
+              <p>Runs through your shell when the Agent pane starts. Reload Agent to apply changes.</p>
+            </section>
+          </header>
+
+          <label class="single-setting-row" for="agent-pane-command">
+            <span>Command</span>
+            <input
+              id="agent-pane-command"
+              :value="form.agentPaneCommand"
+              type="text"
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="pi -c"
+              :aria-invalid="!isLoading && hasInvalidAgentPaneCommand"
+              @input="updateAgentPaneCommand"
+            >
+          </label>
+        </section>
+
         <footer id="settings-actions">
-          <p v-if="hasInvalidProjectDirectories" class="settings-error">
+          <p v-if="!isLoading && hasInvalidProjectDirectories" class="settings-error">
             Project directories must use ~ or an absolute path.
+          </p>
+          <p v-else-if="!isLoading && hasInvalidAgentPaneCommand" class="settings-error">
+            Agent Pane command cannot be empty.
           </p>
           <p v-else-if="error" class="settings-error">{{ error }}</p>
           <p v-else-if="statusMessage" class="settings-status">{{ statusMessage }}</p>
@@ -324,7 +219,8 @@ onMounted(() => {
 }
 
 #settings-form,
-#project-directories-section {
+#project-directories-section,
+#agent-pane-command-section {
   width: min(860px, 100%);
   display: grid;
   gap: 18px;
@@ -388,19 +284,29 @@ onMounted(() => {
   list-style: none;
 }
 
-.project-directory-row {
+.project-directory-row,
+.single-setting-row {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
 }
 
-.project-directory-row label {
+.project-directory-row {
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+}
+
+.single-setting-row {
+  grid-template-columns: 120px minmax(0, 1fr);
+}
+
+.project-directory-row label,
+.single-setting-row span {
   color: var(--muted);
   font-size: 13px;
 }
 
-.project-directory-row input {
+.project-directory-row input,
+.single-setting-row input {
   min-width: 0;
   border: 1px solid rgb(248 248 242 / 30%);
   border-radius: 0;
@@ -410,12 +316,14 @@ onMounted(() => {
   padding: 9px 10px;
 }
 
-.project-directory-row input:focus {
+.project-directory-row input:focus,
+.single-setting-row input:focus {
   border-color: var(--text);
   outline: none;
 }
 
-.project-directory-row input[aria-invalid="true"] {
+.project-directory-row input[aria-invalid="true"],
+.single-setting-row input[aria-invalid="true"] {
   border-color: var(--disconnected);
 }
 
@@ -453,7 +361,8 @@ onMounted(() => {
     flex-direction: column;
   }
 
-  .project-directory-row {
+  .project-directory-row,
+  .single-setting-row {
     grid-template-columns: 1fr;
   }
 }

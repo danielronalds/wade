@@ -30,8 +30,8 @@ type Client struct {
 	once    sync.Once
 }
 
-func startProjectSession(manager *Manager, key string, shell string, directory string) (*ProjectSession, error) {
-	session, err := terminal.Start(shell, directory, terminal.Size{Cols: 80, Rows: 24})
+func startProjectSession(manager *Manager, key string, shell string, agentPaneCommand string, terminalName string, directory string) (*ProjectSession, error) {
+	session, err := startTerminalSession(shell, agentPaneCommand, terminalName, directory)
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +47,18 @@ func startProjectSession(manager *Manager, key string, shell string, directory s
 	go projectSession.readLoop()
 
 	return projectSession, nil
+}
+
+func startTerminalSession(shell string, agentPaneCommand string, terminalName string, directory string) (*terminal.Session, error) {
+	if shouldStartAgentPaneCommand(terminalName, agentPaneCommand) {
+		return terminal.StartShellCommand(shell, directory, agentPaneCommand, terminal.Size{Cols: 80, Rows: 24})
+	}
+
+	return terminal.Start(shell, directory, terminal.Size{Cols: 80, Rows: 24})
+}
+
+func shouldStartAgentPaneCommand(terminalName string, agentPaneCommand string) bool {
+	return terminalName == agentTerminalName && agentPaneCommand != ""
 }
 
 func (s *ProjectSession) IsClosed() bool {

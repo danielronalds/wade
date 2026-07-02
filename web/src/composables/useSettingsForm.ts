@@ -1,0 +1,164 @@
+import { computed, nextTick, onMounted, reactive, readonly, ref } from 'vue';
+import { fetchSettings, reloadConfig, saveSettings } from '../api/settings';
+import {
+  cloneSettings,
+  createEmptySettings,
+  isValidProjectDirectory,
+  normaliseSettings,
+  type Settings
+} from '../types/settings';
+import { useProjects } from './useProjects';
+import { useRecentProjects } from './useRecentProjects';
+
+const settingsHaveChanged = (current: Settings, saved: Settings) => JSON.stringify(current.projectDirectories)
+  !== JSON.stringify(saved.projectDirectories)
+  || current.agentPaneCommand !== saved.agentPaneCommand;
+
+const inputValue = (event: Event) => event.target instanceof HTMLInputElement
+  ? event.target.value
+  : undefined;
+
+const errorMessage = (error: unknown, fallback: string) => error instanceof Error
+  ? error.message
+  : fallback;
+
+export const useSettingsForm = () => {
+  const { syncProjects } = useProjects();
+  const { removeUnavailableRecentProjects } = useRecentProjects();
+
+  const form = reactive<Settings>(createEmptySettings());
+  const savedSettings = ref<Settings>(createEmptySettings());
+  const isLoading = ref(false);
+  const isSaving = ref(false);
+  const error = ref('');
+  const statusMessage = ref('');
+
+  const normalisedSettings = computed(() => normaliseSettings(form));
+  const hasInvalidProjectDirectories = computed(() => form.projectDirectories.some(
+    (directory) => !isValidProjectDirectory(directory)
+  ));
+  const hasInvalidAgentPaneCommand = computed(() => normalisedSettings.value.agentPaneCommand === '');
+  const hasChanges = computed(() => settingsHaveChanged(normalisedSettings.value, savedSettings.value));
+  const canSave = computed(() => !isLoading.value
+    && !isSaving.value
+    && hasChanges.value
+    && !hasInvalidProjectDirectories.value
+    && !hasInvalidAgentPaneCommand.value);
+
+  const clearMessages = () => {
+    statusMessage.value = '';
+    error.value = '';
+  };
+
+  const replaceForm = (settings: Settings) => {
+    form.projectDirectories = [...settings.projectDirectories];
+    form.agentPaneCommand = settings.agentPaneCommand;
+  };
+
+  const loadSettings = async () => {
+    isLoading.value = true;
+    clearMessages();
+
+    try {
+      const settings = await fetchSettings();
+      replaceForm(settings);
+      savedSettings.value = normaliseSettings(settings);
+    } catch (requestError) {
+      error.value = errorMessage(requestError, 'Settings request failed');
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const updateProjectDirectory = (index: number, event: Event) => {
+    const nextDirectory = inputValue(event);
+    if (nextDirectory === undefined) {
+      return;
+    }
+
+    form.projectDirectories = form.projectDirectories.map((directory, directoryIndex) => (
+      directoryIndex === index ? nextDirectory : directory
+    ));
+    clearMessages();
+  };
+
+  const addProjectDirectory = async () => {
+    form.projectDirectories = [...form.projectDirectories, ''];
+    clearMessages();
+
+    await nextTick();
+    document.getElementById(`project-directory-${form.projectDirectories.length - 1}`)?.focus();
+  };
+
+  const removeProjectDirectory = (index: number) => {
+    form.projectDirectories = form.projectDirectories.filter((_, directoryIndex) => directoryIndex !== index);
+    clearMessages();
+  };
+
+  const updateAgentPaneCommand = (event: Event) => {
+    const nextAgentPaneCommand = inputValue(event);
+    if (nextAgentPaneCommand === undefined) {
+      return;
+    }
+
+    form.agentPaneCommand = nextAgentPaneCommand;
+    clearMessages();
+  };
+
+  const refreshProjects = async () => {
+    const availableProjects = await syncProjects();
+    if (availableProjects) {
+      removeUnavailableRecentProjects(availableProjects);
+    }
+  };
+
+  const persistSettings = async () => {
+    const settings = cloneSettings(normalisedSettings.value);
+
+    await saveSettings(settings);
+    await reloadConfig();
+    await refreshProjects();
+
+    replaceForm(settings);
+    savedSettings.value = cloneSettings(settings);
+    statusMessage.value = 'Settings saved';
+  };
+
+  const submit = async () => {
+    if (!canSave.value) {
+      return;
+    }
+
+    isSaving.value = true;
+    clearMessages();
+
+    try {
+      await persistSettings();
+    } catch (saveError) {
+      error.value = errorMessage(saveError, 'Settings save failed');
+    } finally {
+      isSaving.value = false;
+    }
+  };
+
+  onMounted(() => {
+    void loadSettings();
+  });
+
+  return {
+    form,
+    isLoading: readonly(isLoading),
+    isSaving: readonly(isSaving),
+    error: readonly(error),
+    statusMessage: readonly(statusMessage),
+    hasInvalidProjectDirectories,
+    hasInvalidAgentPaneCommand,
+    canSave,
+    isValidProjectDirectory,
+    updateProjectDirectory,
+    addProjectDirectory,
+    removeProjectDirectory,
+    updateAgentPaneCommand,
+    submit
+  };
+};

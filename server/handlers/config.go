@@ -13,6 +13,7 @@ type ConfigHandler struct{}
 
 type configPayload struct {
 	ProjectDirectories []string `json:"projectDirectories"`
+	AgentPaneCommand   string   `json:"agentPaneCommand"`
 }
 
 // NewConfig creates a handler for reading and writing WADE settings.
@@ -42,6 +43,7 @@ func (h ConfigHandler) getConfig(w http.ResponseWriter) {
 
 	writeConfigPayload(w, http.StatusOK, configPayload{
 		ProjectDirectories: settings.ProjectDirectories,
+		AgentPaneCommand:   settings.AgentPaneCommand,
 	})
 }
 
@@ -59,6 +61,12 @@ func (h ConfigHandler) saveConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	agentPaneCommand := strings.TrimSpace(request.AgentPaneCommand)
+	if err := config.ValidateAgentPaneCommand(agentPaneCommand); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	settings, err := config.LoadSettings()
 	if err != nil {
 		http.Error(w, "unable to load config", http.StatusInternalServerError)
@@ -66,6 +74,7 @@ func (h ConfigHandler) saveConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	settings.ProjectDirectories = projectDirectories
+	settings.AgentPaneCommand = agentPaneCommand
 	if err := settings.Save(); err != nil {
 		http.Error(w, "unable to save config", http.StatusInternalServerError)
 		return

@@ -61,6 +61,7 @@ does not exist:
 
 ```json
 {
+  "agentPaneCommand": "pi -c",
   "projectDirectories": [
     "~/Personal",
     "~/Work"
@@ -69,13 +70,14 @@ does not exist:
 ```
 
 Project directories can use `~` or absolute paths. Missing directories are
-allowed and are skipped during discovery. Edit them at `/settings`, or edit the
-JSON file directly and run `Reload Config` from the general command palette to
-apply project directory changes without restarting WADE.
+allowed and are skipped during discovery. Edit settings at `/settings`, or edit
+the JSON file directly and run `Reload Config` from the general command palette
+to apply safe settings changes without restarting WADE.
 
 Project terminal sessions are kept alive for the lifetime of the server.
-Reopening a project reconnects to the existing shell session rather than
-starting a new one.
+Reopening a project reconnects to the existing session rather than starting a
+new one. The Agent pane starts the configured `agentPaneCommand` through your
+shell, defaulting to `pi -c`. Misc and Server terminals start your normal shell.
 
 ## Keyboard shortcuts
 

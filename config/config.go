@@ -19,9 +19,10 @@ const (
 
 // Config is the resolved runtime configuration used by the server.
 type Config struct {
-	Address     string
-	ProjectDirs []string
-	Shell       string
+	Address          string
+	ProjectDirs      []string
+	Shell            string
+	AgentPaneCommand string
 }
 
 // Load resolves runtime configuration from settings and environment variables.
@@ -41,10 +42,16 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	agentPaneCommand := strings.TrimSpace(settings.AgentPaneCommand)
+	if err := ValidateAgentPaneCommand(agentPaneCommand); err != nil {
+		return Config{}, err
+	}
+
 	return Config{
-		Address:     envOrDefault(addressEnv, defaultAddress(os.Getenv(devModeEnv))),
-		ProjectDirs: projectDirs,
-		Shell:       terminal.ResolveShell(os.Getenv("SHELL")),
+		Address:          envOrDefault(addressEnv, defaultAddress(os.Getenv(devModeEnv))),
+		ProjectDirs:      projectDirs,
+		Shell:            terminal.ResolveShell(os.Getenv("SHELL")),
+		AgentPaneCommand: agentPaneCommand,
 	}, nil
 }
 

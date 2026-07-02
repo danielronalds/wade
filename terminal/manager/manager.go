@@ -2,20 +2,32 @@ package manager
 
 import "sync"
 
+const agentTerminalName = "agent"
+
 type Manager struct {
-	shell    string
-	mu       sync.Mutex
-	sessions map[string]*ProjectSession
+	shell            string
+	agentPaneCommand string
+	mu               sync.Mutex
+	sessions         map[string]*ProjectSession
 }
 
-func New(shell string) *Manager {
+func New(shell string, agentPaneCommand string) *Manager {
 	return &Manager{
-		shell:    shell,
-		sessions: make(map[string]*ProjectSession),
+		shell:            shell,
+		agentPaneCommand: agentPaneCommand,
+		sessions:         make(map[string]*ProjectSession),
 	}
 }
 
-func (m *Manager) GetOrStart(key string, directory string) (*ProjectSession, error) {
+func (m *Manager) Configure(shell string, agentPaneCommand string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.shell = shell
+	m.agentPaneCommand = agentPaneCommand
+}
+
+func (m *Manager) GetOrStart(key string, terminalName string, directory string) (*ProjectSession, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -27,7 +39,7 @@ func (m *Manager) GetOrStart(key string, directory string) (*ProjectSession, err
 	// starting a replacement.
 	delete(m.sessions, key)
 
-	session, err := startProjectSession(m, key, m.shell, directory)
+	session, err := startProjectSession(m, key, m.shell, m.agentPaneCommand, terminalName, directory)
 	if err != nil {
 		return nil, err
 	}
