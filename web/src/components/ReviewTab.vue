@@ -84,7 +84,7 @@ const draftCommentBody = ref('');
 const draftCommentKind = ref<ReviewCommentKind>('feedback');
 const isOverallNoteOpen = ref(false);
 const overallNoteDraft = ref('');
-const hideUnchanged = ref(false);
+const hideUnchanged = ref(true);
 const renderSideBySide = ref(true);
 const wrapLines = ref(true);
 const isSendingPrompt = ref(false);
@@ -507,7 +507,7 @@ const resetReview = async (focusStartButton = true) => {
   collapsedDirectories.value = {};
   comments.value = [];
   overallComment.value = '';
-  hideUnchanged.value = false;
+  hideUnchanged.value = true;
   renderSideBySide.value = true;
   wrapLines.value = true;
   draftComment.value = null;
@@ -551,7 +551,7 @@ const startReview = async () => {
   collapsedDirectories.value = {};
   comments.value = [];
   overallComment.value = '';
-  hideUnchanged.value = false;
+  hideUnchanged.value = true;
   renderSideBySide.value = true;
   wrapLines.value = true;
 
