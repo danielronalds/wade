@@ -12,6 +12,9 @@ import type { PaletteResult } from './types';
 const emit = defineEmits<{
   close: [restoreFocus?: boolean];
   openProjectPicker: [];
+  openCreateWorktree: [];
+  openRemoteWorktreePicker: [];
+  openRemoveWorktree: [];
 }>();
 
 const route = useRoute();
@@ -59,6 +62,30 @@ const startReview = () => {
 
   closePaletteWithoutRestoringFocus();
   dispatchStartReviewEvent(currentProjectName.value);
+};
+
+const openCreateWorktree = () => {
+  if (currentProjectName.value === '') {
+    return;
+  }
+
+  emit('openCreateWorktree');
+};
+
+const openRemoteWorktreePicker = () => {
+  if (currentProjectName.value === '') {
+    return;
+  }
+
+  emit('openRemoteWorktreePicker');
+};
+
+const openRemoveWorktree = () => {
+  if (currentProjectName.value === '') {
+    return;
+  }
+
+  emit('openRemoveWorktree');
 };
 
 const openSettings = async () => {
@@ -117,6 +144,27 @@ const commandDefinitions = computed<PaletteResult[]>(() => [
     actionLabel: currentProjectName.value === '' ? 'No project open' : 'Open review tab',
     isDisabled: currentProjectName.value === '',
     run: startReview
+  },
+  {
+    id: 'create-open-worktree',
+    label: 'Create/Open Worktree',
+    actionLabel: currentProjectName.value === '' ? 'No project open' : 'Enter branch',
+    isDisabled: currentProjectName.value === '',
+    run: openCreateWorktree
+  },
+  {
+    id: 'checkout-remote-worktree',
+    label: 'Checkout Remote Branch as Worktree',
+    actionLabel: currentProjectName.value === '' ? 'No project open' : 'Pick branch',
+    isDisabled: currentProjectName.value === '',
+    run: openRemoteWorktreePicker
+  },
+  {
+    id: 'remove-worktree',
+    label: 'Remove Worktree',
+    actionLabel: currentProjectName.value === '' ? 'No project open' : 'Pick worktree',
+    isDisabled: currentProjectName.value === '',
+    run: openRemoveWorktree
   },
   {
     id: 'open-settings',

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import type { PaletteResult } from './types';
+import type { PaletteNotice, PaletteResult } from './types';
 
 const props = defineProps<{
   title: string;
@@ -10,6 +10,7 @@ const props = defineProps<{
   resultsAriaLabel: string;
   statusMessage: string;
   results: PaletteResult[];
+  notice?: PaletteNotice;
 }>();
 
 const emit = defineEmits<{
@@ -149,6 +150,17 @@ onBeforeUnmount(() => {
             @input="updateQuery"
           >
         </form>
+        <section
+          v-if="notice"
+          id="command-palette-notice"
+          role="status"
+          :data-tone="notice.tone"
+        >
+          <h3>{{ notice.title }}</h3>
+          <ul>
+            <li v-for="(message, index) in notice.messages" :key="`${index}:${message}`">{{ message }}</li>
+          </ul>
+        </section>
         <nav id="command-palette-results-region" :aria-label="resultsAriaLabel">
           <ul v-if="results.length > 0" id="command-palette-results">
             <li v-for="(result, index) in results" :key="result.id">
@@ -250,6 +262,53 @@ onBeforeUnmount(() => {
 
 #command-palette-search::-webkit-search-cancel-button {
   display: none;
+}
+
+#command-palette-notice {
+  display: grid;
+  gap: 8px;
+  margin: 8px;
+  padding: 11px 12px;
+  border: 1px solid;
+  background: rgb(248 248 242 / 6%);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#command-palette-notice[data-tone="warning"] {
+  border-color: #d29922;
+  background: rgb(210 153 34 / 14%);
+}
+
+#command-palette-notice[data-tone="error"] {
+  border-color: #ff6e6e;
+  background: rgb(255 110 110 / 14%);
+}
+
+#command-palette-notice h3,
+#command-palette-notice ul {
+  margin: 0;
+}
+
+#command-palette-notice h3 {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#command-palette-notice[data-tone="warning"] h3 {
+  color: #d29922;
+}
+
+#command-palette-notice[data-tone="error"] h3 {
+  color: #ff6e6e;
+}
+
+#command-palette-notice ul {
+  max-height: 120px;
+  overflow: auto;
+  padding-left: 18px;
+  color: var(--text);
+  scrollbar-width: thin;
 }
 
 #command-palette-results-region {
