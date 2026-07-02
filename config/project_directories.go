@@ -3,9 +3,21 @@ package config
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 )
+
+// ValidateProjectDirectories checks that project directory settings are usable.
+func ValidateProjectDirectories(directories []string) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("getting home directory: %w", err)
+	}
+
+	_, err = resolveProjectDirectories(homeDir, directories)
+	return err
+}
 
 // resolveProjectDirectories expands configured project directory paths.
 func resolveProjectDirectories(homeDir string, directories []string) ([]string, error) {

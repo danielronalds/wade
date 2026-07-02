@@ -27,7 +27,11 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 		mux:         http.NewServeMux(),
 	}
 
+	configHandler := handlers.NewConfig()
+
 	server.mux.HandleFunc("GET /ws", server.handleTerminal)
+	server.mux.Handle("GET /api/config", configHandler)
+	server.mux.Handle("POST /api/config", configHandler)
 	server.mux.HandleFunc("POST /api/config/reload", server.handleConfigReload)
 	server.mux.HandleFunc("POST /api/terminal/reload", server.handleTerminalReload)
 	server.mux.Handle("GET /api/project", handlers.NewProject(server.projects))

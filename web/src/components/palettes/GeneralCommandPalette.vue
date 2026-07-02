@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useFuzzyItems } from '../../composables/useFuzzyProjects';
 import { isProjectDetails, type ProjectDetails } from '../../composables/useProjectDetails';
 import { useProjects } from '../../composables/useProjects';
@@ -15,6 +15,7 @@ const emit = defineEmits<{
 }>();
 
 const route = useRoute();
+const router = useRouter();
 const { syncProjects } = useProjects();
 const { removeUnavailableRecentProjects } = useRecentProjects();
 const query = ref('');
@@ -58,6 +59,16 @@ const startReview = () => {
 
   closePaletteWithoutRestoringFocus();
   dispatchStartReviewEvent(currentProjectName.value);
+};
+
+const openSettings = async () => {
+  if (route.name === 'settings') {
+    emit('close');
+    return;
+  }
+
+  emit('close', false);
+  await router.push({ name: 'settings' });
 };
 
 const reloadConfig = async () => {
@@ -106,6 +117,15 @@ const commandDefinitions = computed<PaletteResult[]>(() => [
     actionLabel: currentProjectName.value === '' ? 'No project open' : 'Open review tab',
     isDisabled: currentProjectName.value === '',
     run: startReview
+  },
+  {
+    id: 'open-settings',
+    label: 'Open Settings',
+    actionLabel: route.name === 'settings' ? 'Already open' : 'Open settings',
+    isDisabled: false,
+    run: () => {
+      void openSettings();
+    }
   },
   {
     id: 'reload-config',

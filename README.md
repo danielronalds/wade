@@ -69,9 +69,9 @@ does not exist:
 ```
 
 Project directories can use `~` or absolute paths. Missing directories are
-allowed and are skipped during discovery. After editing the config, run
-`Reload Config` from the general command palette to apply project directory
-changes without restarting WADE.
+allowed and are skipped during discovery. Edit them at `/settings`, or edit the
+JSON file directly and run `Reload Config` from the general command palette to
+apply project directory changes without restarting WADE.
 
 Project terminal sessions are kept alive for the lifetime of the server.
 Reopening a project reconnects to the existing shell session rather than
