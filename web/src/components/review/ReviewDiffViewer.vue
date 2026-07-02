@@ -234,6 +234,7 @@ const languageByFileExtension: Record<string, string> = {
   '.py': 'python',
   '.rs': 'rust',
   '.sh': 'shell',
+  '.sql': 'sql',
   '.ts': 'typescript',
   '.tsx': 'typescript',
   '.vue': 'html',
