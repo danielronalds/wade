@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GitBranch } from '@lucide/vue';
+import { GitBranch, RefreshCw } from '@lucide/vue';
 import { computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useProjectDetails } from '../composables/useProjectDetails';
@@ -34,6 +34,9 @@ const pullRequestButtonTitle = computed(() => isProjectDetailsLoading.value
 const gitHubButtonTitle = computed(() => isProjectDetailsLoading.value
   ? 'Loading GitHub page'
   : githubUrl.value === '' ? 'No GitHub remote found' : 'Open GitHub page');
+const reloadButtonTitle = computed(() => isProjectDetailsLoading.value
+  ? 'Loading project details'
+  : 'Reload project details');
 const gitBranchLabel = computed(() => {
   if (isProjectDetailsLoading.value) {
     return 'Loading branch';
@@ -62,6 +65,10 @@ const openGitHubPage = () => {
   openExternalUrl(githubUrl.value);
 };
 
+const reloadProjectDetails = () => {
+  void loadProjectDetails();
+};
+
 onMounted(() => {
   void loadProjectDetails();
 });
@@ -78,6 +85,16 @@ onMounted(() => {
       </span>
     </h1>
     <section id="project-actions" aria-label="Project actions">
+      <button
+        class="project-reload-action"
+        type="button"
+        :aria-label="reloadButtonTitle"
+        :disabled="isProjectDetailsLoading"
+        :title="reloadButtonTitle"
+        @click="reloadProjectDetails"
+      >
+        <RefreshCw :size="14" :stroke-width="1.7" aria-hidden="true" />
+      </button>
       <button
         class="project-action"
         type="button"
@@ -216,7 +233,20 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.project-action:disabled {
+.project-reload-action {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.project-action:disabled,
+.project-reload-action:disabled {
   color: var(--muted);
   cursor: not-allowed;
   opacity: 0.45;
@@ -225,6 +255,11 @@ onMounted(() => {
 .project-action:not(:disabled):hover,
 .project-action:not(:disabled):focus-visible {
   background: rgb(248 248 242 / 10%);
+}
+
+.project-reload-action:not(:disabled):hover,
+.project-reload-action:not(:disabled):focus-visible {
+  color: var(--text);
 }
 
 .brand-icon {
