@@ -218,22 +218,35 @@ const loadMonaco = () => {
   return monacoLoadPromise;
 };
 
+const languageByFileExtension: Record<string, string> = {
+  '.cjs': 'javascript',
+  '.cs': 'csharp',
+  '.css': 'css',
+  '.go': 'go',
+  '.html': 'html',
+  '.java': 'java',
+  '.js': 'javascript',
+  '.json': 'json',
+  '.jsx': 'javascript',
+  '.kt': 'kotlin',
+  '.md': 'markdown',
+  '.mjs': 'javascript',
+  '.py': 'python',
+  '.rs': 'rust',
+  '.sh': 'shell',
+  '.ts': 'typescript',
+  '.tsx': 'typescript',
+  '.vue': 'html',
+  '.yaml': 'yaml',
+  '.yml': 'yaml'
+};
+
 const inferLanguage = (filePath: string) => {
   const lowerPath = filePath.toLowerCase();
-  if (lowerPath.endsWith('.ts') || lowerPath.endsWith('.tsx')) return 'typescript';
-  if (lowerPath.endsWith('.js') || lowerPath.endsWith('.jsx') || lowerPath.endsWith('.mjs') || lowerPath.endsWith('.cjs')) return 'javascript';
-  if (lowerPath.endsWith('.json')) return 'json';
-  if (lowerPath.endsWith('.md')) return 'markdown';
-  if (lowerPath.endsWith('.css')) return 'css';
-  if (lowerPath.endsWith('.html')) return 'html';
-  if (lowerPath.endsWith('.sh')) return 'shell';
-  if (lowerPath.endsWith('.yml') || lowerPath.endsWith('.yaml')) return 'yaml';
-  if (lowerPath.endsWith('.rs')) return 'rust';
-  if (lowerPath.endsWith('.java')) return 'java';
-  if (lowerPath.endsWith('.kt')) return 'kotlin';
-  if (lowerPath.endsWith('.py')) return 'python';
-  if (lowerPath.endsWith('.go')) return 'go';
-  return 'plaintext';
+  const languageEntry = Object.entries(languageByFileExtension)
+    .find(([extension]) => lowerPath.endsWith(extension));
+
+  return languageEntry?.[1] ?? 'plaintext';
 };
 
 const layoutEditor = () => {
