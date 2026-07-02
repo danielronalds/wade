@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { closeProjectSession } from '../../api/sessions';
 import { useFuzzyItems } from '../../composables/useFuzzyProjects';
 import { isProjectDetails, type ProjectDetails } from '../../composables/useProjectDetails';
 import { useProjects } from '../../composables/useProjects';
 import { useRecentProjects } from '../../composables/useRecentProjects';
 import { dispatchStartReviewEvent } from '../../events/startReview';
 import PaletteShell from './PaletteShell.vue';
-import type { PaletteResult } from './types';
+import type { PaletteNotice, PaletteResult } from './types';
 
 const emit = defineEmits<{
   close: [restoreFocus?: boolean];
@@ -25,11 +26,25 @@ const { removeUnavailableRecentProjects } = useRecentProjects();
 const query = ref('');
 const projectDetails = ref<ProjectDetails | undefined>();
 const isProjectDetailsLoading = ref(false);
+const isClosingSession = ref(false);
+const closeSessionError = ref('');
 let detailsLoadRun = 0;
 
 const currentProjectName = computed(() => route.name === 'project'
   ? String(route.params.projectName ?? '')
   : '');
+
+const closeSessionActionLabel = computed(() => {
+  if (currentProjectName.value === '') {
+    return 'No project open';
+  }
+
+  if (isClosingSession.value) {
+    return 'Closing';
+  }
+
+  return 'Close terminals';
+});
 
 const unavailableCommandLabel = (fallback: string) => {
   if (currentProjectName.value === '') {
@@ -54,6 +69,35 @@ const openExternalUrl = (url: string) => {
 
 const closePaletteWithoutRestoringFocus = () => {
   emit('close', false);
+};
+
+const errorMessage = (error: unknown, fallback: string) => error instanceof Error
+  ? error.message
+  : fallback;
+
+const updateQuery = (nextQuery: string) => {
+  query.value = nextQuery;
+  closeSessionError.value = '';
+};
+
+const closeCurrentSession = async () => {
+  const projectName = currentProjectName.value;
+  if (projectName === '' || isClosingSession.value) {
+    return;
+  }
+
+  isClosingSession.value = true;
+  closeSessionError.value = '';
+
+  try {
+    await closeProjectSession(projectName);
+    closePaletteWithoutRestoringFocus();
+    await router.push({ name: 'home' });
+  } catch (error) {
+    closeSessionError.value = errorMessage(error, 'Session close failed');
+  } finally {
+    isClosingSession.value = false;
+  }
 };
 
 const startReview = () => {
@@ -154,6 +198,15 @@ const commandDefinitions = computed<PaletteResult[]>(() => [
     run: startReview
   },
   {
+    id: 'close-current-session',
+    label: 'Close Current Session',
+    actionLabel: closeSessionActionLabel.value,
+    isDisabled: currentProjectName.value === '' || isClosingSession.value,
+    run: () => {
+      void closeCurrentSession();
+    }
+  },
+  {
     id: 'create-open-worktree',
     label: 'Create/Open Worktree',
     actionLabel: currentProjectName.value === '' ? 'No project open' : 'Enter branch',
@@ -234,6 +287,14 @@ const paletteResults = computed<PaletteResult[]>(() => matchingCommands.value.ma
   id: `command:${match.item.id}`
 })));
 
+const notice = computed<PaletteNotice | undefined>(() => closeSessionError.value === ''
+  ? undefined
+  : {
+    tone: 'error',
+    title: 'Session close failed',
+    messages: [closeSessionError.value]
+  });
+
 const loadCurrentProjectDetails = async () => {
   detailsLoadRun += 1;
   const run = detailsLoadRun;
@@ -289,7 +350,8 @@ onBeforeUnmount(() => {
     results-aria-label="Commands WADE can run"
     status-message="No matching commands"
     :results="paletteResults"
-    @update:query="query = $event"
+    :notice="notice"
+    @update:query="updateQuery"
     @close="emit('close', $event)"
   />
 </template>

@@ -31,11 +31,13 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 
 	configHandler := handlers.NewConfig()
 	remoteHandler := handlers.NewRemoteProjects(server.projects, remote.NewService(remote.RunCommand))
+	sessionsHandler := handlers.NewSessions(server.projects, server.terminals)
 	worktreeService := worktree.NewService(configuration)
 	worktreesHandler := handlers.NewWorktrees(server.projects, worktreeService, server.terminals)
 
 	server.mux.HandleFunc("GET /ws", server.handleTerminal)
 	server.mux.HandleFunc("POST /api/terminal/reload", server.handleTerminalReload)
+	server.mux.HandleFunc("DELETE /api/session/{sessionName}", sessionsHandler.CloseSession)
 
 	server.mux.Handle("GET /api/config", configHandler)
 	server.mux.Handle("POST /api/config", configHandler)
