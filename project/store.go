@@ -40,7 +40,7 @@ func (s Store) Names() ([]string, error) {
 	seenProjects := make(map[string]struct{})
 	projectNames := make([]string, 0)
 
-	for _, directory := range s.directories() {
+	for _, directory := range s.Directories() {
 		if directory == "" {
 			return nil, errors.New("invalid project directory")
 		}
@@ -80,7 +80,7 @@ func (s Store) Path(name string) (string, error) {
 		return "", errors.New("invalid project name")
 	}
 
-	for _, directory := range s.directories() {
+	for _, directory := range s.Directories() {
 		if directory == "" {
 			return "", errors.New("invalid project directory")
 		}
@@ -99,8 +99,7 @@ func (s Store) Path(name string) (string, error) {
 	return "", fmt.Errorf("project %q not found", name)
 }
 
-// directories returns a copy of the current discovery directories.
-func (s Store) directories() []string {
+func (s Store) Directories() []string {
 	if s.state == nil {
 		return nil
 	}

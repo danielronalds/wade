@@ -6,6 +6,7 @@ import (
 
 	"wade/config"
 	"wade/project"
+	"wade/remote"
 	"wade/server/handlers"
 	terminalmanager "wade/terminal/manager"
 	"wade/worktree"
@@ -29,6 +30,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 	}
 
 	configHandler := handlers.NewConfig()
+	remoteHandler := handlers.NewRemoteProjects(server.projects, remote.NewService(remote.RunCommand))
 	worktreeService := worktree.NewService(configuration)
 	worktreesHandler := handlers.NewWorktrees(server.projects, worktreeService, server.terminals)
 
@@ -41,6 +43,8 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 
 	server.mux.Handle("GET /api/project", handlers.NewProject(server.projects))
 	server.mux.Handle("GET /api/projects", handlers.NewProjects(server.projects))
+	server.mux.HandleFunc("GET /api/remote-projects", remoteHandler.List)
+	server.mux.HandleFunc("POST /api/remote-projects/clone", remoteHandler.Clone)
 
 	server.mux.HandleFunc("GET /api/worktrees", worktreesHandler.ListWorktrees)
 	server.mux.HandleFunc("POST /api/worktrees", worktreesHandler.CreateWorktree)
