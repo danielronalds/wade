@@ -12,8 +12,10 @@ import (
 type ConfigHandler struct{}
 
 type configPayload struct {
-	ProjectDirectories []string `json:"projectDirectories"`
-	AgentPaneCommand   string   `json:"agentPaneCommand"`
+	ProjectDirectories                 []string `json:"projectDirectories"`
+	AgentPaneCommand                   string   `json:"agentPaneCommand"`
+	CopyIgnoredFilesOnWorktreeCreation bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
+	WorktreeCopyExcludes               []string `json:"worktreeCopyExcludes"`
 }
 
 // NewConfig creates a handler for reading and writing WADE settings.
@@ -42,8 +44,10 @@ func (h ConfigHandler) getConfig(w http.ResponseWriter) {
 	}
 
 	writeConfigPayload(w, http.StatusOK, configPayload{
-		ProjectDirectories: settings.ProjectDirectories,
-		AgentPaneCommand:   settings.AgentPaneCommand,
+		ProjectDirectories:                 settings.ProjectDirectories,
+		AgentPaneCommand:                   settings.AgentPaneCommand,
+		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
+		WorktreeCopyExcludes:               settings.WorktreeCopyExcludes,
 	})
 }
 
@@ -67,6 +71,12 @@ func (h ConfigHandler) saveConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	worktreeCopyExcludes := trimWorktreeCopyExcludes(request.WorktreeCopyExcludes)
+	if err := config.ValidateWorktreeCopyExcludes(worktreeCopyExcludes); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	settings, err := config.LoadSettings()
 	if err != nil {
 		http.Error(w, "unable to load config", http.StatusInternalServerError)
@@ -75,6 +85,8 @@ func (h ConfigHandler) saveConfig(w http.ResponseWriter, r *http.Request) {
 
 	settings.ProjectDirectories = projectDirectories
 	settings.AgentPaneCommand = agentPaneCommand
+	settings.CopyIgnoredFilesOnWorktreeCreation = request.CopyIgnoredFilesOnWorktreeCreation
+	settings.WorktreeCopyExcludes = worktreeCopyExcludes
 	if err := settings.Save(); err != nil {
 		http.Error(w, "unable to save config", http.StatusInternalServerError)
 		return
@@ -87,6 +99,19 @@ func trimProjectDirectories(projectDirectories []string) []string {
 	trimmed := make([]string, 0, len(projectDirectories))
 	for _, projectDirectory := range projectDirectories {
 		trimmed = append(trimmed, strings.TrimSpace(projectDirectory))
+	}
+
+	return trimmed
+}
+
+func trimWorktreeCopyExcludes(excludes []string) []string {
+	trimmed := make([]string, 0, len(excludes))
+	for _, exclude := range excludes {
+		exclude = strings.TrimSpace(exclude)
+		if exclude == "" {
+			continue
+		}
+		trimmed = append(trimmed, exclude)
 	}
 
 	return trimmed

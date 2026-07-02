@@ -2,13 +2,14 @@
 package worktree
 
 type Worktree struct {
-	Name        string `json:"name"`
-	ProjectName string `json:"projectName"`
-	Path        string `json:"path"`
-	Branch      string `json:"branch"`
-	IsBase      bool   `json:"isBase"`
-	IsCurrent   bool   `json:"isCurrent"`
-	IsRemovable bool   `json:"isRemovable"`
+	Name                    string   `json:"name"`
+	ProjectName             string   `json:"projectName"`
+	Path                    string   `json:"path"`
+	Branch                  string   `json:"branch"`
+	IsBase                  bool     `json:"isBase"`
+	IsCurrent               bool     `json:"isCurrent"`
+	IsRemovable             bool     `json:"isRemovable"`
+	IgnoredFileCopyWarnings []string `json:"ignoredFileCopyWarnings,omitempty"`
 }
 
 type RemoteBranchList struct {

@@ -12,7 +12,9 @@ import { useRecentProjects } from './useRecentProjects';
 
 const settingsHaveChanged = (current: Settings, saved: Settings) => JSON.stringify(current.projectDirectories)
   !== JSON.stringify(saved.projectDirectories)
-  || current.agentPaneCommand !== saved.agentPaneCommand;
+  || current.agentPaneCommand !== saved.agentPaneCommand
+  || current.copyIgnoredFilesOnWorktreeCreation !== saved.copyIgnoredFilesOnWorktreeCreation
+  || JSON.stringify(current.worktreeCopyExcludes) !== JSON.stringify(saved.worktreeCopyExcludes);
 
 const inputValue = (event: Event) => event.target instanceof HTMLInputElement
   ? event.target.value
@@ -53,6 +55,8 @@ export const useSettingsForm = () => {
   const replaceForm = (settings: Settings) => {
     form.projectDirectories = [...settings.projectDirectories];
     form.agentPaneCommand = settings.agentPaneCommand;
+    form.copyIgnoredFilesOnWorktreeCreation = settings.copyIgnoredFilesOnWorktreeCreation;
+    form.worktreeCopyExcludes = [...settings.worktreeCopyExcludes];
   };
 
   const loadSettings = async () => {
@@ -102,6 +106,40 @@ export const useSettingsForm = () => {
     }
 
     form.agentPaneCommand = nextAgentPaneCommand;
+    clearMessages();
+  };
+
+  const updateCopyIgnoredFilesOnWorktreeCreation = (event: Event) => {
+    if (!(event.target instanceof HTMLInputElement)) {
+      return;
+    }
+
+    form.copyIgnoredFilesOnWorktreeCreation = event.target.checked;
+    clearMessages();
+  };
+
+  const updateWorktreeCopyExclude = (index: number, event: Event) => {
+    const nextExclude = inputValue(event);
+    if (nextExclude === undefined) {
+      return;
+    }
+
+    form.worktreeCopyExcludes = form.worktreeCopyExcludes.map((exclude, excludeIndex) => (
+      excludeIndex === index ? nextExclude : exclude
+    ));
+    clearMessages();
+  };
+
+  const addWorktreeCopyExclude = async () => {
+    form.worktreeCopyExcludes = [...form.worktreeCopyExcludes, ''];
+    clearMessages();
+
+    await nextTick();
+    document.getElementById(`worktree-copy-exclude-${form.worktreeCopyExcludes.length - 1}`)?.focus();
+  };
+
+  const removeWorktreeCopyExclude = (index: number) => {
+    form.worktreeCopyExcludes = form.worktreeCopyExcludes.filter((_, excludeIndex) => excludeIndex !== index);
     clearMessages();
   };
 
@@ -159,6 +197,10 @@ export const useSettingsForm = () => {
     addProjectDirectory,
     removeProjectDirectory,
     updateAgentPaneCommand,
+    updateCopyIgnoredFilesOnWorktreeCreation,
+    updateWorktreeCopyExclude,
+    addWorktreeCopyExclude,
+    removeWorktreeCopyExclude,
     submit
   };
 };

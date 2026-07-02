@@ -19,10 +19,12 @@ const (
 
 // Config is the resolved runtime configuration used by the server.
 type Config struct {
-	Address          string
-	ProjectDirs      []string
-	Shell            string
-	AgentPaneCommand string
+	Address                            string
+	ProjectDirs                        []string
+	Shell                              string
+	AgentPaneCommand                   string
+	CopyIgnoredFilesOnWorktreeCreation bool
+	WorktreeCopyExcludes               []string
 }
 
 // Load resolves runtime configuration from settings and environment variables.
@@ -47,11 +49,18 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	worktreeCopyExcludes := trimStrings(settings.WorktreeCopyExcludes)
+	if err := ValidateWorktreeCopyExcludes(worktreeCopyExcludes); err != nil {
+		return Config{}, err
+	}
+
 	return Config{
-		Address:          envOrDefault(addressEnv, defaultAddress(os.Getenv(devModeEnv))),
-		ProjectDirs:      projectDirs,
-		Shell:            terminal.ResolveShell(os.Getenv("SHELL")),
-		AgentPaneCommand: agentPaneCommand,
+		Address:                            envOrDefault(addressEnv, defaultAddress(os.Getenv(devModeEnv))),
+		ProjectDirs:                        projectDirs,
+		Shell:                              terminal.ResolveShell(os.Getenv("SHELL")),
+		AgentPaneCommand:                   agentPaneCommand,
+		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
+		WorktreeCopyExcludes:               worktreeCopyExcludes,
 	}, nil
 }
 

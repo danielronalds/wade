@@ -7,22 +7,28 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 const defaultAgentPaneCommand = "pi -c"
 
 // Settings is the editable user configuration stored on disk.
 type Settings struct {
-	ProjectDirectories []string `json:"projectDirectories"`
-	AgentPaneCommand   string   `json:"agentPaneCommand"`
-	path               string
-	raw                map[string]json.RawMessage
+	ProjectDirectories                 []string `json:"projectDirectories"`
+	AgentPaneCommand                   string   `json:"agentPaneCommand"`
+	CopyIgnoredFilesOnWorktreeCreation bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
+	WorktreeCopyExcludes               []string `json:"worktreeCopyExcludes"`
+	path                               string
+	raw                                map[string]json.RawMessage
 }
 
 type settingsFile struct {
-	ProjectDirectories *[]string `json:"projectDirectories"`
-	AgentPaneCommand   *string   `json:"agentPaneCommand"`
-	LegacyAgentCommand *string   `json:"agentCommand"`
+	ProjectDirectories                 *[]string `json:"projectDirectories"`
+	AgentPaneCommand                   *string   `json:"agentPaneCommand"`
+	CopyIgnoredFilesOnWorktreeCreation *bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
+	WorktreeCopyExcludes               *[]string `json:"worktreeCopyExcludes"`
+	LegacyAgentCommand                 *string   `json:"agentCommand"`
 }
 
 // LoadSettings reads the settings file, creating it with defaults when missing.
@@ -58,6 +64,16 @@ func ValidateAgentPaneCommand(command string) error {
 	return nil
 }
 
+func ValidateWorktreeCopyExcludes(excludes []string) error {
+	for _, pattern := range excludes {
+		if !doublestar.ValidatePattern(pattern) {
+			return fmt.Errorf("invalid worktree copy exclude pattern %q", pattern)
+		}
+	}
+
+	return nil
+}
+
 // FilePath returns the current user's WADE settings file path.
 func FilePath() (string, error) {
 	homeDir, err := os.UserHomeDir()
@@ -85,9 +101,21 @@ func (s Settings) Save() error {
 		return fmt.Errorf("encoding agent pane command: %w", err)
 	}
 
+	copyIgnoredFilesOnWorktreeCreation, err := json.Marshal(s.CopyIgnoredFilesOnWorktreeCreation)
+	if err != nil {
+		return fmt.Errorf("encoding worktree copy setting: %w", err)
+	}
+
+	worktreeCopyExcludes, err := json.Marshal(s.WorktreeCopyExcludes)
+	if err != nil {
+		return fmt.Errorf("encoding worktree copy excludes: %w", err)
+	}
+
 	delete(raw, "agentCommand")
 	raw["projectDirectories"] = projectDirectories
 	raw["agentPaneCommand"] = agentPaneCommand
+	raw["copyIgnoredFilesOnWorktreeCreation"] = copyIgnoredFilesOnWorktreeCreation
+	raw["worktreeCopyExcludes"] = worktreeCopyExcludes
 
 	return writeJSON(s.path, raw)
 }
@@ -95,10 +123,12 @@ func (s Settings) Save() error {
 // defaultSettings creates the built-in settings for a first run.
 func defaultSettings(path string) Settings {
 	return Settings{
-		ProjectDirectories: []string{"~/Personal", "~/Work"},
-		AgentPaneCommand:   defaultAgentPaneCommand,
-		path:               path,
-		raw:                make(map[string]json.RawMessage),
+		ProjectDirectories:                 []string{"~/Personal", "~/Work"},
+		AgentPaneCommand:                   defaultAgentPaneCommand,
+		CopyIgnoredFilesOnWorktreeCreation: false,
+		WorktreeCopyExcludes:               []string{},
+		path:                               path,
+		raw:                                make(map[string]json.RawMessage),
 	}
 }
 
@@ -124,8 +154,26 @@ func parseSettings(path string, contents []byte) (Settings, error) {
 	} else if file.LegacyAgentCommand != nil {
 		settings.AgentPaneCommand = *file.LegacyAgentCommand
 	}
+	if file.CopyIgnoredFilesOnWorktreeCreation != nil {
+		settings.CopyIgnoredFilesOnWorktreeCreation = *file.CopyIgnoredFilesOnWorktreeCreation
+	}
+	if file.WorktreeCopyExcludes != nil {
+		settings.WorktreeCopyExcludes = *file.WorktreeCopyExcludes
+	}
 
 	return settings, nil
+}
+
+func trimStrings(values []string) []string {
+	trimmed := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		trimmed = append(trimmed, value)
+	}
+	return trimmed
 }
 
 // cloneRawSettings copies raw JSON values so saves cannot mutate loaded state.

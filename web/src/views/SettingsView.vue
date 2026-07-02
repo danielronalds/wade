@@ -17,6 +17,10 @@ const {
   addProjectDirectory,
   removeProjectDirectory,
   updateAgentPaneCommand,
+  updateCopyIgnoredFilesOnWorktreeCreation,
+  updateWorktreeCopyExclude,
+  addWorktreeCopyExclude,
+  removeWorktreeCopyExclude,
   submit
 } = useSettingsForm();
 
@@ -96,6 +100,42 @@ onMounted(() => {
               @input="updateAgentPaneCommand"
             >
           </label>
+        </section>
+
+        <section id="worktree-copy-section" aria-labelledby="worktree-copy-title">
+          <header class="settings-section-header">
+            <section>
+              <h2 id="worktree-copy-title">Worktree ignored file copy</h2>
+              <p>Copy gitignored files, like .env files, into newly created worktrees.</p>
+            </section>
+            <button type="button" class="secondary-action" @click="addWorktreeCopyExclude">Add exclude</button>
+          </header>
+
+          <label class="checkbox-setting-row" for="copy-ignored-files-on-worktree-creation">
+            <input
+              id="copy-ignored-files-on-worktree-creation"
+              :checked="form.copyIgnoredFilesOnWorktreeCreation"
+              type="checkbox"
+              @change="updateCopyIgnoredFilesOnWorktreeCreation"
+            >
+            <span>Copy ignored files when creating a worktree</span>
+          </label>
+
+          <ul id="worktree-copy-excludes-list" aria-label="Worktree ignored file copy excludes">
+            <li v-for="(exclude, index) in form.worktreeCopyExcludes" :key="index" class="worktree-copy-exclude-row">
+              <label :for="`worktree-copy-exclude-${index}`">Exclude {{ index + 1 }}</label>
+              <input
+                :id="`worktree-copy-exclude-${index}`"
+                :value="exclude"
+                type="text"
+                spellcheck="false"
+                autocomplete="off"
+                placeholder="**/node_modules"
+                @input="updateWorktreeCopyExclude(index, $event)"
+              >
+              <button type="button" class="remove-action" @click="removeWorktreeCopyExclude(index)">Remove</button>
+            </li>
+          </ul>
         </section>
 
         <footer id="settings-actions">
@@ -218,9 +258,15 @@ onMounted(() => {
   padding: clamp(24px, 7vw, 72px);
 }
 
-#settings-form,
+#settings-form {
+  width: min(860px, 100%);
+  display: grid;
+  gap: 52px;
+}
+
 #project-directories-section,
-#agent-pane-command-section {
+#agent-pane-command-section,
+#worktree-copy-section {
   width: min(860px, 100%);
   display: grid;
   gap: 18px;
@@ -276,7 +322,8 @@ onMounted(() => {
   opacity: 0.45;
 }
 
-#project-directories-list {
+#project-directories-list,
+#worktree-copy-excludes-list {
   display: grid;
   gap: 10px;
   margin: 0;
@@ -285,13 +332,16 @@ onMounted(() => {
 }
 
 .project-directory-row,
-.single-setting-row {
+.single-setting-row,
+.worktree-copy-exclude-row,
+.checkbox-setting-row {
   display: grid;
   align-items: center;
   gap: 10px;
 }
 
-.project-directory-row {
+.project-directory-row,
+.worktree-copy-exclude-row {
   grid-template-columns: 120px minmax(0, 1fr) auto;
 }
 
@@ -299,14 +349,22 @@ onMounted(() => {
   grid-template-columns: 120px minmax(0, 1fr);
 }
 
+.checkbox-setting-row {
+  grid-template-columns: auto minmax(0, 1fr);
+  justify-content: start;
+}
+
 .project-directory-row label,
-.single-setting-row span {
+.single-setting-row span,
+.worktree-copy-exclude-row label,
+.checkbox-setting-row span {
   color: var(--muted);
   font-size: 13px;
 }
 
 .project-directory-row input,
-.single-setting-row input {
+.single-setting-row input,
+.worktree-copy-exclude-row input {
   min-width: 0;
   border: 1px solid rgb(248 248 242 / 30%);
   border-radius: 0;
@@ -317,13 +375,15 @@ onMounted(() => {
 }
 
 .project-directory-row input:focus,
-.single-setting-row input:focus {
+.single-setting-row input:focus,
+.worktree-copy-exclude-row input:focus {
   border-color: var(--text);
   outline: none;
 }
 
 .project-directory-row input[aria-invalid="true"],
-.single-setting-row input[aria-invalid="true"] {
+.single-setting-row input[aria-invalid="true"],
+.worktree-copy-exclude-row input[aria-invalid="true"] {
   border-color: var(--disconnected);
 }
 
@@ -362,7 +422,8 @@ onMounted(() => {
   }
 
   .project-directory-row,
-  .single-setting-row {
+  .single-setting-row,
+  .worktree-copy-exclude-row {
     grid-template-columns: 1fr;
   }
 }

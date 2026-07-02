@@ -29,7 +29,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 	}
 
 	configHandler := handlers.NewConfig()
-	worktreeService := worktree.NewService()
+	worktreeService := worktree.NewService(configuration)
 	worktreesHandler := handlers.NewWorktrees(server.projects, worktreeService, server.terminals)
 
 	server.mux.HandleFunc("GET /ws", server.handleTerminal)

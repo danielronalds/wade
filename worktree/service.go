@@ -7,12 +7,20 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"wade/config"
 )
 
-type Service struct{}
+type Service struct {
+	copyIgnoredFilesOnWorktreeCreation bool
+	worktreeCopyExcludes               []string
+}
 
-func NewService() Service {
-	return Service{}
+func NewService(configuration config.Config) Service {
+	return Service{
+		copyIgnoredFilesOnWorktreeCreation: configuration.CopyIgnoredFilesOnWorktreeCreation,
+		worktreeCopyExcludes:               append([]string(nil), configuration.WorktreeCopyExcludes...),
+	}
 }
 
 func (s Service) List(ctx context.Context, projectPath string) ([]Worktree, error) {
@@ -145,6 +153,8 @@ func (s Service) Create(ctx context.Context, projectPath string, requestedBranch
 		}
 	}
 
+	copyWarnings := s.copyIgnoredFiles(ctx, data.mainPath, targetPath)
+
 	createdData, err := resolveContext(ctx, projectPath)
 	if err != nil {
 		return Worktree{}, err
@@ -153,19 +163,29 @@ func (s Service) Create(ctx context.Context, projectPath string, requestedBranch
 	createdWorktrees := buildWorktrees(createdData, targetPath)
 	for _, worktree := range createdWorktrees {
 		if samePath(worktree.Path, targetPath) {
+			worktree.IgnoredFileCopyWarnings = copyWarnings
 			return worktree, nil
 		}
 	}
 
 	return Worktree{
-		Name:        strings.TrimPrefix(filepath.Base(targetPath), data.projectName+"-"),
-		ProjectName: filepath.Base(targetPath),
-		Path:        targetPath,
-		Branch:      localBranch,
-		IsBase:      false,
-		IsCurrent:   true,
-		IsRemovable: true,
+		Name:                    strings.TrimPrefix(filepath.Base(targetPath), data.projectName+"-"),
+		ProjectName:             filepath.Base(targetPath),
+		Path:                    targetPath,
+		Branch:                  localBranch,
+		IsBase:                  false,
+		IsCurrent:               true,
+		IsRemovable:             true,
+		IgnoredFileCopyWarnings: copyWarnings,
 	}, nil
+}
+
+func (s Service) copyIgnoredFiles(ctx context.Context, mainPath string, targetPath string) []string {
+	if !s.copyIgnoredFilesOnWorktreeCreation {
+		return nil
+	}
+
+	return copyIgnoredFiles(ctx, mainPath, targetPath, s.worktreeCopyExcludes)
 }
 
 func (s Service) Find(ctx context.Context, projectPath string, query string) (Worktree, error) {
