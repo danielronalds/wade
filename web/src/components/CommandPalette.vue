@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import GeneralCommandPalette from './palettes/GeneralCommandPalette.vue';
 import ProjectPalette from './palettes/ProjectPalette.vue';
+import RemoteProjectPalette from './palettes/RemoteProjectPalette.vue';
 import CreateWorktreePalette from './palettes/worktrees/CreateWorktreePalette.vue';
 import RemoteWorktreePalette from './palettes/worktrees/RemoteWorktreePalette.vue';
 import RemoveWorktreePalette from './palettes/worktrees/RemoveWorktreePalette.vue';
@@ -10,6 +11,7 @@ import RemoveWorktreePalette from './palettes/worktrees/RemoveWorktreePalette.vu
 const PaletteModes = {
   Projects: 'projects',
   Commands: 'commands',
+  RemoteProject: 'remote-project',
   CreateWorktree: 'create-worktree',
   RemoteWorktree: 'remote-worktree',
   RemoveWorktree: 'remove-worktree'
@@ -110,9 +112,14 @@ onBeforeUnmount(() => {
     v-if="activePalette === PaletteModes.Commands"
     @close="closePalette"
     @open-project-picker="openPalette(PaletteModes.Projects)"
+    @open-remote-project-picker="openPalette(PaletteModes.RemoteProject)"
     @open-create-worktree="openProjectWorktreePalette(PaletteModes.CreateWorktree)"
     @open-remote-worktree-picker="openProjectWorktreePalette(PaletteModes.RemoteWorktree)"
     @open-remove-worktree="openProjectWorktreePalette(PaletteModes.RemoveWorktree)"
+  />
+  <RemoteProjectPalette
+    v-if="activePalette === PaletteModes.RemoteProject"
+    @close="closePalette"
   />
   <CreateWorktreePalette
     v-if="activePalette === PaletteModes.CreateWorktree"

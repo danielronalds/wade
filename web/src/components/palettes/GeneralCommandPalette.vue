@@ -12,6 +12,7 @@ import type { PaletteResult } from './types';
 const emit = defineEmits<{
   close: [restoreFocus?: boolean];
   openProjectPicker: [];
+  openRemoteProjectPicker: [];
   openCreateWorktree: [];
   openRemoteWorktreePicker: [];
   openRemoveWorktree: [];
@@ -137,6 +138,13 @@ const commandDefinitions = computed<PaletteResult[]>(() => [
     actionLabel: 'Open picker',
     isDisabled: false,
     run: () => emit('openProjectPicker')
+  },
+  {
+    id: 'clone-remote-project',
+    label: 'Clone Remote Project',
+    actionLabel: 'Pick repo',
+    isDisabled: false,
+    run: () => emit('openRemoteProjectPicker')
   },
   {
     id: 'start-review',
