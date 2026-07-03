@@ -36,7 +36,7 @@ onMounted(() => {
         </li>
       </ul>
     </nav>
-    <p v-else id="empty-projects">Press Ctrl + S to get started</p>
+    <p v-else id="empty-projects">Press Ctrl + P to get started</p>
   </section>
 </template>
 

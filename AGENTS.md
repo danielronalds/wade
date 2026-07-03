@@ -74,8 +74,9 @@ it.
 Keyboard shortcuts are part of the product design, not just convenience helpers.
 When adding UI, prefer a clear keyboard path and predictable focus behaviour.
 
-- `Ctrl + P`: open the general command palette.
-- `Ctrl + S`: open the project command palette.
+- `Ctrl + K`: open the general command palette.
+- `Ctrl + P`: open the project picker.
+- `Ctrl + S`: open the project picker.
 - `Ctrl + B`, then `1`: switch to the Terminal tab.
 - `Ctrl + B`, then `2`: switch to the Server tab.
 - `Ctrl + B`, then `o`: switch to the next terminal pane in the active tab.

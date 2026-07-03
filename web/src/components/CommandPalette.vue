@@ -30,12 +30,14 @@ const currentProjectName = computed(() => route.name === 'project'
 const isProjectPaletteShortcut = (event: KeyboardEvent) => event.ctrlKey
   && !event.altKey
   && !event.metaKey
-  && event.key.toLowerCase() === 's';
+  && !event.shiftKey
+  && ['p', 's'].includes(event.key.toLowerCase());
 
 const isCommandPaletteShortcut = (event: KeyboardEvent) => event.ctrlKey
   && !event.altKey
   && !event.metaKey
-  && event.key.toLowerCase() === 'p';
+  && !event.shiftKey
+  && event.key.toLowerCase() === 'k';
 
 const restorePreviousFocus = () => {
   const element = previouslyFocusedElement;

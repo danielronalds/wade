@@ -46,7 +46,7 @@ WADE_ADDR=127.0.0.1:8090 mise run dev
 ## Projects
 
 The root path shows the five most recently opened projects from browser
-`localStorage`. Press `Ctrl + S` to open the command palette and search all
+`localStorage`. Press `Ctrl + P` to open the project picker and search all
 projects WADE can see.
 
 Project pages use the project name as the path:
@@ -84,8 +84,9 @@ shell, defaulting to `pi -c`. Misc and Server terminals start your normal shell.
 Keyboard shortcuts are a core part of WADE's interaction model. New workflows
 should prefer shortcuts and predictable focus behaviour over mouse-only flows.
 
-- `Ctrl + P`: open the general command palette.
-- `Ctrl + S`: open the project command palette.
+- `Ctrl + K`: open the general command palette.
+- `Ctrl + P`: open the project picker.
+- `Ctrl + S`: open the project picker.
 - `Ctrl + B`, then `1`: switch to the Terminal tab.
 - `Ctrl + B`, then `2`: switch to the Server tab.
 - `Ctrl + B`, then `o`: switch to the next terminal pane in the active tab.
