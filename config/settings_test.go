@@ -92,3 +92,49 @@ func TestValidateAgentPaneCommandRejectsEmptyCommands(t *testing.T) {
 		t.Fatal("ValidateAgentPaneCommand() error = nil, want error")
 	}
 }
+
+func TestEnsureFileCreatesDefaultConfigWhenMissing(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	path, err := EnsureFile()
+	if err != nil {
+		t.Fatalf("EnsureFile() error = %v, want nil", err)
+	}
+
+	expectedPath := filepath.Join(homeDir, ".config", "wade", "config.json")
+	if path != expectedPath {
+		t.Fatalf("EnsureFile() path = %q, want %q", path, expectedPath)
+	}
+
+	settings, err := LoadSettings()
+	if err != nil {
+		t.Fatalf("LoadSettings() error = %v, want nil", err)
+	}
+
+	if settings.AgentPaneCommand != defaultAgentPaneCommand {
+		t.Fatalf("AgentPaneCommand = %q, want %q", settings.AgentPaneCommand, defaultAgentPaneCommand)
+	}
+}
+
+func TestEnsureFileDoesNotParseExistingConfig(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	path := filepath.Join(homeDir, ".config", "wade", "config.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll() error = %v, want nil", err)
+	}
+	if err := os.WriteFile(path, []byte(`{`), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v, want nil", err)
+	}
+
+	actualPath, err := EnsureFile()
+	if err != nil {
+		t.Fatalf("EnsureFile() error = %v, want nil", err)
+	}
+
+	if actualPath != path {
+		t.Fatalf("EnsureFile() path = %q, want %q", actualPath, path)
+	}
+}

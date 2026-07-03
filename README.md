@@ -34,8 +34,12 @@ mise run dev
 Open <http://editor-dev.localhost:8090>.
 
 `mise run dev` sets `WADE_ADDR=editor-dev.localhost:8090` and starts Air. Air
-sets `WADE_DEV=1` for the running binary. A directly built binary uses
-<http://editor.localhost:8765> by default.
+sets `WADE_DEV=1` for the running binary. A directly built binary started with
+`wade server` uses <http://editor.localhost:8765> by default.
+
+Running `wade` with no command prints the help menu. Use `wade server` to start
+the web server, or `wade config` to open `~/.config/wade/config.json` in your
+editor.
 
 To use a different address:
 
@@ -56,8 +60,8 @@ http://editor-dev.localhost:8090/wade
 ```
 
 The project name is resolved against project directories from
-`~/.config/wade/config.json`. WADE creates this file on first server start if it
-does not exist:
+`~/.config/wade/config.json`. WADE creates this file on first server start or
+when you run `wade config` if it does not exist:
 
 ```json
 {
@@ -121,8 +125,7 @@ JSON, TOML, Markdown or font files change.
 mise run build
 ```
 
-This writes the binary to `.tmp/wade`. Running that binary directly uses
-<http://editor.localhost:8765> by default.
+This writes the binary to `.tmp/wade`. Start the server with `.tmp/wade server`.
 
 ## Test
 

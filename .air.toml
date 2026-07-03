@@ -13,7 +13,7 @@ tmp_dir = ".tmp"
   exclude_regex = ["_test.go"]
   exclude_unchanged = false
   follow_symlink = false
-  full_bin = "WADE_DEV=1 ./.tmp/wade"
+  full_bin = "WADE_DEV=1 ./.tmp/wade server"
   ignore_dangerous_root_dir = false
   include_dir = []
   include_ext = ["go", "html", "css", "js", "mjs", "ts", "vue", "json", "toml", "md", "ttf", "woff", "woff2"]

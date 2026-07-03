@@ -33,7 +33,7 @@ type settingsFile struct {
 
 // LoadSettings reads the settings file, creating it with defaults when missing.
 func LoadSettings() (Settings, error) {
-	path, err := FilePath()
+	path, err := EnsureFile()
 	if err != nil {
 		return Settings{}, err
 	}
@@ -82,6 +82,25 @@ func FilePath() (string, error) {
 	}
 
 	return configPath(homeDir), nil
+}
+
+func EnsureFile() (string, error) {
+	path, err := FilePath()
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := os.Stat(path); err == nil {
+		return path, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return "", fmt.Errorf("checking config file: %w", err)
+	}
+
+	if err := defaultSettings(path).Save(); err != nil {
+		return "", err
+	}
+
+	return path, nil
 }
 
 // Save writes settings while preserving keys WADE does not understand yet.
