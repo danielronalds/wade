@@ -20,6 +20,11 @@ description = "Builds the wade binary"
 depends = ["gen:embed"]
 run = "go build -o .tmp/wade ./cmd/wade"
 
+[tasks."install:wade"]
+description = "Builds embedded assets and installs the wade binary"
+depends = ["gen:embed"]
+run = "go install ./cmd/wade"
+
 [tasks.fmt]
 description = "Formats Go code"
 run = "go fmt ./..."
