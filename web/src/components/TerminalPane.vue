@@ -4,15 +4,19 @@ import { useProjectTerminalTab } from '../composables/useProjectTerminalTab';
 import TerminalHeader from './TerminalHeader.vue';
 import type { TerminalConnectionStatus } from '../types/terminalConnectionStatus';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   projectName: string;
   terminalName: string;
   label: string;
   isActive: boolean;
-}>();
+  showCloseIcon?: boolean;
+}>(), {
+  showCloseIcon: false
+});
 
 const emit = defineEmits<{
   activate: [];
+  close: [];
   connectionStatusChange: [status: TerminalConnectionStatus];
 }>();
 
@@ -41,6 +45,10 @@ const reload = () => {
   void reloadTerminal();
 };
 
+const close = () => {
+  emit('close');
+};
+
 defineExpose({
   focusTerminal
 });
@@ -57,8 +65,10 @@ defineExpose({
     <TerminalHeader
       :label="label"
       :is-active="isActive"
+      :show-close-icon="showCloseIcon"
       @scroll-to-bottom="scrollToBottom"
       @reload="reload"
+      @close="close"
     />
     <section ref="terminalElement" class="terminal-screen" :aria-label="`${label} shell`"></section>
   </section>

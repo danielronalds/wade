@@ -5,18 +5,29 @@ const projectShortcutPrefixTimeoutMs = 1500;
 type ProjectKeyboardShortcutsOptions = {
   selectTabBySlot: (slot: number) => void;
   switchToNextTerminal: () => void;
+  toggleScratchpadTerminal: () => void;
 };
 
-const isShortcutPrefix = (event: KeyboardEvent) => event.ctrlKey
+const isCtrlShortcut = (event: KeyboardEvent, key: string) => event.ctrlKey
   && !event.altKey
   && !event.metaKey
-  && event.key.toLowerCase() === 'b';
+  && !event.shiftKey
+  && event.key.toLowerCase() === key;
+
+const isCtrlAltShortcut = (event: KeyboardEvent, key: string) => event.ctrlKey
+  && event.altKey
+  && !event.metaKey
+  && !event.shiftKey
+  && event.key.toLowerCase() === key;
+
+const isShortcutPrefix = (event: KeyboardEvent) => isCtrlShortcut(event, 'b');
 
 const isNumberKey = (key: string) => /^[1-9]$/.test(key);
 
 export const useProjectKeyboardShortcuts = ({
   selectTabBySlot,
-  switchToNextTerminal
+  switchToNextTerminal,
+  toggleScratchpadTerminal
 }: ProjectKeyboardShortcutsOptions) => {
   let isWaitingForPrefixCommand = false;
   let prefixTimeout: number | undefined;
@@ -58,6 +69,13 @@ export const useProjectKeyboardShortcuts = ({
   };
 
   const handleKeydown = (event: KeyboardEvent) => {
+    if (isCtrlAltShortcut(event, 't')) {
+      stopEvent(event);
+      clearPrefix();
+      toggleScratchpadTerminal();
+      return;
+    }
+
     if (isShortcutPrefix(event)) {
       stopEvent(event);
       startPrefix();

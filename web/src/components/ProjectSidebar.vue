@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { FileSearch, Server, SquareTerminal } from '@lucide/vue';
+import { FileSearch, FileTerminal, Server, SquareTerminal } from '@lucide/vue';
 import type { Component } from 'vue';
 import { ProjectTabs, type ProjectTab } from '../types/projectTabs';
 
 const props = defineProps<{
   activeTab: ProjectTab;
+  isScratchpadOpen: boolean;
 }>();
 
 const emit = defineEmits<{
   selectTab: [tab: ProjectTab];
+  toggleScratchpad: [];
 }>();
 
 const tabs: Array<{
@@ -36,6 +38,10 @@ const tabs: Array<{
 const selectTab = (tab: ProjectTab) => {
   emit('selectTab', tab);
 };
+
+const toggleScratchpad = () => {
+  emit('toggleScratchpad');
+};
 </script>
 
 <template>
@@ -48,11 +54,22 @@ const selectTab = (tab: ProjectTab) => {
         type="button"
         :aria-label="tab.label"
         :aria-current="props.activeTab === tab.id ? 'page' : undefined"
-        :data-active="String(props.activeTab === tab.id)"
+        :data-active="String(props.activeTab === tab.id && !props.isScratchpadOpen)"
         :title="tab.label"
         @click="selectTab(tab.id)"
       >
         <component :is="tab.icon" :size="22" :stroke-width="1.6" aria-hidden="true" />
+      </button>
+      <button
+        class="project-tab"
+        type="button"
+        aria-label="Scratchpad"
+        :aria-pressed="props.isScratchpadOpen"
+        :data-active="String(props.isScratchpadOpen)"
+        title="Scratchpad"
+        @click="toggleScratchpad"
+      >
+        <FileTerminal :size="22" :stroke-width="1.6" aria-hidden="true" />
       </button>
     </nav>
   </aside>
