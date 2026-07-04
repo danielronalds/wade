@@ -143,7 +143,12 @@ useProjectKeyboardShortcuts({
       :is-connected="activeConnectionStatus.isConnected"
     />
     <section id="project-workspace">
-      <ProjectSidebar :active-tab="activeTab" @select-tab="selectTab" />
+      <ProjectSidebar
+        :active-tab="activeTab"
+        :is-scratchpad-open="isScratchpadOpen"
+        @select-tab="selectTab"
+        @toggle-scratchpad="toggleScratchpadTerminal"
+      />
       <section id="project-screens">
         <TerminalTab
           ref="terminalTab"
