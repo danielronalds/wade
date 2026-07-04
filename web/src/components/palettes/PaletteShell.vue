@@ -214,7 +214,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 12px;
   padding: 11px 14px;
-  border-bottom: 1px solid rgb(248 248 242 / 14%);
+  border-bottom: 1px solid rgb(var(--accent-rgb) / 14%);
   color: var(--muted);
   font-size: 12px;
   line-height: 1;
@@ -232,7 +232,7 @@ onBeforeUnmount(() => {
 }
 
 #command-palette-search-form {
-  border-bottom: 1px solid rgb(248 248 242 / 14%);
+  border-bottom: 1px solid rgb(var(--accent-rgb) / 14%);
 }
 
 #command-palette-search-form label {
@@ -270,7 +270,7 @@ onBeforeUnmount(() => {
   margin: 8px;
   padding: 11px 12px;
   border: 1px solid;
-  background: rgb(248 248 242 / 6%);
+  background: rgb(var(--accent-rgb) / 6%);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -343,12 +343,12 @@ onBeforeUnmount(() => {
 }
 
 .command-palette-result[data-selected="true"] {
-  background: rgb(248 248 242 / 10%);
+  background: rgb(var(--accent-rgb) / 10%);
 }
 
 .command-palette-result:hover,
 .command-palette-result:focus-visible {
-  background: rgb(248 248 242 / 12%);
+  background: rgb(var(--accent-rgb) / 12%);
 }
 
 .command-palette-result:disabled {

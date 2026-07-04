@@ -13,12 +13,19 @@ import (
 
 const defaultAgentPaneCommand = "pi -c"
 
+const (
+	ThemeAccentColorWhite  = "white"
+	ThemeAccentColorOrange = "orange"
+	ThemeAccentColorPurple = "purple"
+)
+
 // Settings is the editable user configuration stored on disk.
 type Settings struct {
 	ProjectDirectories                 []string `json:"projectDirectories"`
 	AgentPaneCommand                   string   `json:"agentPaneCommand"`
 	CopyIgnoredFilesOnWorktreeCreation bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
 	WorktreeCopyExcludes               []string `json:"worktreeCopyExcludes"`
+	ThemeAccentColor                   string   `json:"themeAccentColor"`
 	path                               string
 	raw                                map[string]json.RawMessage
 }
@@ -28,6 +35,7 @@ type settingsFile struct {
 	AgentPaneCommand                   *string   `json:"agentPaneCommand"`
 	CopyIgnoredFilesOnWorktreeCreation *bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
 	WorktreeCopyExcludes               *[]string `json:"worktreeCopyExcludes"`
+	ThemeAccentColor                   *string   `json:"themeAccentColor"`
 	LegacyAgentCommand                 *string   `json:"agentCommand"`
 }
 
@@ -62,6 +70,24 @@ func ValidateAgentPaneCommand(command string) error {
 	}
 
 	return nil
+}
+
+func ValidateThemeAccentColor(color string) error {
+	switch color {
+	case ThemeAccentColorWhite, ThemeAccentColorOrange, ThemeAccentColorPurple:
+		return nil
+	default:
+		return fmt.Errorf("invalid theme accent color %q", color)
+	}
+}
+
+func NormaliseThemeAccentColor(color string) string {
+	color = strings.TrimSpace(color)
+	if color == "" {
+		return ThemeAccentColorWhite
+	}
+
+	return color
 }
 
 func ValidateWorktreeCopyExcludes(excludes []string) error {
@@ -130,11 +156,17 @@ func (s Settings) Save() error {
 		return fmt.Errorf("encoding worktree copy excludes: %w", err)
 	}
 
+	themeAccentColor, err := json.Marshal(NormaliseThemeAccentColor(s.ThemeAccentColor))
+	if err != nil {
+		return fmt.Errorf("encoding theme accent color: %w", err)
+	}
+
 	delete(raw, "agentCommand")
 	raw["projectDirectories"] = projectDirectories
 	raw["agentPaneCommand"] = agentPaneCommand
 	raw["copyIgnoredFilesOnWorktreeCreation"] = copyIgnoredFilesOnWorktreeCreation
 	raw["worktreeCopyExcludes"] = worktreeCopyExcludes
+	raw["themeAccentColor"] = themeAccentColor
 
 	return writeJSON(s.path, raw)
 }
@@ -146,6 +178,7 @@ func defaultSettings(path string) Settings {
 		AgentPaneCommand:                   defaultAgentPaneCommand,
 		CopyIgnoredFilesOnWorktreeCreation: false,
 		WorktreeCopyExcludes:               []string{},
+		ThemeAccentColor:                   ThemeAccentColorWhite,
 		path:                               path,
 		raw:                                make(map[string]json.RawMessage),
 	}
@@ -178,6 +211,12 @@ func parseSettings(path string, contents []byte) (Settings, error) {
 	}
 	if file.WorktreeCopyExcludes != nil {
 		settings.WorktreeCopyExcludes = *file.WorktreeCopyExcludes
+	}
+	if file.ThemeAccentColor != nil {
+		themeAccentColor := NormaliseThemeAccentColor(*file.ThemeAccentColor)
+		if ValidateThemeAccentColor(themeAccentColor) == nil {
+			settings.ThemeAccentColor = themeAccentColor
+		}
 	}
 
 	return settings, nil

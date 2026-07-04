@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
+import ThemeAccentPicker from '../components/settings/ThemeAccentPicker.vue';
 import { useSettingsForm } from '../composables/useSettingsForm';
 
 const {
@@ -18,11 +19,17 @@ const {
   removeProjectDirectory,
   updateAgentPaneCommand,
   updateCopyIgnoredFilesOnWorktreeCreation,
+  updateThemeAccentColor,
   updateWorktreeCopyExclude,
   addWorktreeCopyExclude,
   removeWorktreeCopyExclude,
   submit
 } = useSettingsForm();
+
+const selectedThemeAccentColor = computed({
+  get: () => form.themeAccentColor,
+  set: updateThemeAccentColor
+});
 
 onMounted(() => {
   document.title = 'WADE - Settings';
@@ -46,6 +53,8 @@ onMounted(() => {
 
     <section id="settings-content" aria-label="Settings form">
       <form id="settings-form" @submit.prevent="submit">
+        <ThemeAccentPicker v-model:theme-accent-color="selectedThemeAccentColor" />
+
         <section id="project-directories-section" aria-labelledby="project-directories-title">
           <header class="settings-section-header">
             <section>
@@ -227,7 +236,7 @@ onMounted(() => {
   align-items: center;
   gap: 7px;
   padding: 0 9px;
-  border: 1px solid rgb(248 248 242 / 45%);
+  border: 1px solid rgb(var(--accent-rgb) / 45%);
   border-radius: 999px;
   background: transparent;
   color: var(--text);
@@ -278,7 +287,7 @@ onMounted(() => {
   justify-content: space-between;
   gap: 18px;
   padding-bottom: 13px;
-  border-bottom: 1px solid rgb(248 248 242 / 18%);
+  border-bottom: 1px solid rgb(var(--accent-rgb) / 18%);
 }
 
 .settings-section-header h2,
@@ -366,7 +375,7 @@ onMounted(() => {
 .single-setting-row input,
 .worktree-copy-exclude-row input {
   min-width: 0;
-  border: 1px solid rgb(248 248 242 / 30%);
+  border: 1px solid rgb(var(--accent-rgb) / 30%);
   border-radius: 0;
   background: rgb(0 0 0 / 18%);
   color: var(--text);
@@ -388,7 +397,7 @@ onMounted(() => {
 }
 
 .remove-action {
-  border-color: rgb(248 248 242 / 35%);
+  border-color: rgb(var(--accent-rgb) / 35%);
 }
 
 #settings-actions {

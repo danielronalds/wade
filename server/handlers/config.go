@@ -16,6 +16,7 @@ type configPayload struct {
 	AgentPaneCommand                   string   `json:"agentPaneCommand"`
 	CopyIgnoredFilesOnWorktreeCreation bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
 	WorktreeCopyExcludes               []string `json:"worktreeCopyExcludes"`
+	ThemeAccentColor                   string   `json:"themeAccentColor"`
 }
 
 // NewConfig creates a handler for reading and writing WADE settings.
@@ -48,6 +49,7 @@ func (h ConfigHandler) getConfig(w http.ResponseWriter) {
 		AgentPaneCommand:                   settings.AgentPaneCommand,
 		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
 		WorktreeCopyExcludes:               settings.WorktreeCopyExcludes,
+		ThemeAccentColor:                   settings.ThemeAccentColor,
 	})
 }
 
@@ -77,6 +79,12 @@ func (h ConfigHandler) saveConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	themeAccentColor := config.NormaliseThemeAccentColor(request.ThemeAccentColor)
+	if err := config.ValidateThemeAccentColor(themeAccentColor); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	settings, err := config.LoadSettings()
 	if err != nil {
 		http.Error(w, "unable to load config", http.StatusInternalServerError)
@@ -87,6 +95,7 @@ func (h ConfigHandler) saveConfig(w http.ResponseWriter, r *http.Request) {
 	settings.AgentPaneCommand = agentPaneCommand
 	settings.CopyIgnoredFilesOnWorktreeCreation = request.CopyIgnoredFilesOnWorktreeCreation
 	settings.WorktreeCopyExcludes = worktreeCopyExcludes
+	settings.ThemeAccentColor = themeAccentColor
 	if err := settings.Save(); err != nil {
 		http.Error(w, "unable to save config", http.StatusInternalServerError)
 		return

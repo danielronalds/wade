@@ -1,6 +1,20 @@
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { RouterView } from 'vue-router';
+import { fetchSettings } from './api/settings';
 import CommandPalette from './components/CommandPalette.vue';
+import { applyThemeAccentColor, storedThemeAccentColor } from './theme';
+
+applyThemeAccentColor(storedThemeAccentColor());
+
+onMounted(async () => {
+  try {
+    const settings = await fetchSettings();
+    applyThemeAccentColor(settings.themeAccentColor);
+  } catch {
+    return;
+  }
+});
 </script>
 
 <template>

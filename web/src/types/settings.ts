@@ -1,22 +1,27 @@
+import { defaultThemeAccentColor, isThemeAccentColor, normaliseThemeAccentColor, type ThemeAccentColor } from '../theme';
+
 export type Settings = {
   projectDirectories: string[];
   agentPaneCommand: string;
   copyIgnoredFilesOnWorktreeCreation: boolean;
   worktreeCopyExcludes: string[];
+  themeAccentColor: ThemeAccentColor;
 };
 
 export const createEmptySettings = (): Settings => ({
   projectDirectories: [],
   agentPaneCommand: '',
   copyIgnoredFilesOnWorktreeCreation: false,
-  worktreeCopyExcludes: []
+  worktreeCopyExcludes: [],
+  themeAccentColor: defaultThemeAccentColor
 });
 
 export const cloneSettings = (settings: Settings): Settings => ({
   projectDirectories: [...settings.projectDirectories],
   agentPaneCommand: settings.agentPaneCommand,
   copyIgnoredFilesOnWorktreeCreation: settings.copyIgnoredFilesOnWorktreeCreation,
-  worktreeCopyExcludes: [...settings.worktreeCopyExcludes]
+  worktreeCopyExcludes: [...settings.worktreeCopyExcludes],
+  themeAccentColor: settings.themeAccentColor
 });
 
 export const normaliseProjectDirectories = (directories: readonly string[]) => directories.map((directory) => directory.trim());
@@ -31,7 +36,8 @@ export const normaliseSettings = (settings: Settings): Settings => ({
   projectDirectories: normaliseProjectDirectories(settings.projectDirectories),
   agentPaneCommand: normaliseAgentPaneCommand(settings.agentPaneCommand),
   copyIgnoredFilesOnWorktreeCreation: settings.copyIgnoredFilesOnWorktreeCreation,
-  worktreeCopyExcludes: normaliseWorktreeCopyExcludes(settings.worktreeCopyExcludes)
+  worktreeCopyExcludes: normaliseWorktreeCopyExcludes(settings.worktreeCopyExcludes),
+  themeAccentColor: normaliseThemeAccentColor(settings.themeAccentColor)
 });
 
 export const isValidProjectDirectory = (directory: string) => {
@@ -54,5 +60,6 @@ export const isSettings = (value: unknown): value is Settings => {
     && typeof response.agentPaneCommand === 'string'
     && typeof response.copyIgnoredFilesOnWorktreeCreation === 'boolean'
     && Array.isArray(response.worktreeCopyExcludes)
-    && response.worktreeCopyExcludes.every((exclude) => typeof exclude === 'string');
+    && response.worktreeCopyExcludes.every((exclude) => typeof exclude === 'string')
+    && isThemeAccentColor(response.themeAccentColor);
 };

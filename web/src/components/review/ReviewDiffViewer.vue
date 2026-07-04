@@ -776,7 +776,7 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 8px;
   padding: 8px;
-  border: 1px solid rgb(248 248 242 / 45%);
+  border: 1px solid rgb(var(--accent-rgb) / 45%);
   background: rgb(0 0 0 / 12%);
 }
 
@@ -826,7 +826,7 @@ onBeforeUnmount(() => {
 
 .review-diff-editor :global(.review-inline-zone button:not(:disabled):hover),
 .review-diff-editor :global(.review-inline-zone button:not(:disabled):focus-visible) {
-  background: rgb(248 248 242 / 10%);
+  background: rgb(var(--accent-rgb) / 10%);
 }
 
 .review-diff-editor :global(.review-inline-comment textarea) {

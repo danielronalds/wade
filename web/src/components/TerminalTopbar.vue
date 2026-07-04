@@ -223,7 +223,7 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 0 9px;
-  border: 1px solid rgb(248 248 242 / 45%);
+  border: 1px solid rgb(var(--accent-rgb) / 45%);
   border-radius: 999px;
   background: transparent;
   color: var(--text);
@@ -254,7 +254,7 @@ onMounted(() => {
 
 .project-action:not(:disabled):hover,
 .project-action:not(:disabled):focus-visible {
-  background: rgb(248 248 242 / 10%);
+  background: rgb(var(--accent-rgb) / 10%);
 }
 
 .project-reload-action:not(:disabled):hover,
@@ -275,7 +275,7 @@ onMounted(() => {
   align-items: center;
   gap: 7px;
   padding: 0 9px;
-  border: 1px solid rgb(248 248 242 / 45%);
+  border: 1px solid rgb(var(--accent-rgb) / 45%);
   border-radius: 999px;
   background: transparent;
   color: var(--text);

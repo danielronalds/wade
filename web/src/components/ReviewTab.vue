@@ -1132,7 +1132,7 @@ button:disabled {
 
 button:not(:disabled):hover,
 button:not(:disabled):focus-visible {
-  background: rgb(248 248 242 / 10%);
+  background: rgb(var(--accent-rgb) / 10%);
 }
 
 .review-error,
@@ -1198,7 +1198,7 @@ button:not(:disabled):focus-visible {
 
 .review-scopes button[data-active="true"] {
   border-color: var(--text);
-  background: rgb(248 248 242 / 10%);
+  background: rgb(var(--accent-rgb) / 10%);
   color: var(--text);
 }
 
@@ -1253,7 +1253,7 @@ button:not(:disabled):focus-visible {
 }
 
 .review-file-row[data-active="true"] {
-  background: rgb(248 248 242 / 14%);
+  background: rgb(var(--accent-rgb) / 14%);
 }
 
 .review-file-row[data-kind="dir"] {
@@ -1386,7 +1386,7 @@ button:not(:disabled):focus-visible {
 
 .review-action-group + .review-action-group {
   padding-left: 10px;
-  border-left: 1px solid rgb(248 248 242 / 35%);
+  border-left: 1px solid rgb(var(--accent-rgb) / 35%);
 }
 
 .review-header-actions button {
@@ -1447,7 +1447,7 @@ button:not(:disabled):focus-visible {
   display: grid;
   gap: 6px;
   padding: 8px;
-  border: 1px solid rgb(248 248 242 / 45%);
+  border: 1px solid rgb(var(--accent-rgb) / 45%);
 }
 
 .review-comment-card header,

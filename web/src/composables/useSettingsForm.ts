@@ -1,5 +1,6 @@
-import { computed, nextTick, onMounted, reactive, readonly, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, readonly, ref } from 'vue';
 import { fetchSettings, reloadConfig, saveSettings } from '../api/settings';
+import { applyThemeAccentColor, type ThemeAccentColor } from '../theme';
 import {
   cloneSettings,
   createEmptySettings,
@@ -14,7 +15,8 @@ const settingsHaveChanged = (current: Settings, saved: Settings) => JSON.stringi
   !== JSON.stringify(saved.projectDirectories)
   || current.agentPaneCommand !== saved.agentPaneCommand
   || current.copyIgnoredFilesOnWorktreeCreation !== saved.copyIgnoredFilesOnWorktreeCreation
-  || JSON.stringify(current.worktreeCopyExcludes) !== JSON.stringify(saved.worktreeCopyExcludes);
+  || JSON.stringify(current.worktreeCopyExcludes) !== JSON.stringify(saved.worktreeCopyExcludes)
+  || current.themeAccentColor !== saved.themeAccentColor;
 
 const inputValue = (event: Event) => event.target instanceof HTMLInputElement
   ? event.target.value
@@ -57,6 +59,7 @@ export const useSettingsForm = () => {
     form.agentPaneCommand = settings.agentPaneCommand;
     form.copyIgnoredFilesOnWorktreeCreation = settings.copyIgnoredFilesOnWorktreeCreation;
     form.worktreeCopyExcludes = [...settings.worktreeCopyExcludes];
+    form.themeAccentColor = settings.themeAccentColor;
   };
 
   const loadSettings = async () => {
@@ -67,6 +70,7 @@ export const useSettingsForm = () => {
       const settings = await fetchSettings();
       replaceForm(settings);
       savedSettings.value = normaliseSettings(settings);
+      applyThemeAccentColor(settings.themeAccentColor);
     } catch (requestError) {
       error.value = errorMessage(requestError, 'Settings request failed');
     } finally {
@@ -118,6 +122,12 @@ export const useSettingsForm = () => {
     clearMessages();
   };
 
+  const updateThemeAccentColor = (themeAccentColor: ThemeAccentColor) => {
+    form.themeAccentColor = themeAccentColor;
+    applyThemeAccentColor(themeAccentColor);
+    clearMessages();
+  };
+
   const updateWorktreeCopyExclude = (index: number, event: Event) => {
     const nextExclude = inputValue(event);
     if (nextExclude === undefined) {
@@ -159,6 +169,7 @@ export const useSettingsForm = () => {
 
     replaceForm(settings);
     savedSettings.value = cloneSettings(settings);
+    applyThemeAccentColor(settings.themeAccentColor);
     statusMessage.value = 'Settings saved';
   };
 
@@ -183,6 +194,12 @@ export const useSettingsForm = () => {
     void loadSettings();
   });
 
+  onBeforeUnmount(() => {
+    if (normalisedSettings.value.themeAccentColor !== savedSettings.value.themeAccentColor) {
+      applyThemeAccentColor(savedSettings.value.themeAccentColor);
+    }
+  });
+
   return {
     form,
     isLoading: readonly(isLoading),
@@ -198,6 +215,7 @@ export const useSettingsForm = () => {
     removeProjectDirectory,
     updateAgentPaneCommand,
     updateCopyIgnoredFilesOnWorktreeCreation,
+    updateThemeAccentColor,
     updateWorktreeCopyExclude,
     addWorktreeCopyExclude,
     removeWorktreeCopyExclude,

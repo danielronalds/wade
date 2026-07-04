@@ -70,7 +70,8 @@ when you run `wade config` if it does not exist:
   "projectDirectories": [
     "~/Personal",
     "~/Work"
-  ]
+  ],
+  "themeAccentColor": "white"
 }
 ```
 

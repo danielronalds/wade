@@ -9,10 +9,22 @@
 :root {
   color-scheme: dark;
   --window: #17181c;
-  --text: #f8f8f2;
+  --accent: #f8f8f2;
+  --accent-rgb: 248 248 242;
+  --text: var(--accent);
   --muted: #85889a;
   --connected: #28c840;
   --disconnected: #ff5f57;
+}
+
+:root[data-theme-accent-color="orange"] {
+  --accent: #ffb86c;
+  --accent-rgb: 255 184 108;
+}
+
+:root[data-theme-accent-color="purple"] {
+  --accent: #bd93f9;
+  --accent-rgb: 189 147 249;
 }
 
 * {

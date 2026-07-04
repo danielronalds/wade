@@ -57,7 +57,7 @@ const reload = () => {
   justify-content: space-between;
   gap: 8px;
   padding: 0 8px 0 12px;
-  border-bottom: 1px solid rgb(248 248 242 / 45%);
+  border-bottom: 1px solid rgb(var(--accent-rgb) / 45%);
   color: var(--muted);
   user-select: none;
 }
