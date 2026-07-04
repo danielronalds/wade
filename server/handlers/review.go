@@ -13,10 +13,6 @@ type Review struct {
 	projects project.Store
 }
 
-type ReviewFile struct {
-	projects project.Store
-}
-
 type reviewFileRequest struct {
 	FileID string       `json:"fileId"`
 	Scope  review.Scope `json:"scope"`
@@ -30,11 +26,7 @@ func NewReview(projects project.Store) Review {
 	return Review{projects: projects}
 }
 
-func NewReviewFile(projects project.Store) ReviewFile {
-	return ReviewFile{projects: projects}
-}
-
-func (h Review) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h Review) GetReviewWindowData(w http.ResponseWriter, r *http.Request) {
 	projectPath, ok := resolveProjectPath(w, r, h.projects)
 	if !ok {
 		return
@@ -49,7 +41,7 @@ func (h Review) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, data)
 }
 
-func (h ReviewFile) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h Review) GetReviewFileContents(w http.ResponseWriter, r *http.Request) {
 	projectPath, ok := resolveProjectPath(w, r, h.projects)
 	if !ok {
 		return

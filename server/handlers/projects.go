@@ -11,6 +11,14 @@ type Projects struct {
 	projects project.Store
 }
 
+type projectResponse struct {
+	Name            string `json:"name"`
+	GitBranch       string `json:"gitBranch"`
+	LinearTicketURL string `json:"linearTicketUrl"`
+	PullRequestURL  string `json:"pullRequestUrl"`
+	GitHubURL       string `json:"githubUrl"`
+}
+
 type projectsResponse struct {
 	Projects []string `json:"projects"`
 }
@@ -19,7 +27,27 @@ func NewProjects(projects project.Store) Projects {
 	return Projects{projects: projects}
 }
 
-func (h Projects) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h Projects) GetProjectDetails(w http.ResponseWriter, r *http.Request) {
+	projectName := r.URL.Query().Get("project")
+	projectPath, err := h.projects.Path(projectName)
+	if err != nil {
+		http.Error(w, "project not found", http.StatusNotFound)
+		return
+	}
+
+	metadata := project.Details(projectPath)
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(projectResponse{
+		Name:            projectName,
+		GitBranch:       metadata.GitBranch,
+		LinearTicketURL: metadata.LinearTicketURL,
+		PullRequestURL:  metadata.PullRequestURL,
+		GitHubURL:       metadata.GitHubURL,
+	})
+}
+
+func (h Projects) ListProjects(w http.ResponseWriter, r *http.Request) {
 	projectNames, err := h.projects.Names()
 	if err != nil {
 		http.Error(w, "unable to list projects", http.StatusInternalServerError)

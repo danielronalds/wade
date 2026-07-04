@@ -17,7 +17,7 @@ type Server struct {
 	projects    project.Store
 	staticFiles fs.FS
 	terminals   *terminalmanager.Manager
-	mux         *http.ServeMux
+	Mux         *http.ServeMux
 }
 
 // New wires handlers to shared project and terminal state.
@@ -26,46 +26,50 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 		projects:    project.NewStore(configuration.ProjectDirs),
 		staticFiles: staticFiles,
 		terminals:   terminalmanager.New(configuration.Shell, configuration.AgentPaneCommand),
-		mux:         http.NewServeMux(),
+		Mux:         http.NewServeMux(),
 	}
 
 	configHandler := handlers.NewConfig()
-	remoteHandler := handlers.NewRemoteProjects(server.projects, remote.NewService(remote.RunCommand))
+
+	projectsHandler := handlers.NewProjects(server.projects)
 	sessionsHandler := handlers.NewSessions(server.projects, server.terminals)
+
+	remoteService := remote.NewService(remote.RunCommand)
+	remoteHandler := handlers.NewRemoteProjects(server.projects, remoteService)
+
 	worktreeService := worktree.NewService(configuration)
 	worktreesHandler := handlers.NewWorktrees(server.projects, worktreeService, server.terminals)
 
-	server.mux.HandleFunc("GET /ws", server.handleTerminal)
-	server.mux.HandleFunc("POST /api/terminal/reload", server.handleTerminalReload)
-	server.mux.HandleFunc("GET /api/sessions", sessionsHandler.ListSessions)
-	server.mux.HandleFunc("DELETE /api/session/{sessionName}", sessionsHandler.CloseSession)
+	reviewHandler := handlers.NewReview(server.projects)
 
-	server.mux.Handle("GET /api/config", configHandler)
-	server.mux.Handle("POST /api/config", configHandler)
-	server.mux.HandleFunc("POST /api/config/reload", server.handleConfigReload)
+	pageHandler := handlers.NewPage(server.staticFiles)
 
-	server.mux.Handle("GET /api/project", handlers.NewProject(server.projects))
-	server.mux.Handle("GET /api/projects", handlers.NewProjects(server.projects))
-	server.mux.HandleFunc("GET /api/remote-projects", remoteHandler.List)
-	server.mux.HandleFunc("POST /api/remote-projects/clone", remoteHandler.Clone)
+	server.Mux.HandleFunc("GET /ws", server.handleTerminal)
+	server.Mux.HandleFunc("POST /api/terminal/reload", server.handleTerminalReload)
+	server.Mux.HandleFunc("GET /api/sessions", sessionsHandler.ListSessions)
+	server.Mux.HandleFunc("DELETE /api/session/{sessionName}", sessionsHandler.CloseSession)
 
-	server.mux.HandleFunc("GET /api/worktrees", worktreesHandler.ListWorktrees)
-	server.mux.HandleFunc("POST /api/worktrees", worktreesHandler.CreateWorktree)
-	server.mux.HandleFunc("DELETE /api/worktrees", worktreesHandler.RemoveWorktree)
-	server.mux.HandleFunc("GET /api/worktrees/remote-branches", worktreesHandler.ListRemoteBranches)
+	server.Mux.HandleFunc("GET /api/config", configHandler.GetConfig)
+	server.Mux.HandleFunc("POST /api/config", configHandler.UpdateConfig)
+	server.Mux.HandleFunc("POST /api/config/reload", server.handleConfigReload)
 
-	server.mux.Handle("GET /api/review", handlers.NewReview(server.projects))
-	server.mux.Handle("POST /api/review/file", handlers.NewReviewFile(server.projects))
+	server.Mux.HandleFunc("GET /api/project", projectsHandler.GetProjectDetails)
+	server.Mux.HandleFunc("GET /api/projects", projectsHandler.ListProjects)
+	server.Mux.HandleFunc("GET /api/remote-projects", remoteHandler.List)
+	server.Mux.HandleFunc("POST /api/remote-projects/clone", remoteHandler.Clone)
 
-	server.mux.Handle("GET /static/", http.FileServer(http.FS(staticFiles)))
-	server.mux.Handle("GET /", handlers.NewPage(server.staticFiles))
+	server.Mux.HandleFunc("GET /api/worktrees", worktreesHandler.ListWorktrees)
+	server.Mux.HandleFunc("POST /api/worktrees", worktreesHandler.CreateWorktree)
+	server.Mux.HandleFunc("DELETE /api/worktrees", worktreesHandler.RemoveWorktree)
+	server.Mux.HandleFunc("GET /api/worktrees/remote-branches", worktreesHandler.ListRemoteBranches)
+
+	server.Mux.HandleFunc("GET /api/review", reviewHandler.GetReviewWindowData)
+	server.Mux.HandleFunc("POST /api/review/file", reviewHandler.GetReviewFileContents)
+
+	server.Mux.Handle("GET /static/", http.FileServer(http.FS(staticFiles)))
+	server.Mux.HandleFunc("GET /", pageHandler.GetApplicationPage)
 
 	return server
-}
-
-// ServeHTTP delegates requests to the server mux.
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
 }
 
 // Close stops terminal sessions.

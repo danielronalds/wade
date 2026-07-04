@@ -36,7 +36,7 @@ func (c ServerController) HandleArgs(args []string) error {
 	application := server.New(configuration, staticFiles)
 	httpServer := &http.Server{
 		Addr:    configuration.Address,
-		Handler: application,
+		Handler: application.Mux,
 	}
 
 	shutdownSignals := make(chan os.Signal, 1)

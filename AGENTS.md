@@ -106,6 +106,12 @@ Frontend dependencies are installed with npm in `web/node_modules`.
 `vue-tsc` and bundles with esbuild. The generated `web/dist` directory is
 embedded into the Go binary.
 
+## Coding standards
+
+When declaring several local variables together, group related variables and
+separate unrelated groups with an empty line. This keeps setup and wiring blocks
+easy to scan as they grow.
+
 ## Validation
 
 Run:

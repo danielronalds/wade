@@ -24,20 +24,7 @@ func NewConfig() ConfigHandler {
 	return ConfigHandler{}
 }
 
-// ServeHTTP routes config requests by method.
-func (h ConfigHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		h.getConfig(w)
-	case http.MethodPost:
-		h.saveConfig(w, r)
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-	}
-}
-
-// getConfig returns the editable settings payload.
-func (h ConfigHandler) getConfig(w http.ResponseWriter) {
+func (h ConfigHandler) GetConfig(w http.ResponseWriter, _ *http.Request) {
 	settings, err := config.LoadSettings()
 	if err != nil {
 		http.Error(w, "unable to load config", http.StatusInternalServerError)
@@ -53,8 +40,7 @@ func (h ConfigHandler) getConfig(w http.ResponseWriter) {
 	})
 }
 
-// saveConfig validates and saves editable settings.
-func (h ConfigHandler) saveConfig(w http.ResponseWriter, r *http.Request) {
+func (h ConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	var request configPayload
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, "invalid config request", http.StatusBadRequest)

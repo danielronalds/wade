@@ -15,7 +15,7 @@ func NewPage(staticFiles fs.FS) Page {
 	return Page{staticFiles: staticFiles}
 }
 
-func (h Page) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h Page) GetApplicationPage(w http.ResponseWriter, r *http.Request) {
 	requestedPath := strings.TrimPrefix(path.Clean("/"+r.URL.Path), "/")
 	if requestedPath == "" || isProjectPagePath(requestedPath) {
 		http.ServeFileFS(w, r, h.staticFiles, "index.html")
