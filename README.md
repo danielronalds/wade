@@ -93,6 +93,7 @@ should prefer shortcuts and predictable focus behaviour over mouse-only flows.
 - `Ctrl + K`: open the general command palette.
 - `Ctrl + P`: open the project picker.
 - `Ctrl + S`: open the active sessions picker.
+- `Ctrl + Alt + T`: toggle the project scratchpad terminal.
 - `Ctrl + B`, then `1`: switch to the Terminal tab.
 - `Ctrl + B`, then `2`: switch to the Server tab.
 - `Ctrl + B`, then `o`: switch to the next terminal pane in the active tab.

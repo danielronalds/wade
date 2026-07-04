@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { ArrowDownToLine, RefreshCw } from '@lucide/vue';
+import { ArrowDownToLine, RefreshCw, X } from '@lucide/vue';
 
-defineProps<{
+withDefaults(defineProps<{
   label: string;
   isActive: boolean;
-}>();
+  showCloseIcon?: boolean;
+}>(), {
+  showCloseIcon: false
+});
 
 const emit = defineEmits<{
   scrollToBottom: [];
   reload: [];
+  close: [];
 }>();
 
 const scrollToBottom = () => {
@@ -17,6 +21,10 @@ const scrollToBottom = () => {
 
 const reload = () => {
   emit('reload');
+};
+
+const close = () => {
+  emit('close');
 };
 </script>
 
@@ -44,6 +52,17 @@ const reload = () => {
           @click.stop="reload"
         >
           <RefreshCw :size="14" :stroke-width="1.7" aria-hidden="true" />
+        </button>
+      </li>
+      <li v-if="showCloseIcon">
+        <button
+          class="terminal-header-icon-button"
+          type="button"
+          :aria-label="`Close ${label} terminal`"
+          :title="`Close ${label} terminal`"
+          @click.stop="close"
+        >
+          <X :size="14" :stroke-width="1.7" aria-hidden="true" />
         </button>
       </li>
     </menu>

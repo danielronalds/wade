@@ -2,6 +2,7 @@
 import { computed, nextTick, reactive, ref } from 'vue';
 import ProjectSidebar from '../components/ProjectSidebar.vue';
 import ReviewTab from '../components/ReviewTab.vue';
+import ScratchpadTerminal from '../components/ScratchpadTerminal.vue';
 import ServerTab from '../components/ServerTab.vue';
 import TerminalTab from '../components/TerminalTab.vue';
 import TerminalTopbar from '../components/TerminalTopbar.vue';
@@ -22,6 +23,9 @@ const activeTab = ref<ProjectTab>(ProjectTabs.Terminal);
 const terminalTab = ref<ProjectScreenComponent | null>(null);
 const serverTab = ref<ProjectScreenComponent | null>(null);
 const reviewTab = ref<ReviewScreenComponent | null>(null);
+const scratchpadTerminal = ref<ProjectScreenComponent | null>(null);
+const isScratchpadOpen = ref(false);
+const hasScratchpadOpened = ref(false);
 const connectionStatuses = reactive<Record<ProjectTab, TerminalConnectionStatus>>({
   [ProjectTabs.Terminal]: createDisconnectedTerminalConnectionStatus(),
   [ProjectTabs.Server]: createDisconnectedTerminalConnectionStatus(),
@@ -30,7 +34,14 @@ const connectionStatuses = reactive<Record<ProjectTab, TerminalConnectionStatus>
     isConnected: true
   }
 });
-const activeConnectionStatus = computed(() => connectionStatuses[activeTab.value]);
+const scratchpadConnectionStatus = ref<TerminalConnectionStatus>(createDisconnectedTerminalConnectionStatus());
+const isProjectScreenActive = computed(() => !isScratchpadOpen.value);
+const isTerminalTabActive = computed(() => isProjectScreenActive.value && activeTab.value === ProjectTabs.Terminal);
+const isServerTabActive = computed(() => isProjectScreenActive.value && activeTab.value === ProjectTabs.Server);
+const isReviewTabActive = computed(() => isProjectScreenActive.value && activeTab.value === ProjectTabs.Review);
+const activeConnectionStatus = computed(() => isScratchpadOpen.value
+  ? scratchpadConnectionStatus.value
+  : connectionStatuses[activeTab.value]);
 
 const getActiveProjectScreen = () => {
   if (activeTab.value === ProjectTabs.Server) {
@@ -64,6 +75,11 @@ const selectTabBySlot = (slot: number) => {
 };
 
 const switchToNextTerminal = () => {
+  if (isScratchpadOpen.value) {
+    void scratchpadTerminal.value?.switchToNextTerminal();
+    return;
+  }
+
   void getActiveProjectScreen()?.switchToNextTerminal();
 };
 
@@ -73,6 +89,31 @@ const selectTerminalTab = () => {
 
 const updateConnectionStatus = (tab: ProjectTab, status: TerminalConnectionStatus) => {
   connectionStatuses[tab] = status;
+};
+
+const updateScratchpadConnectionStatus = (status: TerminalConnectionStatus) => {
+  scratchpadConnectionStatus.value = status;
+};
+
+const openScratchpadTerminal = async () => {
+  hasScratchpadOpened.value = true;
+  isScratchpadOpen.value = true;
+  await nextTick();
+  await scratchpadTerminal.value?.focusActiveTerminal();
+};
+
+const closeScratchpadTerminal = async () => {
+  isScratchpadOpen.value = false;
+  await focusActiveProjectScreen();
+};
+
+const toggleScratchpadTerminal = () => {
+  if (isScratchpadOpen.value) {
+    void closeScratchpadTerminal();
+    return;
+  }
+
+  void openScratchpadTerminal();
 };
 
 const startReviewFromCommandPalette = async () => {
@@ -89,7 +130,8 @@ useProjectEventHandlers({
 
 useProjectKeyboardShortcuts({
   selectTabBySlot,
-  switchToNextTerminal
+  switchToNextTerminal,
+  toggleScratchpadTerminal
 });
 </script>
 
@@ -107,25 +149,34 @@ useProjectKeyboardShortcuts({
           ref="terminalTab"
           v-show="activeTab === ProjectTabs.Terminal"
           :project-name="projectName"
-          :is-active="activeTab === ProjectTabs.Terminal"
+          :is-active="isTerminalTabActive"
           @connection-status-change="updateConnectionStatus(ProjectTabs.Terminal, $event)"
         />
         <ServerTab
           ref="serverTab"
           v-show="activeTab === ProjectTabs.Server"
           :project-name="projectName"
-          :is-active="activeTab === ProjectTabs.Server"
+          :is-active="isServerTabActive"
           @connection-status-change="updateConnectionStatus(ProjectTabs.Server, $event)"
         />
         <ReviewTab
           ref="reviewTab"
           v-show="activeTab === ProjectTabs.Review"
           :project-name="projectName"
-          :is-active="activeTab === ProjectTabs.Review"
+          :is-active="isReviewTabActive"
           @request-terminal-tab="selectTerminalTab"
         />
       </section>
     </section>
+    <ScratchpadTerminal
+      v-if="hasScratchpadOpened"
+      ref="scratchpadTerminal"
+      :project-name="projectName"
+      :is-open="isScratchpadOpen"
+      :is-active="isScratchpadOpen"
+      @close="closeScratchpadTerminal"
+      @connection-status-change="updateScratchpadConnectionStatus"
+    />
   </section>
 </template>
 
