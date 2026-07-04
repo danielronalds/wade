@@ -65,7 +65,14 @@ const selectTab = (tab: ProjectTab) => {
   void focusActiveProjectScreen();
 };
 
-const selectTabBySlot = (slot: number) => {
+const scratchpadSidebarSlot = projectTabs.length + 1;
+
+const selectSidebarItemBySlot = (slot: number) => {
+  if (slot === scratchpadSidebarSlot) {
+    void openScratchpadTerminal();
+    return;
+  }
+
   const tab = projectTabs[slot - 1];
   if (!tab) {
     return;
@@ -129,7 +136,7 @@ useProjectEventHandlers({
 });
 
 useProjectKeyboardShortcuts({
-  selectTabBySlot,
+  selectSidebarItemBySlot,
   switchToNextTerminal,
   toggleScratchpadTerminal
 });
