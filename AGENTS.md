@@ -79,6 +79,8 @@ When adding UI, prefer a clear keyboard path and predictable focus behaviour.
 - `Ctrl + S`: open the project picker.
 - `Ctrl + B`, then `1`: switch to the Terminal tab.
 - `Ctrl + B`, then `2`: switch to the Server tab.
+- `Ctrl + B`, then `3`: switch to the Review tab.
+- `Ctrl + B`, then `4`: open the project scratchpad terminal.
 - `Ctrl + B`, then `o`: switch to the next terminal pane in the active tab.
 
 ## Nerd Fonts

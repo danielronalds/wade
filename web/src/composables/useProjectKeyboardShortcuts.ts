@@ -3,7 +3,7 @@ import { onBeforeUnmount, onMounted } from 'vue';
 const projectShortcutPrefixTimeoutMs = 1500;
 
 type ProjectKeyboardShortcutsOptions = {
-  selectTabBySlot: (slot: number) => void;
+  selectSidebarItemBySlot: (slot: number) => void;
   switchToNextTerminal: () => void;
   toggleScratchpadTerminal: () => void;
 };
@@ -25,7 +25,7 @@ const isShortcutPrefix = (event: KeyboardEvent) => isCtrlShortcut(event, 'b');
 const isNumberKey = (key: string) => /^[1-9]$/.test(key);
 
 export const useProjectKeyboardShortcuts = ({
-  selectTabBySlot,
+  selectSidebarItemBySlot,
   switchToNextTerminal,
   toggleScratchpadTerminal
 }: ProjectKeyboardShortcutsOptions) => {
@@ -64,7 +64,7 @@ export const useProjectKeyboardShortcuts = ({
     }
 
     if (isNumberKey(key)) {
-      selectTabBySlot(Number(key));
+      selectSidebarItemBySlot(Number(key));
     }
   };
 
