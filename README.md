@@ -51,7 +51,8 @@ WADE_ADDR=127.0.0.1:8090 mise run dev
 
 The root path shows the five most recently opened projects from browser
 `localStorage`. Press `Ctrl + P` to open the project picker and search all
-projects WADE can see.
+projects WADE can see. Press `Ctrl + S` to open active sessions for the current
+WADE server lifetime.
 
 Project pages use the project name as the path:
 
@@ -90,7 +91,7 @@ should prefer shortcuts and predictable focus behaviour over mouse-only flows.
 
 - `Ctrl + K`: open the general command palette.
 - `Ctrl + P`: open the project picker.
-- `Ctrl + S`: open the project picker.
+- `Ctrl + S`: open the active sessions picker.
 - `Ctrl + B`, then `1`: switch to the Terminal tab.
 - `Ctrl + B`, then `2`: switch to the Server tab.
 - `Ctrl + B`, then `o`: switch to the next terminal pane in the active tab.

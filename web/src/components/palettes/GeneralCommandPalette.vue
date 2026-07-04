@@ -13,6 +13,7 @@ import type { PaletteNotice, PaletteResult } from './types';
 const emit = defineEmits<{
   close: [restoreFocus?: boolean];
   openProjectPicker: [];
+  openActiveSessionPicker: [];
   openRemoteProjectPicker: [];
   openCreateWorktree: [];
   openRemoteWorktreePicker: [];
@@ -182,6 +183,13 @@ const commandDefinitions = computed<PaletteResult[]>(() => [
     actionLabel: 'Open picker',
     isDisabled: false,
     run: () => emit('openProjectPicker')
+  },
+  {
+    id: 'open-active-session-picker',
+    label: 'Open Active Session Picker',
+    actionLabel: 'Open picker',
+    isDisabled: false,
+    run: () => emit('openActiveSessionPicker')
   },
   {
     id: 'clone-remote-project',

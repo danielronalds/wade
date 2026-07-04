@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -11,13 +12,33 @@ type sessionCloser interface {
 	CloseSessionsForDirectory(directory string) int
 }
 
-type Sessions struct {
-	projects  project.Store
-	terminals sessionCloser
+type activeSessionLister interface {
+	ActiveDirectories() []string
 }
 
-func NewSessions(projects project.Store, terminals sessionCloser) Sessions {
+type sessionManager interface {
+	sessionCloser
+	activeSessionLister
+}
+
+type Sessions struct {
+	projects  project.Store
+	terminals sessionManager
+}
+
+type sessionsResponse struct {
+	Sessions []string `json:"sessions"`
+}
+
+func NewSessions(projects project.Store, terminals sessionManager) Sessions {
 	return Sessions{projects: projects, terminals: terminals}
+}
+
+func (h Sessions) ListSessions(w http.ResponseWriter, r *http.Request) {
+	activeProjects := h.projects.NamesForDirectories(h.terminals.ActiveDirectories())
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(sessionsResponse{Sessions: activeProjects})
 }
 
 func (h Sessions) CloseSession(w http.ResponseWriter, r *http.Request) {
@@ -33,9 +54,7 @@ func (h Sessions) CloseSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.terminals != nil {
-		h.terminals.CloseSessionsForDirectory(projectPath)
-	}
+	h.terminals.CloseSessionsForDirectory(projectPath)
 
 	w.WriteHeader(http.StatusNoContent)
 }

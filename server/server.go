@@ -37,6 +37,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 
 	server.mux.HandleFunc("GET /ws", server.handleTerminal)
 	server.mux.HandleFunc("POST /api/terminal/reload", server.handleTerminalReload)
+	server.mux.HandleFunc("GET /api/sessions", sessionsHandler.ListSessions)
 	server.mux.HandleFunc("DELETE /api/session/{sessionName}", sessionsHandler.CloseSession)
 
 	server.mux.Handle("GET /api/config", configHandler)

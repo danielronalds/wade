@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { useCommandPaletteKeyboardShortcuts } from '../composables/useCommandPaletteKeyboardShortcuts';
+import ActiveSessionPalette from './palettes/ActiveSessionPalette.vue';
 import GeneralCommandPalette from './palettes/GeneralCommandPalette.vue';
 import ProjectPalette from './palettes/ProjectPalette.vue';
 import RemoteProjectPalette from './palettes/RemoteProjectPalette.vue';
@@ -10,6 +12,7 @@ import RemoveWorktreePalette from './palettes/worktrees/RemoveWorktreePalette.vu
 
 const PaletteModes = {
   Projects: 'projects',
+  ActiveSessions: 'active-sessions',
   Commands: 'commands',
   RemoteProject: 'remote-project',
   CreateWorktree: 'create-worktree',
@@ -26,18 +29,6 @@ let previouslyFocusedElement: HTMLElement | null = null;
 const currentProjectName = computed(() => route.name === 'project'
   ? String(route.params.projectName ?? '')
   : '');
-
-const isProjectPaletteShortcut = (event: KeyboardEvent) => event.ctrlKey
-  && !event.altKey
-  && !event.metaKey
-  && !event.shiftKey
-  && ['p', 's'].includes(event.key.toLowerCase());
-
-const isCommandPaletteShortcut = (event: KeyboardEvent) => event.ctrlKey
-  && !event.altKey
-  && !event.metaKey
-  && !event.shiftKey
-  && event.key.toLowerCase() === 'k';
 
 const restorePreviousFocus = () => {
   const element = previouslyFocusedElement;
@@ -81,27 +72,10 @@ const openProjectWorktreePalette = (mode: PaletteMode) => {
   openPalette(mode);
 };
 
-const handleGlobalKeydown = (event: KeyboardEvent) => {
-  if (isProjectPaletteShortcut(event)) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    openPalette(PaletteModes.Projects);
-    return;
-  }
-
-  if (isCommandPaletteShortcut(event)) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    openPalette(PaletteModes.Commands);
-  }
-};
-
-onMounted(() => {
-  window.addEventListener('keydown', handleGlobalKeydown, true);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', handleGlobalKeydown, true);
+useCommandPaletteKeyboardShortcuts({
+  openActiveSessionPicker: () => openPalette(PaletteModes.ActiveSessions),
+  openCommandPalette: () => openPalette(PaletteModes.Commands),
+  openProjectPicker: () => openPalette(PaletteModes.Projects)
 });
 </script>
 
@@ -110,10 +84,15 @@ onBeforeUnmount(() => {
     v-if="activePalette === PaletteModes.Projects"
     @close="closePalette"
   />
+  <ActiveSessionPalette
+    v-if="activePalette === PaletteModes.ActiveSessions"
+    @close="closePalette"
+  />
   <GeneralCommandPalette
     v-if="activePalette === PaletteModes.Commands"
     @close="closePalette"
     @open-project-picker="openPalette(PaletteModes.Projects)"
+    @open-active-session-picker="openPalette(PaletteModes.ActiveSessions)"
     @open-remote-project-picker="openPalette(PaletteModes.RemoteProject)"
     @open-create-worktree="openProjectWorktreePalette(PaletteModes.CreateWorktree)"
     @open-remote-worktree-picker="openProjectWorktreePalette(PaletteModes.RemoteWorktree)"

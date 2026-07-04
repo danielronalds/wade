@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"sort"
 	"strings"
 	"sync"
 )
@@ -80,6 +81,34 @@ func (m *Manager) CloseSessionsForDirectory(directory string) int {
 	}
 
 	return len(sessions)
+}
+
+func (m *Manager) ActiveDirectories() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	directories := make(map[string]struct{})
+	for key, session := range m.sessions {
+		if session.IsClosed() {
+			continue
+		}
+
+		directory, _, ok := strings.Cut(key, "\x00")
+		if !ok || directory == "" {
+			continue
+		}
+
+		directories[directory] = struct{}{}
+	}
+
+	activeDirectories := make([]string, 0, len(directories))
+	for directory := range directories {
+		activeDirectories = append(activeDirectories, directory)
+	}
+
+	sort.Strings(activeDirectories)
+
+	return activeDirectories
 }
 
 func (m *Manager) remove(key string, session *ProjectSession) {
