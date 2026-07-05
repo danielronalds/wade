@@ -96,6 +96,8 @@ should prefer shortcuts and predictable focus behaviour over mouse-only flows.
 - `Ctrl + Alt + T`: toggle the project scratchpad terminal.
 - `Ctrl + B`, then `1`: switch to the Terminal tab.
 - `Ctrl + B`, then `2`: switch to the Server tab.
+- `Ctrl + B`, then `3`: switch to the Review tab.
+- `Ctrl + B`, then `4`: open the project scratchpad terminal.
 - `Ctrl + B`, then `o`: switch to the next terminal pane in the active tab.
 
 ## Terminal behaviour
