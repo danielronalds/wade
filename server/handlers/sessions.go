@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -37,8 +36,7 @@ func NewSessions(projects project.Store, terminals sessionManager) Sessions {
 func (h Sessions) ListSessions(w http.ResponseWriter, r *http.Request) {
 	activeProjects := h.projects.NamesForDirectories(h.terminals.ActiveDirectories())
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(sessionsResponse{Sessions: activeProjects})
+	writeJSON(w, http.StatusOK, sessionsResponse{Sessions: activeProjects})
 }
 
 func (h Sessions) CloseSession(w http.ResponseWriter, r *http.Request) {

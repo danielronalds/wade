@@ -18,10 +18,6 @@ type reviewFileRequest struct {
 	Scope  review.Scope `json:"scope"`
 }
 
-type errorResponse struct {
-	Message string `json:"message"`
-}
-
 func NewReview(projects project.Store) Review {
 	return Review{projects: projects}
 }
@@ -97,14 +93,4 @@ func findReviewFile(files []review.File, fileID string) (review.File, bool) {
 	}
 
 	return review.File{}, false
-}
-
-func writeJSON(w http.ResponseWriter, statusCode int, body any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(body)
-}
-
-func writeJSONError(w http.ResponseWriter, statusCode int, message string) {
-	writeJSON(w, statusCode, errorResponse{Message: message})
 }

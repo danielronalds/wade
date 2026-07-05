@@ -27,11 +27,11 @@ func NewConfig() ConfigHandler {
 func (h ConfigHandler) GetConfig(w http.ResponseWriter, _ *http.Request) {
 	settings, err := config.LoadSettings()
 	if err != nil {
-		http.Error(w, "unable to load config", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "unable to load config")
 		return
 	}
 
-	writeConfigPayload(w, http.StatusOK, configPayload{
+	writeJSON(w, http.StatusOK, configPayload{
 		ProjectDirectories:                 settings.ProjectDirectories,
 		AgentPaneCommand:                   settings.AgentPaneCommand,
 		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
@@ -43,37 +43,37 @@ func (h ConfigHandler) GetConfig(w http.ResponseWriter, _ *http.Request) {
 func (h ConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	var request configPayload
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(w, "invalid config request", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "invalid config request")
 		return
 	}
 
 	projectDirectories := trimProjectDirectories(request.ProjectDirectories)
 	if err := config.ValidateProjectDirectories(projectDirectories); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	agentPaneCommand := strings.TrimSpace(request.AgentPaneCommand)
 	if err := config.ValidateAgentPaneCommand(agentPaneCommand); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	worktreeCopyExcludes := trimWorktreeCopyExcludes(request.WorktreeCopyExcludes)
 	if err := config.ValidateWorktreeCopyExcludes(worktreeCopyExcludes); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	themeAccentColor := config.NormaliseThemeAccentColor(request.ThemeAccentColor)
 	if err := config.ValidateThemeAccentColor(themeAccentColor); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	settings, err := config.LoadSettings()
 	if err != nil {
-		http.Error(w, "unable to load config", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "unable to load config")
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h ConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	settings.WorktreeCopyExcludes = worktreeCopyExcludes
 	settings.ThemeAccentColor = themeAccentColor
 	if err := settings.Save(); err != nil {
-		http.Error(w, "unable to save config", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "unable to save config")
 		return
 	}
 
@@ -110,10 +110,4 @@ func trimWorktreeCopyExcludes(excludes []string) []string {
 	}
 
 	return trimmed
-}
-
-func writeConfigPayload(w http.ResponseWriter, statusCode int, payload configPayload) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(payload)
 }

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"wade/project"
@@ -31,14 +30,13 @@ func (h Projects) GetProjectDetails(w http.ResponseWriter, r *http.Request) {
 	projectName := r.URL.Query().Get("project")
 	projectPath, err := h.projects.Path(projectName)
 	if err != nil {
-		http.Error(w, "project not found", http.StatusNotFound)
+		writeJSONError(w, http.StatusNotFound, "project not found")
 		return
 	}
 
 	metadata := project.Details(projectPath)
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(projectResponse{
+	writeJSON(w, http.StatusOK, projectResponse{
 		Name:            projectName,
 		GitBranch:       metadata.GitBranch,
 		LinearTicketURL: metadata.LinearTicketURL,
@@ -50,10 +48,9 @@ func (h Projects) GetProjectDetails(w http.ResponseWriter, r *http.Request) {
 func (h Projects) ListProjects(w http.ResponseWriter, r *http.Request) {
 	projectNames, err := h.projects.Names()
 	if err != nil {
-		http.Error(w, "unable to list projects", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "unable to list projects")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(projectsResponse{Projects: projectNames})
+	writeJSON(w, http.StatusOK, projectsResponse{Projects: projectNames})
 }
