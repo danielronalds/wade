@@ -226,5 +226,13 @@ func (s Service) Remove(ctx context.Context, projectPath string, target Worktree
 		return fmt.Errorf("pruning worktrees: %w", err)
 	}
 
+	if target.Branch == "" {
+		return nil
+	}
+
+	if _, err := gitOutput(ctx, data.mainPath, "branch", "-D", "--", target.Branch); err != nil {
+		return fmt.Errorf("deleting local branch: %w", err)
+	}
+
 	return nil
 }

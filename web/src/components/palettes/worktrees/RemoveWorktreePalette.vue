@@ -144,7 +144,9 @@ const paletteResults = computed<PaletteResult[]>(() => {
     return [
       {
         id: 'confirm-remove-worktree',
-        label: `Remove ${targetWorktree.value.projectName}`,
+        label: targetWorktree.value.branch === ''
+          ? `Remove ${targetWorktree.value.projectName}`
+          : `Remove ${targetWorktree.value.projectName} and local branch ${targetWorktree.value.branch}`,
         actionLabel: isRemoving.value ? 'Removing' : 'Confirm remove',
         isDisabled: isRemoving.value,
         run: () => {
