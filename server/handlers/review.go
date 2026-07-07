@@ -4,6 +4,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"sync"
 
 	"wade/project"
 	"wade/review"
@@ -11,6 +12,12 @@ import (
 
 type Review struct {
 	projects project.Store
+	cache    *reviewWindowCache
+}
+
+type reviewWindowCache struct {
+	mu    sync.RWMutex
+	items map[string]review.WindowData
 }
 
 type reviewFileRequest struct {
@@ -19,7 +26,12 @@ type reviewFileRequest struct {
 }
 
 func NewReview(projects project.Store) Review {
-	return Review{projects: projects}
+	return Review{
+		projects: projects,
+		cache: &reviewWindowCache{
+			items: make(map[string]review.WindowData),
+		},
+	}
 }
 
 func (h Review) GetReviewWindowData(w http.ResponseWriter, r *http.Request) {
@@ -34,6 +46,7 @@ func (h Review) GetReviewWindowData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.cache.set(projectPath, data)
 	writeJSON(w, http.StatusOK, data)
 }
 
@@ -54,10 +67,16 @@ func (h Review) GetReviewFileContents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := review.BuildWindowData(r.Context(), projectPath)
-	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
-		return
+	data, found := h.cache.get(projectPath)
+	if !found {
+		freshData, err := review.BuildWindowData(r.Context(), projectPath)
+		if err != nil {
+			writeJSONError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		data = freshData
+		h.cache.set(projectPath, data)
 	}
 
 	file, found := findReviewFile(data.Files, request.FileID)
@@ -73,6 +92,21 @@ func (h Review) GetReviewFileContents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, contents)
+}
+
+func (c *reviewWindowCache) get(projectPath string) (review.WindowData, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	data, found := c.items[projectPath]
+	return data, found
+}
+
+func (c *reviewWindowCache) set(projectPath string, data review.WindowData) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.items[projectPath] = data
 }
 
 func resolveProjectPath(w http.ResponseWriter, r *http.Request, projects project.Store) (string, bool) {

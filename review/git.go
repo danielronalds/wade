@@ -3,6 +3,7 @@ package review
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -17,9 +18,10 @@ import (
 const gitCommandTimeout = 5 * time.Second
 
 const (
-	ScopeGitDiff    Scope = "git-diff"
-	ScopeLastCommit Scope = "last-commit"
-	ScopeAllFiles   Scope = "all-files"
+	ScopePullRequest Scope = "pull-request"
+	ScopeGitDiff     Scope = "git-diff"
+	ScopeLastCommit  Scope = "last-commit"
+	ScopeAllFiles    Scope = "all-files"
 )
 
 const (
@@ -33,6 +35,13 @@ type Scope string
 
 type ChangeStatus string
 
+type PullRequest struct {
+	Number      int    `json:"number"`
+	URL         string `json:"url"`
+	BaseRefName string `json:"baseRefName"`
+	HeadRefName string `json:"headRefName"`
+}
+
 type FileComparison struct {
 	Status      ChangeStatus `json:"status"`
 	OldPath     *string      `json:"oldPath"`
@@ -40,6 +49,9 @@ type FileComparison struct {
 	DisplayPath string       `json:"displayPath"`
 	HasOriginal bool         `json:"hasOriginal"`
 	HasModified bool         `json:"hasModified"`
+
+	originalRevision string
+	modifiedRevision string
 }
 
 type File struct {
@@ -49,14 +61,17 @@ type File struct {
 	HasWorkingTreeFile bool            `json:"hasWorkingTreeFile"`
 	InGitDiff          bool            `json:"inGitDiff"`
 	InLastCommit       bool            `json:"inLastCommit"`
+	InPullRequest      bool            `json:"inPullRequest"`
 	GitDiff            *FileComparison `json:"gitDiff"`
 	LastCommit         *FileComparison `json:"lastCommit"`
+	PullRequest        *FileComparison `json:"pullRequest"`
 }
 
 type WindowData struct {
-	RepoRoot   string `json:"repoRoot"`
-	BranchName string `json:"branchName"`
-	Files      []File `json:"files"`
+	RepoRoot    string       `json:"repoRoot"`
+	BranchName  string       `json:"branchName"`
+	PullRequest *PullRequest `json:"pullRequest"`
+	Files       []File       `json:"files"`
 }
 
 type FileContents struct {
@@ -70,14 +85,24 @@ type changedPath struct {
 	newPath *string
 }
 
+type pullRequestResponse struct {
+	Number      int    `json:"number"`
+	URL         string `json:"url"`
+	State       string `json:"state"`
+	BaseRefName string `json:"baseRefName"`
+	HeadRefName string `json:"headRefName"`
+}
+
 type fileSeed struct {
 	path               string
 	worktreeStatus     *ChangeStatus
 	hasWorkingTreeFile bool
 	inGitDiff          bool
 	inLastCommit       bool
+	inPullRequest      bool
 	gitDiff            *FileComparison
 	lastCommit         *FileComparison
+	pullRequest        *FileComparison
 }
 
 func BuildWindowData(ctx context.Context, cwd string) (WindowData, error) {
@@ -103,6 +128,22 @@ func BuildWindowData(ctx context.Context, cwd string) (WindowData, error) {
 	lastCommitOutput := []byte(nil)
 	if repositoryHasHead {
 		lastCommitOutput = runGitAllowFailure(ctx, repoRoot, "diff-tree", "--root", "--find-renames", "-M", "--name-status", "-z", "--no-commit-id", "-r", "HEAD")
+	}
+
+	var pullRequest *PullRequest
+	if repositoryHasHead {
+		pullRequest = openPullRequest(ctx, repoRoot, branchName)
+	}
+
+	pullRequestOriginalRevision := ""
+	pullRequestChanges := []changedPath(nil)
+	if pullRequest != nil {
+		resolvedBaseRevision := resolvePullRequestBaseRevision(ctx, repoRoot, pullRequest.BaseRefName)
+		pullRequestOriginalRevision = mergeBase(ctx, repoRoot, resolvedBaseRevision)
+		if pullRequestOriginalRevision != "" {
+			pullRequestOutput := runGitAllowFailure(ctx, repoRoot, "diff", "--find-renames", "-M", "--name-status", "-z", pullRequestOriginalRevision, "HEAD", "--")
+			pullRequestChanges = filterReviewableChanges(parseNameStatusZ(pullRequestOutput))
+		}
 	}
 
 	worktreeChanges := filterReviewableChanges(mergeChangedPaths(parseNameStatusZ(trackedDiffOutput), parseUntrackedPathsZ(untrackedOutput)))
@@ -147,6 +188,18 @@ func BuildWindowData(ctx context.Context, cwd string) (WindowData, error) {
 		seed.lastCommit = comparison(change)
 	}
 
+	for _, change := range pullRequestChanges {
+		key := changedPathKey(change)
+		seed := upsertSeed(seeds, key, func() *fileSeed {
+			return &fileSeed{
+				path:               key,
+				hasWorkingTreeFile: change.newPath != nil && contains(currentPaths, *change.newPath),
+			}
+		})
+		seed.inPullRequest = true
+		seed.pullRequest = comparisonWithRevisions(change, pullRequestOriginalRevision, "HEAD")
+	}
+
 	files := make([]File, 0, len(seeds))
 	for _, seed := range seeds {
 		files = append(files, reviewFile(seed))
@@ -156,9 +209,10 @@ func BuildWindowData(ctx context.Context, cwd string) (WindowData, error) {
 	})
 
 	return WindowData{
-		RepoRoot:   repoRoot,
-		BranchName: branchName,
-		Files:      files,
+		RepoRoot:    repoRoot,
+		BranchName:  branchName,
+		PullRequest: pullRequest,
+		Files:       files,
 	}, nil
 }
 
@@ -173,23 +227,30 @@ func LoadFileContents(ctx context.Context, repoRoot string, file File, scope Sco
 	}
 
 	comparison := file.LastCommit
+	originalRevision := "HEAD^"
+	modifiedRevision := "HEAD"
+
 	if scope == ScopeGitDiff {
 		comparison = file.GitDiff
+		originalRevision = "HEAD"
+		modifiedRevision = ""
+	}
+
+	if scope == ScopePullRequest {
+		comparison = file.PullRequest
 	}
 
 	if comparison == nil {
 		return FileContents{}, nil
 	}
 
-	originalRevision := "HEAD^"
-	modifiedRevision := "HEAD"
-	if scope == ScopeGitDiff {
-		originalRevision = "HEAD"
-		modifiedRevision = ""
+	if scope == ScopePullRequest {
+		originalRevision = comparison.originalRevision
+		modifiedRevision = comparison.modifiedRevision
 	}
 
 	originalContent := ""
-	if comparison.OldPath != nil {
+	if comparison.OldPath != nil && originalRevision != "" {
 		originalContent = revisionContent(ctx, repoRoot, originalRevision, *comparison.OldPath)
 	}
 
@@ -210,7 +271,7 @@ func LoadFileContents(ctx context.Context, repoRoot string, file File, scope Sco
 }
 
 func IsValidScope(scope Scope) bool {
-	return scope == ScopeGitDiff || scope == ScopeLastCommit || scope == ScopeAllFiles
+	return scope == ScopePullRequest || scope == ScopeGitDiff || scope == ScopeLastCommit || scope == ScopeAllFiles
 }
 
 func repoRoot(ctx context.Context, cwd string) (string, error) {
@@ -229,12 +290,74 @@ func hasHead(ctx context.Context, repoRoot string) bool {
 
 func currentBranchName(ctx context.Context, repoRoot string) string {
 	output := runGitAllowFailure(ctx, repoRoot, "branch", "--show-current")
-	branchName := strings.TrimSpace(string(output))
+	return strings.TrimSpace(string(output))
+}
+
+func openPullRequest(ctx context.Context, repoRoot string, branchName string) *PullRequest {
 	if branchName == "" {
-		return "git"
+		return nil
 	}
 
-	return branchName
+	output, err := runCommand(ctx, gitCommandTimeout, repoRoot, "gh", "pr", "view", branchName, "--json", "number,url,state,baseRefName,headRefName")
+	if err != nil {
+		return nil
+	}
+
+	var response pullRequestResponse
+	if err := json.Unmarshal(output, &response); err != nil {
+		return nil
+	}
+
+	if !strings.EqualFold(response.State, "OPEN") || response.URL == "" || response.BaseRefName == "" {
+		return nil
+	}
+
+	headRefName := response.HeadRefName
+	if headRefName == "" {
+		headRefName = branchName
+	}
+
+	return &PullRequest{
+		Number:      response.Number,
+		URL:         response.URL,
+		BaseRefName: response.BaseRefName,
+		HeadRefName: headRefName,
+	}
+}
+
+func resolvePullRequestBaseRevision(ctx context.Context, repoRoot string, baseRefName string) string {
+	if baseRefName == "" {
+		return ""
+	}
+
+	candidates := []string{
+		"refs/remotes/origin/" + baseRefName,
+		"refs/heads/" + baseRefName,
+		baseRefName,
+	}
+
+	for _, candidate := range candidates {
+		revision := commitRevision(ctx, repoRoot, candidate)
+		if revision != "" {
+			return revision
+		}
+	}
+
+	return ""
+}
+
+func commitRevision(ctx context.Context, repoRoot string, revision string) string {
+	output := runGitAllowFailure(ctx, repoRoot, "rev-parse", "--verify", "--quiet", fmt.Sprintf("%s^{commit}", revision))
+	return strings.TrimSpace(string(output))
+}
+
+func mergeBase(ctx context.Context, repoRoot string, revision string) string {
+	if revision == "" {
+		return ""
+	}
+
+	output := runGitAllowFailure(ctx, repoRoot, "merge-base", revision, "HEAD")
+	return strings.TrimSpace(string(output))
 }
 
 func runGit(ctx context.Context, repoRoot string, args ...string) ([]byte, error) {
@@ -408,13 +531,19 @@ func displayPath(change changedPath) string {
 }
 
 func comparison(change changedPath) *FileComparison {
+	return comparisonWithRevisions(change, "", "")
+}
+
+func comparisonWithRevisions(change changedPath, originalRevision string, modifiedRevision string) *FileComparison {
 	return &FileComparison{
-		Status:      change.status,
-		OldPath:     change.oldPath,
-		NewPath:     change.newPath,
-		DisplayPath: displayPath(change),
-		HasOriginal: change.oldPath != nil,
-		HasModified: change.newPath != nil,
+		Status:           change.status,
+		OldPath:          change.oldPath,
+		NewPath:          change.newPath,
+		DisplayPath:      displayPath(change),
+		HasOriginal:      change.oldPath != nil,
+		HasModified:      change.newPath != nil,
+		originalRevision: originalRevision,
+		modifiedRevision: modifiedRevision,
 	}
 }
 
@@ -426,8 +555,10 @@ func reviewFile(seed *fileSeed) File {
 		HasWorkingTreeFile: seed.hasWorkingTreeFile,
 		InGitDiff:          seed.inGitDiff,
 		InLastCommit:       seed.inLastCommit,
+		InPullRequest:      seed.inPullRequest,
 		GitDiff:            seed.gitDiff,
 		LastCommit:         seed.lastCommit,
+		PullRequest:        seed.pullRequest,
 	}
 }
 
@@ -447,7 +578,12 @@ func reviewFileID(seed *fileSeed) string {
 		lastCommitDisplayPath = seed.lastCommit.DisplayPath
 	}
 
-	return strings.Join([]string{seed.path, workingTreeState, gitDiffDisplayPath, lastCommitDisplayPath}, "::")
+	pullRequestDisplayPath := ""
+	if seed.pullRequest != nil {
+		pullRequestDisplayPath = seed.pullRequest.DisplayPath
+	}
+
+	return strings.Join([]string{seed.path, workingTreeState, gitDiffDisplayPath, lastCommitDisplayPath, pullRequestDisplayPath}, "::")
 }
 
 func upsertSeed(seeds map[string]*fileSeed, key string, create func() *fileSeed) *fileSeed {

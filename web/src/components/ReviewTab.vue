@@ -93,16 +93,28 @@ const searchInput = ref<HTMLInputElement | null>(null);
 const draftCommentTextarea = ref<HTMLTextAreaElement | null>(null);
 const overallNoteTextarea = ref<HTMLTextAreaElement | null>(null);
 
-const scopeOptions: Array<{ id: ReviewScope; label: string }> = [
-  { id: 'git-diff', label: 'Git diff' },
-  { id: 'last-commit', label: 'Last commit' },
-  { id: 'all-files', label: 'All files' }
-];
+const scopeOptions = computed<Array<{ id: ReviewScope; label: string }>>(() => {
+  const localScopeOptions: Array<{ id: ReviewScope; label: string }> = [
+    { id: 'git-diff', label: 'Git diff' },
+    { id: 'last-commit', label: 'Last commit' },
+    { id: 'all-files', label: 'All files' }
+  ];
+
+  if (!reviewData.value?.pullRequest) {
+    return localScopeOptions;
+  }
+
+  return [
+    { id: 'pull-request', label: `PR #${reviewData.value.pullRequest.number}` },
+    ...localScopeOptions
+  ];
+});
 
 const cacheKey = (scope: ReviewScope, fileId: string) => `${scope}:${fileId}`;
 
 const scopeLabel = (scope: ReviewScope) => {
   switch (scope) {
+    case 'pull-request': return 'Pull request';
     case 'git-diff': return 'Git diff';
     case 'last-commit': return 'Last commit';
     default: return 'All files';
@@ -124,6 +136,10 @@ const getComparison = (file: ReviewFile | null, scope: ReviewScope): ReviewFileC
     return null;
   }
 
+  if (scope === 'pull-request') {
+    return file.pullRequest;
+  }
+
   if (scope === 'git-diff') {
     return file.gitDiff;
   }
@@ -136,6 +152,7 @@ const getComparison = (file: ReviewFile | null, scope: ReviewScope): ReviewFileC
 };
 
 const scopeCounts = computed<Record<ReviewScope, number>>(() => ({
+  'pull-request': reviewData.value?.files.filter((file) => file.inPullRequest).length ?? 0,
   'git-diff': reviewData.value?.files.filter((file) => file.inGitDiff).length ?? 0,
   'last-commit': reviewData.value?.files.filter((file) => file.inLastCommit).length ?? 0,
   'all-files': reviewData.value?.files.filter((file) => file.hasWorkingTreeFile).length ?? 0
@@ -143,6 +160,10 @@ const scopeCounts = computed<Record<ReviewScope, number>>(() => ({
 
 const scopedFiles = computed(() => {
   const files = reviewData.value?.files ?? [];
+  if (activeScope.value === 'pull-request') {
+    return files.filter((file) => file.inPullRequest);
+  }
+
   if (activeScope.value === 'git-diff') {
     return files.filter((file) => file.inGitDiff);
   }
@@ -400,6 +421,10 @@ const toggleDirectoryCollapsed = (directoryPath: string) => {
 };
 
 const selectInitialScope = (data: ReviewData): ReviewScope => {
+  if (data.pullRequest && data.files.some((file) => file.inPullRequest)) {
+    return 'pull-request';
+  }
+
   if (data.files.some((file) => file.inGitDiff)) {
     return 'git-diff';
   }
@@ -854,7 +879,7 @@ defineExpose({
         <p class="review-kicker">Code review</p>
         <h2>Review this project from inside WADE.</h2>
         <p>
-          Start a local review of the current git diff, last commit or full working tree.
+          Start a local review of an open pull request, current git diff, last commit or full working tree.
         </p>
         <button ref="startButton" type="button" :disabled="state === 'loading'" @click="startReview">
           {{ state === 'loading' ? 'Starting review' : 'Start Review' }}

@@ -1,5 +1,5 @@
 // NOTE: Vibecoded and not suppppppper reviewed
-export type ReviewScope = 'git-diff' | 'last-commit' | 'all-files';
+export type ReviewScope = 'pull-request' | 'git-diff' | 'last-commit' | 'all-files';
 
 export type ChangeStatus = 'modified' | 'added' | 'deleted' | 'renamed';
 
@@ -12,6 +12,13 @@ export interface ReviewFileComparison {
   hasModified: boolean;
 }
 
+export interface ReviewPullRequest {
+  number: number;
+  url: string;
+  baseRefName: string;
+  headRefName: string;
+}
+
 export interface ReviewFile {
   id: string;
   path: string;
@@ -19,13 +26,16 @@ export interface ReviewFile {
   hasWorkingTreeFile: boolean;
   inGitDiff: boolean;
   inLastCommit: boolean;
+  inPullRequest: boolean;
   gitDiff: ReviewFileComparison | null;
   lastCommit: ReviewFileComparison | null;
+  pullRequest: ReviewFileComparison | null;
 }
 
 export interface ReviewData {
   repoRoot: string;
   branchName: string;
+  pullRequest: ReviewPullRequest | null;
   files: ReviewFile[];
 }
 
