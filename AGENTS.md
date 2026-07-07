@@ -108,6 +108,20 @@ Frontend dependencies are installed with npm in `web/node_modules`.
 `internal/web`, which typechecks with `vue-tsc` and bundles with esbuild. The
 generated `internal/web/.dist` directory is embedded into the Go binary.
 
+## Internal packages
+
+- `internal/config`: Loads, validates and persists WADE runtime settings.
+- `internal/project`: Discovers local projects and resolves project metadata.
+- `internal/remote`: Lists and clones remote GitHub repositories.
+- `internal/review`: Builds Git-based review data and file contents.
+- `internal/server`: Wires HTTP routes, WebSockets and long-lived server state.
+- `internal/server/handlers`: Implements HTTP API and page handlers.
+- `internal/terminal`: Starts and controls PTY-backed terminal sessions.
+- `internal/terminal/manager`: Manages persistent project terminal sessions and
+  clients.
+- `internal/web`: Embeds built frontend assets for serving.
+- `internal/worktree`: Lists, creates and removes Git worktrees.
+
 ## Coding standards
 
 When declaring several local variables together, group related variables and
