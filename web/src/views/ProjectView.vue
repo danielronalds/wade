@@ -90,8 +90,16 @@ const switchToNextTerminal = () => {
   void getActiveProjectScreen()?.switchToNextTerminal();
 };
 
-const selectTerminalTab = () => {
-  selectTab(ProjectTabs.Terminal);
+const selectFirstTerminalPane = async () => {
+  activeTab.value = ProjectTabs.Terminal;
+  await nextTick();
+
+  if (terminalTab.value?.focusFirstPane) {
+    await terminalTab.value.focusFirstPane();
+    return;
+  }
+
+  await terminalTab.value?.focusActiveTerminal();
 };
 
 const updateConnectionStatus = (tab: ProjectTab, status: TerminalConnectionStatus) => {
@@ -176,7 +184,7 @@ useProjectKeyboardShortcuts({
           v-show="activeTab === ProjectTabs.Review"
           :project-name="projectName"
           :is-active="isReviewTabActive"
-          @request-terminal-tab="selectTerminalTab"
+          @request-terminal-tab="selectFirstTerminalPane"
         />
       </section>
     </section>

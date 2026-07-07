@@ -56,6 +56,11 @@ const focusActiveTerminal = async () => {
   await getActivePaneComponent()?.focusTerminal();
 };
 
+const focusFirstPane = async () => {
+  activePane.value = terminalPanes[0];
+  await focusActiveTerminal();
+};
+
 const switchToNextTerminal = async () => {
   const activePaneIndex = terminalPanes.indexOf(activePane.value);
   activePane.value = terminalPanes[(activePaneIndex + 1) % terminalPanes.length];
@@ -68,6 +73,7 @@ watch(combinedConnectionStatus, (status) => {
 
 defineExpose({
   focusActiveTerminal,
+  focusFirstPane,
   switchToNextTerminal
 });
 </script>

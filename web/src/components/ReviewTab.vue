@@ -520,7 +520,7 @@ const handleReviewKeydown = (event: KeyboardEvent) => {
   }
 };
 
-const resetReview = async (focusStartButton = true) => {
+const resetReview = () => {
   state.value = 'idle';
   reviewData.value = null;
   activeScope.value = 'git-diff';
@@ -538,13 +538,11 @@ const resetReview = async (focusStartButton = true) => {
   wrapLines.value = true;
   draftComment.value = null;
   isOverallNoteOpen.value = false;
+};
 
-  if (!focusStartButton) {
-    return;
-  }
-
-  await nextTick();
-  startButton.value?.focus();
+const closeReview = () => {
+  resetReview();
+  emit('requestTerminalTab');
 };
 
 const setFileRequestState = (key: string, value: FileRequestState) => {
@@ -817,7 +815,7 @@ const finishReview = async () => {
 
   try {
     await pasteIntoAgentTerminal(props.projectName, composeReviewPrompt());
-    await resetReview(false);
+    resetReview();
     emit('requestTerminalTab');
   } catch (error) {
     sendErrorMessage.value = error instanceof Error ? error.message : 'Could not send the review prompt';
@@ -1001,7 +999,7 @@ defineExpose({
               </button>
             </section>
             <section class="review-action-group" aria-label="Review lifecycle actions">
-              <button class="review-icon-button" type="button" title="Cancel review" aria-label="Cancel review" @click="resetReview()">
+              <button class="review-icon-button" type="button" title="Cancel review" aria-label="Cancel review" @click="closeReview">
                 <X :size="15" :stroke-width="1.8" aria-hidden="true" />
               </button>
               <button class="review-finish-button" type="button" :disabled="!canFinishReview" @click="finishReview">
