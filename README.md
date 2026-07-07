@@ -148,12 +148,13 @@ Vue and TypeScript source files live in `web/src`. Static public assets live in
 `web/static`. xterm.js, Vue and the frontend build tools are fetched by npm into
 `web/node_modules`.
 
-`go generate ./...` runs `npm run build` in `web`. That typechecks with
-`vue-tsc`, bundles the frontend with esbuild into `web/dist`, and the Go binary
-embeds `web/dist` with `go:embed`. There is no Vite dev server. Go serves the
-built assets.
+`go generate ./...` runs `npm --prefix ../../web run build` from
+`internal/web`. That typechecks with `vue-tsc`, bundles the frontend with
+esbuild into `internal/web/.dist`, and the Go binary embeds that directory with
+`go:embed`. There is no Vite dev server. Go serves the built assets.
 
-The generated `web/dist` directory and `web/node_modules` are ignored by git.
+The generated `internal/web/.dist` directory and `web/node_modules` are ignored
+by git.
 
 ## Nerd Fonts
 

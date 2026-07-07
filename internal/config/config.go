@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"wade/terminal"
+	"wade/internal/terminal"
 )
 
 const (

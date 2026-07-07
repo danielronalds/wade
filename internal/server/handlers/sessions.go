@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"wade/project"
+	"wade/internal/project"
 )
 
 type sessionCloser interface {

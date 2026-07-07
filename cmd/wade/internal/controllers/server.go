@@ -11,9 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	"wade/config"
-	"wade/server"
-	"wade/web"
+	"wade/internal/config"
+	"wade/internal/server"
+	"wade/internal/web"
 )
 
 type ServerController struct{}

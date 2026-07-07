@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"sync"
 
-	"wade/project"
-	"wade/review"
+	"wade/internal/project"
+	"wade/internal/review"
 )
 
 type Review struct {

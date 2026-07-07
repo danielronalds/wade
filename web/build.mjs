@@ -6,7 +6,7 @@ import { compileScript, compileStyle, compileTemplate, parse } from '@vue/compil
 import * as esbuild from 'esbuild';
 
 const root = dirname(fileURLToPath(import.meta.url));
-const distDir = join(root, 'dist');
+const distDir = join(root, '..', 'internal', 'web', '.dist');
 const staticDir = join(distDir, 'static');
 
 const createVueDescriptorId = (filePath) => createHash('sha256')

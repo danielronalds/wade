@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"wade/config"
+	"wade/internal/config"
 )
 
 func TestRemoveDeletesLocalBranch(t *testing.T) {

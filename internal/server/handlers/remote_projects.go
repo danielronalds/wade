@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"wade/project"
-	"wade/remote"
+	"wade/internal/project"
+	"wade/internal/remote"
 )
 
 type remoteProjectService interface {

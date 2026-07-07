@@ -4,7 +4,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"wade/terminal"
+	"wade/internal/terminal"
 )
 
 const (

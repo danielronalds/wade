@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"wade/project"
+	"wade/internal/project"
 )
 
 type Projects struct {

@@ -4,12 +4,12 @@ import (
 	"io/fs"
 	"net/http"
 
-	"wade/config"
-	"wade/project"
-	"wade/remote"
-	"wade/server/handlers"
-	terminalmanager "wade/terminal/manager"
-	"wade/worktree"
+	"wade/internal/config"
+	"wade/internal/project"
+	"wade/internal/remote"
+	"wade/internal/server/handlers"
+	terminalmanager "wade/internal/terminal/manager"
+	"wade/internal/worktree"
 )
 
 // Server owns HTTP routing and long-lived runtime state.

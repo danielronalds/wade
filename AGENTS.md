@@ -11,7 +11,7 @@ The backend is a Go HTTP server bound to localhost. It creates PTYs with
 `github.com/gorilla/websocket`.
 
 The frontend lives in `web/src`, uses Vue 3 and TypeScript, and is bundled with
-esbuild into `web/dist`. Avoid CDN JavaScript for the local shell page.
+esbuild into `internal/web/.dist`. Avoid CDN JavaScript for the local shell page.
 
 `mise run dev` serves WADE at `editor-dev.localhost:8090`. A directly built
 binary uses `editor.localhost:8765` by default. Override either with
@@ -104,9 +104,9 @@ is currently set to `1`.
 ## Frontend dependencies
 
 Frontend dependencies are installed with npm in `web/node_modules`.
-`go generate ./...` runs `npm run build` from `web`, which typechecks with
-`vue-tsc` and bundles with esbuild. The generated `web/dist` directory is
-embedded into the Go binary.
+`go generate ./...` runs `npm --prefix ../../web run build` from
+`internal/web`, which typechecks with `vue-tsc` and bundles with esbuild. The
+generated `internal/web/.dist` directory is embedded into the Go binary.
 
 ## Coding standards
 

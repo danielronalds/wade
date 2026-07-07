@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"wade/config"
+	"wade/internal/config"
 )
 
 // ConfigHandler reads and writes editable WADE settings.

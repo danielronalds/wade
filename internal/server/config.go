@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"wade/config"
+	"wade/internal/config"
 )
 
 // handleConfigReload reloads runtime-safe settings on demand.

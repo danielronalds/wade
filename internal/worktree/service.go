@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"wade/config"
+	"wade/internal/config"
 )
 
 type Service struct {

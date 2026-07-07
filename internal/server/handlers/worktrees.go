@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"wade/project"
-	"wade/worktree"
+	"wade/internal/project"
+	"wade/internal/worktree"
 )
 
 type worktreeSessionCloser interface {
