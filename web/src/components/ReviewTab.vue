@@ -105,8 +105,9 @@ const scopeOptions = computed<Array<{ id: ReviewScope; label: string }>>(() => {
   }
 
   return [
+    localScopeOptions[0],
     { id: 'pull-request', label: `PR #${reviewData.value.pullRequest.number}` },
-    ...localScopeOptions
+    ...localScopeOptions.slice(1)
   ];
 });
 
@@ -421,12 +422,12 @@ const toggleDirectoryCollapsed = (directoryPath: string) => {
 };
 
 const selectInitialScope = (data: ReviewData): ReviewScope => {
-  if (data.pullRequest && data.files.some((file) => file.inPullRequest)) {
-    return 'pull-request';
-  }
-
   if (data.files.some((file) => file.inGitDiff)) {
     return 'git-diff';
+  }
+
+  if (data.pullRequest && data.files.some((file) => file.inPullRequest)) {
+    return 'pull-request';
   }
 
   if (data.files.some((file) => file.inLastCommit)) {
