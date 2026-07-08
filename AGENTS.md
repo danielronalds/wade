@@ -128,6 +128,24 @@ When declaring several local variables together, group related variables and
 separate unrelated groups with an empty line. This keeps setup and wiring blocks
 easy to scan as they grow.
 
+For non-trivial frontend components, prefer a feature folder under
+`web/src/components` named after the component or feature in kebab-case. Put the
+main component at the top level of that folder, private child components in a
+`components` subfolder, and component-specific composables in a `composable`
+subfolder. Keep shared components and shared composables in the existing shared
+locations instead.
+
+Example:
+
+```text
+web/src/components/terminal-tab/
+  TerminalTab.vue
+  components/
+    CollapsedTerminalRail.vue
+  composable/
+    useTerminalTabPaneZoom.ts
+```
+
 ## Validation
 
 Run:

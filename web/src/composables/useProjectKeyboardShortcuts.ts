@@ -1,11 +1,16 @@
 import { onBeforeUnmount, onMounted } from 'vue';
 
 const projectShortcutPrefixTimeoutMs = 1500;
+const projectShortcutPrefixKey = 'b';
+const nextTerminalPaneKey = 'o';
+const terminalZoomKey = 'z';
+const scratchpadTerminalKey = 't';
 
 type ProjectKeyboardShortcutsOptions = {
   selectSidebarItemBySlot: (slot: number) => void;
   switchToNextTerminal: () => void;
   toggleScratchpadTerminal: () => void;
+  toggleTerminalZoom: () => void;
 };
 
 const isCtrlShortcut = (event: KeyboardEvent, key: string) => event.ctrlKey
@@ -20,14 +25,15 @@ const isCtrlAltShortcut = (event: KeyboardEvent, key: string) => event.ctrlKey
   && !event.shiftKey
   && event.key.toLowerCase() === key;
 
-const isShortcutPrefix = (event: KeyboardEvent) => isCtrlShortcut(event, 'b');
+const isShortcutPrefix = (event: KeyboardEvent) => isCtrlShortcut(event, projectShortcutPrefixKey);
 
 const isNumberKey = (key: string) => /^[1-9]$/.test(key);
 
 export const useProjectKeyboardShortcuts = ({
   selectSidebarItemBySlot,
   switchToNextTerminal,
-  toggleScratchpadTerminal
+  toggleScratchpadTerminal,
+  toggleTerminalZoom
 }: ProjectKeyboardShortcutsOptions) => {
   let isWaitingForPrefixCommand = false;
   let prefixTimeout: number | undefined;
@@ -58,8 +64,13 @@ export const useProjectKeyboardShortcuts = ({
     const key = event.key.toLowerCase();
     clearPrefix();
 
-    if (key === 'o') {
+    if (key === nextTerminalPaneKey) {
       switchToNextTerminal();
+      return;
+    }
+
+    if (key === terminalZoomKey) {
+      toggleTerminalZoom();
       return;
     }
 
@@ -69,7 +80,7 @@ export const useProjectKeyboardShortcuts = ({
   };
 
   const handleKeydown = (event: KeyboardEvent) => {
-    if (isCtrlAltShortcut(event, 't')) {
+    if (isCtrlAltShortcut(event, scratchpadTerminalKey)) {
       stopEvent(event);
       clearPrefix();
       toggleScratchpadTerminal();

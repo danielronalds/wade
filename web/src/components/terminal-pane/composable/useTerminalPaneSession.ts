@@ -1,20 +1,20 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
-import type { TerminalConnectionStatus } from '../types/terminalConnectionStatus';
-import { useTerminalSession } from './useTerminalSession';
+import type { TerminalConnectionStatus } from '../../../types/terminalConnectionStatus';
+import { useTerminalSession } from '../../../composables/useTerminalSession';
 
-type ProjectTerminalTabOptions = {
+type TerminalPaneSessionOptions = {
   projectName: string;
   terminalName: string;
   isActive: Readonly<Ref<boolean>>;
   onConnectionStatusChange: (status: TerminalConnectionStatus) => void;
 };
 
-export const useProjectTerminalTab = ({
+export const useTerminalPaneSession = ({
   projectName,
   terminalName,
   isActive,
   onConnectionStatusChange
-}: ProjectTerminalTabOptions) => {
+}: TerminalPaneSessionOptions) => {
   const terminalElement = ref<HTMLElement | null>(null);
   const terminalSession = useTerminalSession({
     projectName,

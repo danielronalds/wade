@@ -1,19 +1,29 @@
 <script setup lang="ts">
-import { ArrowDownToLine, RefreshCw, X } from '@lucide/vue';
+import { computed } from 'vue';
+import { ArrowDownToLine, Maximize2, Minimize2, RefreshCw, X } from '@lucide/vue';
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   label: string;
   isActive: boolean;
   showCloseIcon?: boolean;
+  showZoomIcon?: boolean;
+  isZoomed?: boolean;
 }>(), {
-  showCloseIcon: false
+  showCloseIcon: false,
+  showZoomIcon: false,
+  isZoomed: false
 });
 
 const emit = defineEmits<{
   scrollToBottom: [];
   reload: [];
   close: [];
+  toggleZoom: [];
 }>();
+
+const zoomButtonLabel = computed(() => props.isZoomed
+  ? 'Restore split view'
+  : `Zoom ${props.label} terminal`);
 
 const scrollToBottom = () => {
   emit('scrollToBottom');
@@ -25,6 +35,10 @@ const reload = () => {
 
 const close = () => {
   emit('close');
+};
+
+const toggleZoom = () => {
+  emit('toggleZoom');
 };
 </script>
 
@@ -63,6 +77,18 @@ const close = () => {
           @click.stop="close"
         >
           <X :size="14" :stroke-width="1.7" aria-hidden="true" />
+        </button>
+      </li>
+      <li v-if="showZoomIcon">
+        <button
+          class="terminal-header-icon-button"
+          type="button"
+          :aria-label="zoomButtonLabel"
+          :title="zoomButtonLabel"
+          @click.stop="toggleZoom"
+        >
+          <Minimize2 v-if="isZoomed" :size="14" :stroke-width="1.7" aria-hidden="true" />
+          <Maximize2 v-else :size="14" :stroke-width="1.7" aria-hidden="true" />
         </button>
       </li>
     </menu>

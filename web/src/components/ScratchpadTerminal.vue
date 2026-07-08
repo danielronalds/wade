@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue';
 import type { TerminalConnectionStatus } from '../types/terminalConnectionStatus';
-import TerminalPane from './TerminalPane.vue';
+import TerminalPane from './terminal-pane/TerminalPane.vue';
 
 const props = defineProps<{
   projectName: string;

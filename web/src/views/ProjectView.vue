@@ -4,7 +4,7 @@ import ProjectSidebar from '../components/ProjectSidebar.vue';
 import ReviewTab from '../components/ReviewTab.vue';
 import ScratchpadTerminal from '../components/ScratchpadTerminal.vue';
 import ServerTab from '../components/ServerTab.vue';
-import TerminalTab from '../components/TerminalTab.vue';
+import TerminalTab from '../components/terminal-tab/TerminalTab.vue';
 import TerminalTopbar from '../components/TerminalTopbar.vue';
 import { useProjectEventHandlers } from '../composables/useProjectEventHandlers';
 import { useProjectKeyboardShortcuts } from '../composables/useProjectKeyboardShortcuts';
@@ -90,6 +90,14 @@ const switchToNextTerminal = () => {
   void getActiveProjectScreen()?.switchToNextTerminal();
 };
 
+const toggleTerminalZoom = () => {
+  if (isScratchpadOpen.value || activeTab.value !== ProjectTabs.Terminal) {
+    return;
+  }
+
+  void terminalTab.value?.toggleActivePaneZoom?.();
+};
+
 const selectFirstTerminalPane = async () => {
   activeTab.value = ProjectTabs.Terminal;
   await nextTick();
@@ -146,7 +154,8 @@ useProjectEventHandlers({
 useProjectKeyboardShortcuts({
   selectSidebarItemBySlot,
   switchToNextTerminal,
-  toggleScratchpadTerminal
+  toggleScratchpadTerminal,
+  toggleTerminalZoom
 });
 </script>
 
