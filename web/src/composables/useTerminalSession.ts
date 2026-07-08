@@ -1,6 +1,7 @@
 import { readonly, type Ref, ref } from 'vue';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { useRecentProjects } from './useRecentProjects';
 
@@ -52,6 +53,20 @@ const waitForEmbeddedFont = async () => {
 
   await document.fonts.load(`14px "${embeddedFontFamily}"`);
   await document.fonts.ready;
+};
+
+const openHttpLink = (_event: MouseEvent, uri: string) => {
+  if (!URL.canParse(uri)) {
+    return;
+  }
+
+  const url = new URL(uri);
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
+
+  window.open(url.toString(), '_blank', 'noopener,noreferrer');
 };
 
 const createTerminal = () => new Terminal({
@@ -289,6 +304,7 @@ export const useTerminalSession = ({
     terminal = createTerminal();
     fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
+    terminal.loadAddon(new WebLinksAddon(openHttpLink));
     terminal.open(terminalElement.value);
     loadWebglAddon(terminal);
 
