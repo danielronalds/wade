@@ -12,11 +12,11 @@ import (
 type ConfigHandler struct{}
 
 type configPayload struct {
-	ProjectDirectories                 []string `json:"projectDirectories"`
-	AgentPaneCommand                   string   `json:"agentPaneCommand"`
-	CopyIgnoredFilesOnWorktreeCreation bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
-	WorktreeCopyExcludes               []string `json:"worktreeCopyExcludes"`
-	ThemeAccentColor                   string   `json:"themeAccentColor"`
+	ProjectDirectories                 []string       `json:"projectDirectories"`
+	Agents                             []config.Agent `json:"agents"`
+	CopyIgnoredFilesOnWorktreeCreation bool           `json:"copyIgnoredFilesOnWorktreeCreation"`
+	WorktreeCopyExcludes               []string       `json:"worktreeCopyExcludes"`
+	ThemeAccentColor                   string         `json:"themeAccentColor"`
 }
 
 // NewConfig creates a handler for reading and writing WADE settings.
@@ -33,7 +33,7 @@ func (h ConfigHandler) GetConfig(w http.ResponseWriter, _ *http.Request) {
 
 	writeJSON(w, http.StatusOK, configPayload{
 		ProjectDirectories:                 settings.ProjectDirectories,
-		AgentPaneCommand:                   settings.AgentPaneCommand,
+		Agents:                             settings.Agents,
 		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
 		WorktreeCopyExcludes:               settings.WorktreeCopyExcludes,
 		ThemeAccentColor:                   settings.ThemeAccentColor,
@@ -53,8 +53,8 @@ func (h ConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	agentPaneCommand := strings.TrimSpace(request.AgentPaneCommand)
-	if err := config.ValidateAgentPaneCommand(agentPaneCommand); err != nil {
+	agents := trimAgents(request.Agents)
+	if err := config.ValidateAgents(agents); err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -78,7 +78,7 @@ func (h ConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	settings.ProjectDirectories = projectDirectories
-	settings.AgentPaneCommand = agentPaneCommand
+	settings.Agents = agents
 	settings.CopyIgnoredFilesOnWorktreeCreation = request.CopyIgnoredFilesOnWorktreeCreation
 	settings.WorktreeCopyExcludes = worktreeCopyExcludes
 	settings.ThemeAccentColor = themeAccentColor
@@ -96,6 +96,18 @@ func trimProjectDirectories(projectDirectories []string) []string {
 		trimmed = append(trimmed, strings.TrimSpace(projectDirectory))
 	}
 
+	return trimmed
+}
+
+func trimAgents(agents []config.Agent) []config.Agent {
+	trimmed := make([]config.Agent, 0, len(agents))
+	for _, agent := range agents {
+		trimmed = append(trimmed, config.Agent{
+			Name:    strings.TrimSpace(agent.Name),
+			Command: strings.TrimSpace(agent.Command),
+			Default: agent.Default,
+		})
+	}
 	return trimmed
 }
 

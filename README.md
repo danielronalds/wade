@@ -66,7 +66,10 @@ when you run `wade config` if it does not exist:
 
 ```json
 {
-  "agentPaneCommand": "pi -c",
+  "agents": [
+    { "name": "Pi", "command": "pi -c", "default": true },
+    { "name": "Claude", "command": "claude", "default": false }
+  ],
   "projectDirectories": [
     "~/Personal",
     "~/Work"
@@ -82,8 +85,8 @@ to apply safe settings changes without restarting WADE.
 
 Project terminal sessions are kept alive for the lifetime of the server.
 Reopening a project reconnects to the existing session rather than starting a
-new one. The Agent pane starts the configured `agentPaneCommand` through your
-shell, defaulting to `pi -c`. Misc and Server terminals start your normal shell.
+new one. The Agent pane starts the selected configured agent command through
+your shell. Misc and Server terminals start your normal shell.
 
 ## Keyboard shortcuts
 

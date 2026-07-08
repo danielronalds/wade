@@ -5,23 +5,31 @@ import { useTerminalSession } from '../../../composables/useTerminalSession';
 type TerminalPaneSessionOptions = {
   projectName: string;
   terminalName: string;
+  agentName?: string;
   isActive: Readonly<Ref<boolean>>;
+  lazy?: boolean;
   onConnectionStatusChange: (status: TerminalConnectionStatus) => void;
 };
 
 export const useTerminalPaneSession = ({
   projectName,
   terminalName,
+  agentName,
   isActive,
+  lazy = false,
   onConnectionStatusChange
 }: TerminalPaneSessionOptions) => {
   const terminalElement = ref<HTMLElement | null>(null);
   const terminalSession = useTerminalSession({
     projectName,
     terminalName,
+    agentName,
     terminalElement,
     isActive
   });
+
+  let hasStarted = false;
+  let startPromise: Promise<void> | undefined;
 
   const publishConnectionStatus = () => {
     onConnectionStatusChange({
@@ -30,9 +38,30 @@ export const useTerminalPaneSession = ({
     });
   };
 
+  const startTerminal = async () => {
+    if (hasStarted) {
+      return;
+    }
+
+    if (startPromise) {
+      await startPromise;
+      return;
+    }
+
+    startPromise = terminalSession.start().finally(() => {
+      startPromise = undefined;
+    });
+    hasStarted = true;
+    await startPromise;
+  };
+
   const fitAndFocusTerminal = async () => {
     if (!isActive.value) {
       return;
+    }
+
+    if (lazy) {
+      await startTerminal();
     }
 
     await nextTick();
@@ -42,11 +71,19 @@ export const useTerminalPaneSession = ({
   };
 
   const reloadTerminal = async () => {
+    if (lazy) {
+      await startTerminal();
+    }
+
     await terminalSession.reload();
     await fitAndFocusTerminal();
   };
 
   const scrollTerminalToBottom = async () => {
+    if (lazy) {
+      await startTerminal();
+    }
+
     await nextTick();
     terminalSession.scrollToBottom();
   };
@@ -64,7 +101,11 @@ export const useTerminalPaneSession = ({
   });
 
   onMounted(() => {
-    void terminalSession.start();
+    if (!lazy) {
+      hasStarted = true;
+      void terminalSession.start();
+    }
+
     void fitAndFocusTerminal();
   });
 

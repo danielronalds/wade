@@ -25,7 +25,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 	server := &Server{
 		projects:    project.NewStore(configuration.ProjectDirs),
 		staticFiles: staticFiles,
-		terminals:   terminalmanager.New(configuration.Shell, configuration.AgentPaneCommand),
+		terminals:   terminalmanager.New(configuration.Shell, terminalAgents(configuration.Agents)),
 		Mux:         http.NewServeMux(),
 	}
 
@@ -75,4 +75,16 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 // Close stops terminal sessions.
 func (s *Server) Close() {
 	s.terminals.Close()
+}
+
+func terminalAgents(agents []config.Agent) []terminalmanager.Agent {
+	terminalAgents := make([]terminalmanager.Agent, 0, len(agents))
+	for _, agent := range agents {
+		terminalAgents = append(terminalAgents, terminalmanager.Agent{
+			Name:    agent.Name,
+			Command: agent.Command,
+			Default: agent.Default,
+		})
+	}
+	return terminalAgents
 }

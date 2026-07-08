@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
+import AgentSettingsEditor from '../components/settings/AgentSettingsEditor.vue';
 import ThemeAccentPicker from '../components/settings/ThemeAccentPicker.vue';
 import { useSettingsForm } from '../composables/useSettingsForm';
 
@@ -11,13 +12,17 @@ const {
   error,
   statusMessage,
   hasInvalidProjectDirectories,
-  hasInvalidAgentPaneCommand,
+  hasInvalidAgents,
   canSave,
   isValidProjectDirectory,
   updateProjectDirectory,
   addProjectDirectory,
   removeProjectDirectory,
-  updateAgentPaneCommand,
+  updateAgentName,
+  updateAgentCommand,
+  setDefaultAgent,
+  addAgent,
+  removeAgent,
   updateCopyIgnoredFilesOnWorktreeCreation,
   updateThemeAccentColor,
   updateWorktreeCopyExclude,
@@ -88,28 +93,15 @@ onMounted(() => {
           </p>
         </section>
 
-        <section id="agent-pane-command-section" aria-labelledby="agent-pane-command-title">
-          <header class="settings-section-header">
-            <section>
-              <h2 id="agent-pane-command-title">Agent Pane command</h2>
-              <p>Runs through your shell when the Agent pane starts. Reload Agent to apply changes.</p>
-            </section>
-          </header>
-
-          <label class="single-setting-row" for="agent-pane-command">
-            <span>Command</span>
-            <input
-              id="agent-pane-command"
-              :value="form.agentPaneCommand"
-              type="text"
-              spellcheck="false"
-              autocomplete="off"
-              placeholder="pi -c"
-              :aria-invalid="!isLoading && hasInvalidAgentPaneCommand"
-              @input="updateAgentPaneCommand"
-            >
-          </label>
-        </section>
+        <AgentSettingsEditor
+          :agents="form.agents"
+          :is-loading="isLoading"
+          @add-agent="addAgent"
+          @remove-agent="removeAgent"
+          @set-default-agent="setDefaultAgent"
+          @update-agent-name="updateAgentName"
+          @update-agent-command="updateAgentCommand"
+        />
 
         <section id="worktree-copy-section" aria-labelledby="worktree-copy-title">
           <header class="settings-section-header">
@@ -151,8 +143,8 @@ onMounted(() => {
           <p v-if="!isLoading && hasInvalidProjectDirectories" class="settings-error">
             Project directories must use ~ or an absolute path.
           </p>
-          <p v-else-if="!isLoading && hasInvalidAgentPaneCommand" class="settings-error">
-            Agent Pane command cannot be empty.
+          <p v-else-if="!isLoading && hasInvalidAgents" class="settings-error">
+            At least one agent is required. Agent names and commands cannot be empty, names must be unique, and exactly one agent must be default.
           </p>
           <p v-else-if="error" class="settings-error">{{ error }}</p>
           <p v-else-if="statusMessage" class="settings-status">{{ statusMessage }}</p>
@@ -274,7 +266,6 @@ onMounted(() => {
 }
 
 #project-directories-section,
-#agent-pane-command-section,
 #worktree-copy-section {
   width: min(860px, 100%);
   display: grid;
@@ -341,7 +332,6 @@ onMounted(() => {
 }
 
 .project-directory-row,
-.single-setting-row,
 .worktree-copy-exclude-row,
 .checkbox-setting-row {
   display: grid;
@@ -354,17 +344,12 @@ onMounted(() => {
   grid-template-columns: 120px minmax(0, 1fr) auto;
 }
 
-.single-setting-row {
-  grid-template-columns: 120px minmax(0, 1fr);
-}
-
 .checkbox-setting-row {
   grid-template-columns: auto minmax(0, 1fr);
   justify-content: start;
 }
 
 .project-directory-row label,
-.single-setting-row span,
 .worktree-copy-exclude-row label,
 .checkbox-setting-row span {
   color: var(--muted);
@@ -372,7 +357,6 @@ onMounted(() => {
 }
 
 .project-directory-row input,
-.single-setting-row input,
 .worktree-copy-exclude-row input {
   min-width: 0;
   border: 1px solid rgb(var(--accent-rgb) / 30%);
@@ -384,14 +368,12 @@ onMounted(() => {
 }
 
 .project-directory-row input:focus,
-.single-setting-row input:focus,
 .worktree-copy-exclude-row input:focus {
   border-color: var(--text);
   outline: none;
 }
 
 .project-directory-row input[aria-invalid="true"],
-.single-setting-row input[aria-invalid="true"],
 .worktree-copy-exclude-row input[aria-invalid="true"] {
   border-color: var(--disconnected);
 }
@@ -431,7 +413,6 @@ onMounted(() => {
   }
 
   .project-directory-row,
-  .single-setting-row,
   .worktree-copy-exclude-row {
     grid-template-columns: 1fr;
   }

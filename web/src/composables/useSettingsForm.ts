@@ -4,6 +4,7 @@ import { applyThemeAccentColor, type ThemeAccentColor } from '../theme';
 import {
   cloneSettings,
   createEmptySettings,
+  isValidAgents,
   isValidProjectDirectory,
   normaliseSettings,
   type Settings
@@ -13,7 +14,7 @@ import { useRecentProjects } from './useRecentProjects';
 
 const settingsHaveChanged = (current: Settings, saved: Settings) => JSON.stringify(current.projectDirectories)
   !== JSON.stringify(saved.projectDirectories)
-  || current.agentPaneCommand !== saved.agentPaneCommand
+  || JSON.stringify(current.agents) !== JSON.stringify(saved.agents)
   || current.copyIgnoredFilesOnWorktreeCreation !== saved.copyIgnoredFilesOnWorktreeCreation
   || JSON.stringify(current.worktreeCopyExcludes) !== JSON.stringify(saved.worktreeCopyExcludes)
   || current.themeAccentColor !== saved.themeAccentColor;
@@ -41,13 +42,13 @@ export const useSettingsForm = () => {
   const hasInvalidProjectDirectories = computed(() => form.projectDirectories.some(
     (directory) => !isValidProjectDirectory(directory)
   ));
-  const hasInvalidAgentPaneCommand = computed(() => normalisedSettings.value.agentPaneCommand === '');
+  const hasInvalidAgents = computed(() => !isValidAgents(normalisedSettings.value.agents));
   const hasChanges = computed(() => settingsHaveChanged(normalisedSettings.value, savedSettings.value));
   const canSave = computed(() => !isLoading.value
     && !isSaving.value
     && hasChanges.value
     && !hasInvalidProjectDirectories.value
-    && !hasInvalidAgentPaneCommand.value);
+    && !hasInvalidAgents.value);
 
   const clearMessages = () => {
     statusMessage.value = '';
@@ -56,7 +57,7 @@ export const useSettingsForm = () => {
 
   const replaceForm = (settings: Settings) => {
     form.projectDirectories = [...settings.projectDirectories];
-    form.agentPaneCommand = settings.agentPaneCommand;
+    form.agents = settings.agents.map((agent) => ({ ...agent }));
     form.copyIgnoredFilesOnWorktreeCreation = settings.copyIgnoredFilesOnWorktreeCreation;
     form.worktreeCopyExcludes = [...settings.worktreeCopyExcludes];
     form.themeAccentColor = settings.themeAccentColor;
@@ -103,13 +104,56 @@ export const useSettingsForm = () => {
     clearMessages();
   };
 
-  const updateAgentPaneCommand = (event: Event) => {
-    const nextAgentPaneCommand = inputValue(event);
-    if (nextAgentPaneCommand === undefined) {
+  const updateAgentName = (index: number, event: Event) => {
+    const nextName = inputValue(event);
+    if (nextName === undefined) {
       return;
     }
 
-    form.agentPaneCommand = nextAgentPaneCommand;
+    form.agents = form.agents.map((agent, agentIndex) => (
+      agentIndex === index ? { ...agent, name: nextName } : agent
+    ));
+    clearMessages();
+  };
+
+  const updateAgentCommand = (index: number, event: Event) => {
+    const nextCommand = inputValue(event);
+    if (nextCommand === undefined) {
+      return;
+    }
+
+    form.agents = form.agents.map((agent, agentIndex) => (
+      agentIndex === index ? { ...agent, command: nextCommand } : agent
+    ));
+    clearMessages();
+  };
+
+  const setDefaultAgent = (index: number) => {
+    form.agents = form.agents.map((agent, agentIndex) => ({
+      ...agent,
+      default: agentIndex === index
+    }));
+    clearMessages();
+  };
+
+  const addAgent = async () => {
+    form.agents = [...form.agents, { name: '', command: '', default: false }];
+    clearMessages();
+
+    await nextTick();
+    document.getElementById(`agent-name-${form.agents.length - 1}`)?.focus();
+  };
+
+  const removeAgent = (index: number) => {
+    if (form.agents.length <= 1) {
+      return;
+    }
+
+    const removedAgentWasDefault = form.agents[index]?.default ?? false;
+    const remainingAgents = form.agents.filter((_, agentIndex) => agentIndex !== index);
+    form.agents = removedAgentWasDefault
+      ? remainingAgents.map((agent, agentIndex) => ({ ...agent, default: agentIndex === 0 }))
+      : remainingAgents;
     clearMessages();
   };
 
@@ -207,13 +251,17 @@ export const useSettingsForm = () => {
     error: readonly(error),
     statusMessage: readonly(statusMessage),
     hasInvalidProjectDirectories,
-    hasInvalidAgentPaneCommand,
+    hasInvalidAgents,
     canSave,
     isValidProjectDirectory,
     updateProjectDirectory,
     addProjectDirectory,
     removeProjectDirectory,
-    updateAgentPaneCommand,
+    updateAgentName,
+    updateAgentCommand,
+    setDefaultAgent,
+    addAgent,
+    removeAgent,
     updateCopyIgnoredFilesOnWorktreeCreation,
     updateThemeAccentColor,
     updateWorktreeCopyExclude,

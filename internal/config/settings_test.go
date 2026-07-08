@@ -4,59 +4,51 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
-func TestDefaultSettingsIncludesAgentPaneCommand(t *testing.T) {
+func TestDefaultSettingsIncludesAgents(t *testing.T) {
 	settings := defaultSettings(filepath.Join(t.TempDir(), "config.json"))
 
-	if settings.AgentPaneCommand != defaultAgentPaneCommand {
-		t.Fatalf("AgentPaneCommand = %q, want %q", settings.AgentPaneCommand, defaultAgentPaneCommand)
+	if !reflect.DeepEqual(settings.Agents, defaultAgents) {
+		t.Fatalf("Agents = %#v, want %#v", settings.Agents, defaultAgents)
 	}
 }
 
-func TestParseSettingsDefaultsAgentPaneCommandWhenMissing(t *testing.T) {
+func TestParseSettingsDefaultsAgentsWhenMissing(t *testing.T) {
 	settings, err := parseSettings("config.json", []byte(`{"projectDirectories":["~/Code"]}`))
 	if err != nil {
 		t.Fatalf("parseSettings() error = %v, want nil", err)
 	}
 
-	if settings.AgentPaneCommand != defaultAgentPaneCommand {
-		t.Fatalf("AgentPaneCommand = %q, want %q", settings.AgentPaneCommand, defaultAgentPaneCommand)
+	if !reflect.DeepEqual(settings.Agents, defaultAgents) {
+		t.Fatalf("Agents = %#v, want %#v", settings.Agents, defaultAgents)
 	}
 }
 
-func TestParseSettingsUsesConfiguredAgentPaneCommand(t *testing.T) {
-	settings, err := parseSettings("config.json", []byte(`{"projectDirectories":["~/Code"],"agentPaneCommand":"custom-agent"}`))
+func TestParseSettingsUsesConfiguredAgents(t *testing.T) {
+	configuredAgents := []Agent{{Name: "Custom", Command: "custom-agent", Default: true}}
+	settings, err := parseSettings("config.json", []byte(`{"projectDirectories":["~/Code"],"agents":[{"name":"Custom","command":"custom-agent","default":true}]}`))
 	if err != nil {
 		t.Fatalf("parseSettings() error = %v, want nil", err)
 	}
 
-	if settings.AgentPaneCommand != "custom-agent" {
-		t.Fatalf("AgentPaneCommand = %q, want %q", settings.AgentPaneCommand, "custom-agent")
+	if !reflect.DeepEqual(settings.Agents, configuredAgents) {
+		t.Fatalf("Agents = %#v, want %#v", settings.Agents, configuredAgents)
 	}
 }
 
-func TestParseSettingsUsesLegacyAgentCommand(t *testing.T) {
-	settings, err := parseSettings("config.json", []byte(`{"projectDirectories":["~/Code"],"agentCommand":"legacy-agent"}`))
-	if err != nil {
-		t.Fatalf("parseSettings() error = %v, want nil", err)
-	}
-
-	if settings.AgentPaneCommand != "legacy-agent" {
-		t.Fatalf("AgentPaneCommand = %q, want %q", settings.AgentPaneCommand, "legacy-agent")
-	}
-}
-
-func TestSettingsSaveWritesAgentPaneCommandAndPreservesUnknownKeys(t *testing.T) {
+func TestSettingsSaveWritesAgentsAndPreservesUnknownKeys(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.json")
 	settings := Settings{
 		ProjectDirectories: []string{"~/Code"},
-		AgentPaneCommand:   "custom-agent",
+		Agents:             []Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
 		path:               path,
 		raw: map[string]json.RawMessage{
-			"agentCommand": json.RawMessage(`"legacy-agent"`),
-			"theme":        json.RawMessage(`"dark"`),
+			"agentCommand":     json.RawMessage(`"legacy-agent"`),
+			"agentPaneCommand": json.RawMessage(`"pane-agent"`),
+			"theme":            json.RawMessage(`"dark"`),
 		},
 	}
 
@@ -74,12 +66,24 @@ func TestSettingsSaveWritesAgentPaneCommandAndPreservesUnknownKeys(t *testing.T)
 		t.Fatalf("Unmarshal() error = %v, want nil", err)
 	}
 
-	if saved["agentPaneCommand"] != "custom-agent" {
-		t.Fatalf("agentPaneCommand = %#v, want %q", saved["agentPaneCommand"], "custom-agent")
+	agents, ok := saved["agents"].([]any)
+	if !ok || len(agents) != 1 {
+		t.Fatalf("agents = %#v, want one agent", saved["agents"])
+	}
+
+	agent, ok := agents[0].(map[string]any)
+	if !ok {
+		t.Fatalf("agents[0] = %#v, want object", agents[0])
+	}
+	if agent["name"] != "Custom" || agent["command"] != "custom-agent" || agent["default"] != true {
+		t.Fatalf("agents[0] = %#v, want Custom custom-agent default", agent)
 	}
 
 	if _, ok := saved["agentCommand"]; ok {
 		t.Fatalf("agentCommand was preserved, want it removed")
+	}
+	if _, ok := saved["agentPaneCommand"]; ok {
+		t.Fatalf("agentPaneCommand was preserved, want it removed")
 	}
 
 	if saved["theme"] != "dark" {
@@ -87,9 +91,51 @@ func TestSettingsSaveWritesAgentPaneCommandAndPreservesUnknownKeys(t *testing.T)
 	}
 }
 
-func TestValidateAgentPaneCommandRejectsEmptyCommands(t *testing.T) {
-	if err := ValidateAgentPaneCommand("   "); err == nil {
-		t.Fatal("ValidateAgentPaneCommand() error = nil, want error")
+func TestValidateAgentsRejectsMissingAgents(t *testing.T) {
+	if err := ValidateAgents(nil); err == nil {
+		t.Fatal("ValidateAgents() error = nil, want error")
+	}
+}
+
+func TestValidateAgentsRejectsEmptyNames(t *testing.T) {
+	if err := ValidateAgents([]Agent{{Name: "   ", Command: "pi -c", Default: true}}); err == nil {
+		t.Fatal("ValidateAgents() error = nil, want error")
+	}
+}
+
+func TestValidateAgentsRejectsEmptyCommands(t *testing.T) {
+	if err := ValidateAgents([]Agent{{Name: "Pi", Command: "   ", Default: true}}); err == nil {
+		t.Fatal("ValidateAgents() error = nil, want error")
+	}
+}
+
+func TestValidateAgentsRejectsCaseInsensitiveDuplicateNames(t *testing.T) {
+	agents := []Agent{
+		{Name: "Pi", Command: "pi -c", Default: true},
+		{Name: "pi", Command: "pi -c"},
+	}
+
+	if err := ValidateAgents(agents); err == nil {
+		t.Fatal("ValidateAgents() error = nil, want error")
+	}
+}
+
+func TestValidateAgentsRejectsMissingDefaultAgent(t *testing.T) {
+	agents := []Agent{{Name: "Pi", Command: "pi -c"}}
+
+	if err := ValidateAgents(agents); err == nil {
+		t.Fatal("ValidateAgents() error = nil, want error")
+	}
+}
+
+func TestValidateAgentsRejectsMultipleDefaultAgents(t *testing.T) {
+	agents := []Agent{
+		{Name: "Pi", Command: "pi -c", Default: true},
+		{Name: "Claude", Command: "claude", Default: true},
+	}
+
+	if err := ValidateAgents(agents); err == nil {
+		t.Fatal("ValidateAgents() error = nil, want error")
 	}
 }
 
@@ -112,8 +158,8 @@ func TestEnsureFileCreatesDefaultConfigWhenMissing(t *testing.T) {
 		t.Fatalf("LoadSettings() error = %v, want nil", err)
 	}
 
-	if settings.AgentPaneCommand != defaultAgentPaneCommand {
-		t.Fatalf("AgentPaneCommand = %q, want %q", settings.AgentPaneCommand, defaultAgentPaneCommand)
+	if !reflect.DeepEqual(settings.Agents, defaultAgents) {
+		t.Fatalf("Agents = %#v, want %#v", settings.Agents, defaultAgents)
 	}
 }
 

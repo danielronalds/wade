@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useTerminalPaneSession } from './composable/useTerminalPaneSession';
 import TerminalHeader from './components/TerminalHeader.vue';
+import type { Agent } from '../../types/settings';
 import type { TerminalConnectionStatus } from '../../types/terminalConnectionStatus';
 
 const props = withDefaults(defineProps<{
@@ -13,11 +14,19 @@ const props = withDefaults(defineProps<{
   showZoomIcon?: boolean;
   isZoomed?: boolean;
   isCollapsed?: boolean;
+  lazy?: boolean;
+  agentName?: string;
+  agents?: Agent[];
+  selectedAgentName?: string;
 }>(), {
   showCloseIcon: false,
   showZoomIcon: false,
   isZoomed: false,
-  isCollapsed: false
+  isCollapsed: false,
+  lazy: false,
+  agentName: undefined,
+  agents: undefined,
+  selectedAgentName: undefined
 });
 
 const emit = defineEmits<{
@@ -25,6 +34,7 @@ const emit = defineEmits<{
   close: [];
   connectionStatusChange: [status: TerminalConnectionStatus];
   toggleZoom: [];
+  agentChange: [agentName: string];
 }>();
 
 const isActive = computed(() => props.isActive && !props.isCollapsed);
@@ -36,7 +46,9 @@ const {
 } = useTerminalPaneSession({
   projectName: props.projectName,
   terminalName: props.terminalName,
+  agentName: props.agentName,
   isActive,
+  lazy: props.lazy,
   onConnectionStatusChange: (status) => emit('connectionStatusChange', status)
 });
 
@@ -64,6 +76,10 @@ const toggleZoom = () => {
   emit('toggleZoom');
 };
 
+const updateAgent = (agentName: string) => {
+  emit('agentChange', agentName);
+};
+
 defineExpose({
   focusTerminal
 });
@@ -84,10 +100,13 @@ defineExpose({
       :show-close-icon="showCloseIcon"
       :show-zoom-icon="showZoomIcon"
       :is-zoomed="isZoomed"
+      :agents="agents"
+      :selected-agent-name="selectedAgentName"
       @scroll-to-bottom="scrollToBottom"
       @reload="reload"
       @close="close"
       @toggle-zoom="toggleZoom"
+      @agent-change="updateAgent"
     />
     <section ref="terminalElement" class="terminal-screen" :aria-label="`${label} shell`"></section>
   </section>

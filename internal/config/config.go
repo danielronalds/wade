@@ -22,7 +22,7 @@ type Config struct {
 	Address                            string
 	ProjectDirs                        []string
 	Shell                              string
-	AgentPaneCommand                   string
+	Agents                             []Agent
 	CopyIgnoredFilesOnWorktreeCreation bool
 	WorktreeCopyExcludes               []string
 }
@@ -44,8 +44,8 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
-	agentPaneCommand := strings.TrimSpace(settings.AgentPaneCommand)
-	if err := ValidateAgentPaneCommand(agentPaneCommand); err != nil {
+	agents := trimAgents(settings.Agents)
+	if err := ValidateAgents(agents); err != nil {
 		return Config{}, err
 	}
 
@@ -58,7 +58,7 @@ func Load() (Config, error) {
 		Address:                            envOrDefault(addressEnv, defaultAddress(os.Getenv(devModeEnv))),
 		ProjectDirs:                        projectDirs,
 		Shell:                              terminal.ResolveShell(os.Getenv("SHELL")),
-		AgentPaneCommand:                   agentPaneCommand,
+		Agents:                             agents,
 		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
 		WorktreeCopyExcludes:               worktreeCopyExcludes,
 	}, nil

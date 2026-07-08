@@ -26,6 +26,6 @@ func (s *Server) reloadConfig() error {
 	}
 
 	s.projects.Reload(configuration.ProjectDirs)
-	s.terminals.Configure(configuration.Shell, configuration.AgentPaneCommand)
+	s.terminals.Configure(configuration.Shell, terminalAgents(configuration.Agents))
 	return nil
 }

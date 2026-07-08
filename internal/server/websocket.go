@@ -13,14 +13,6 @@ var websocketUpgrader = websocket.Upgrader{
 	CheckOrigin: allowSameOrigin,
 }
 
-func terminalSessionKey(projectPath string, terminalName string) string {
-	if terminalName == "" {
-		terminalName = "terminal"
-	}
-
-	return projectPath + "\x00" + terminalName
-}
-
 func (s *Server) handleTerminalReload(w http.ResponseWriter, r *http.Request) {
 	projectPath, err := s.projects.Path(r.URL.Query().Get("project"))
 	if err != nil {
@@ -28,7 +20,7 @@ func (s *Server) handleTerminalReload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.terminals.CloseSession(terminalSessionKey(projectPath, r.URL.Query().Get("terminal")))
+	s.terminals.CloseTerminal(r.URL.Query().Get("terminal"), r.URL.Query().Get("agent"), projectPath)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -40,7 +32,7 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	terminalName := r.URL.Query().Get("terminal")
-	projectSession, err := s.terminals.GetOrStart(terminalSessionKey(projectPath, terminalName), terminalName, projectPath)
+	projectSession, err := s.terminals.GetOrStart(terminalName, r.URL.Query().Get("agent"), projectPath)
 	if err != nil {
 		log.Printf("pty start failed: %v", err)
 		http.Error(w, "failed to start terminal", http.StatusInternalServerError)

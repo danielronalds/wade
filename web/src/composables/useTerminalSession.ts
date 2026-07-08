@@ -12,6 +12,7 @@ type Disposable = {
 type TerminalSessionOptions = {
   projectName: string;
   terminalName: string;
+  agentName?: string;
   terminalElement: Ref<HTMLElement | null>;
   isActive: Readonly<Ref<boolean>>;
 };
@@ -109,6 +110,7 @@ const createTerminal = () => new Terminal({
 export const useTerminalSession = ({
   projectName,
   terminalName,
+  agentName,
   terminalElement,
   isActive
 }: TerminalSessionOptions) => {
@@ -220,9 +222,18 @@ export const useTerminalSession = ({
     sendEscapeKey();
   };
 
+  const terminalRequestParams = () => {
+    const params = new URLSearchParams({ project: projectName, terminal: terminalName });
+    if (agentName) {
+      params.set('agent', agentName);
+    }
+
+    return params;
+  };
+
   const connectWebSocket = (run: number) => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const params = new URLSearchParams({ project: projectName, terminal: terminalName });
+    const params = terminalRequestParams();
     const connection = new WebSocket(`${protocol}//${window.location.host}/ws?${params}`);
     socket = connection;
     connection.binaryType = 'arraybuffer';
@@ -320,7 +331,7 @@ export const useTerminalSession = ({
   };
 
   const closeRemoteTerminal = async () => {
-    const params = new URLSearchParams({ project: projectName, terminal: terminalName });
+    const params = terminalRequestParams();
     const response = await fetch(`/api/terminal/reload?${params}`, { method: 'POST' });
 
     if (!response.ok) {

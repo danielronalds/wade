@@ -1,24 +1,37 @@
 import { defaultThemeAccentColor, isThemeAccentColor, normaliseThemeAccentColor, type ThemeAccentColor } from '../theme';
 
+export type Agent = {
+  name: string;
+  command: string;
+  default: boolean;
+};
+
 export type Settings = {
   projectDirectories: string[];
-  agentPaneCommand: string;
+  agents: Agent[];
   copyIgnoredFilesOnWorktreeCreation: boolean;
   worktreeCopyExcludes: string[];
   themeAccentColor: ThemeAccentColor;
 };
 
+export const defaultAgents: Agent[] = [
+  { name: 'Pi', command: 'pi -c', default: true },
+  { name: 'Claude', command: 'claude', default: false }
+];
+
 export const createEmptySettings = (): Settings => ({
   projectDirectories: [],
-  agentPaneCommand: '',
+  agents: defaultAgents.map((agent) => ({ ...agent })),
   copyIgnoredFilesOnWorktreeCreation: false,
   worktreeCopyExcludes: [],
   themeAccentColor: defaultThemeAccentColor
 });
 
+export const cloneAgents = (agents: readonly Agent[]): Agent[] => agents.map((agent) => ({ ...agent }));
+
 export const cloneSettings = (settings: Settings): Settings => ({
   projectDirectories: [...settings.projectDirectories],
-  agentPaneCommand: settings.agentPaneCommand,
+  agents: cloneAgents(settings.agents),
   copyIgnoredFilesOnWorktreeCreation: settings.copyIgnoredFilesOnWorktreeCreation,
   worktreeCopyExcludes: [...settings.worktreeCopyExcludes],
   themeAccentColor: settings.themeAccentColor
@@ -26,7 +39,11 @@ export const cloneSettings = (settings: Settings): Settings => ({
 
 export const normaliseProjectDirectories = (directories: readonly string[]) => directories.map((directory) => directory.trim());
 
-export const normaliseAgentPaneCommand = (command: string) => command.trim();
+export const normaliseAgents = (agents: readonly Agent[]) => agents.map((agent) => ({
+  name: agent.name.trim(),
+  command: agent.command.trim(),
+  default: agent.default
+}));
 
 export const normaliseWorktreeCopyExcludes = (excludes: readonly string[]) => excludes
   .map((exclude) => exclude.trim())
@@ -34,7 +51,7 @@ export const normaliseWorktreeCopyExcludes = (excludes: readonly string[]) => ex
 
 export const normaliseSettings = (settings: Settings): Settings => ({
   projectDirectories: normaliseProjectDirectories(settings.projectDirectories),
-  agentPaneCommand: normaliseAgentPaneCommand(settings.agentPaneCommand),
+  agents: normaliseAgents(settings.agents),
   copyIgnoredFilesOnWorktreeCreation: settings.copyIgnoredFilesOnWorktreeCreation,
   worktreeCopyExcludes: normaliseWorktreeCopyExcludes(settings.worktreeCopyExcludes),
   themeAccentColor: normaliseThemeAccentColor(settings.themeAccentColor)
@@ -48,6 +65,47 @@ export const isValidProjectDirectory = (directory: string) => {
     || trimmedDirectory.startsWith('/');
 };
 
+export const isValidAgents = (agents: readonly Agent[]) => {
+  if (agents.length === 0) {
+    return false;
+  }
+
+  const defaultAgents = agents.filter((agent) => agent.default);
+  if (defaultAgents.length !== 1) {
+    return false;
+  }
+
+  const agentNames = new Set<string>();
+  for (const agent of agents) {
+    const name = agent.name.trim();
+    const command = agent.command.trim();
+    if (name === '' || command === '') {
+      return false;
+    }
+
+    const key = name.toLowerCase();
+    if (agentNames.has(key)) {
+      return false;
+    }
+
+    agentNames.add(key);
+  }
+
+  return true;
+};
+
+const isAgent = (value: unknown): value is Agent => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const response = value as Partial<Agent>;
+
+  return typeof response.name === 'string'
+    && typeof response.command === 'string'
+    && typeof response.default === 'boolean';
+};
+
 export const isSettings = (value: unknown): value is Settings => {
   if (!value || typeof value !== 'object') {
     return false;
@@ -57,7 +115,8 @@ export const isSettings = (value: unknown): value is Settings => {
 
   return Array.isArray(response.projectDirectories)
     && response.projectDirectories.every((directory) => typeof directory === 'string')
-    && typeof response.agentPaneCommand === 'string'
+    && Array.isArray(response.agents)
+    && response.agents.every(isAgent)
     && typeof response.copyIgnoredFilesOnWorktreeCreation === 'boolean'
     && Array.isArray(response.worktreeCopyExcludes)
     && response.worktreeCopyExcludes.every((exclude) => typeof exclude === 'string')

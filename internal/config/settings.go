@@ -11,7 +11,10 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 )
 
-const defaultAgentPaneCommand = "pi -c"
+var defaultAgents = []Agent{
+	{Name: "Pi", Command: "pi -c", Default: true},
+	{Name: "Claude", Command: "claude"},
+}
 
 const (
 	ThemeAccentColorWhite  = "white"
@@ -19,10 +22,16 @@ const (
 	ThemeAccentColorPurple = "purple"
 )
 
+type Agent struct {
+	Name    string `json:"name"`
+	Command string `json:"command"`
+	Default bool   `json:"default"`
+}
+
 // Settings is the editable user configuration stored on disk.
 type Settings struct {
 	ProjectDirectories                 []string `json:"projectDirectories"`
-	AgentPaneCommand                   string   `json:"agentPaneCommand"`
+	Agents                             []Agent  `json:"agents"`
 	CopyIgnoredFilesOnWorktreeCreation bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
 	WorktreeCopyExcludes               []string `json:"worktreeCopyExcludes"`
 	ThemeAccentColor                   string   `json:"themeAccentColor"`
@@ -32,11 +41,10 @@ type Settings struct {
 
 type settingsFile struct {
 	ProjectDirectories                 *[]string `json:"projectDirectories"`
-	AgentPaneCommand                   *string   `json:"agentPaneCommand"`
+	Agents                             *[]Agent  `json:"agents"`
 	CopyIgnoredFilesOnWorktreeCreation *bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
 	WorktreeCopyExcludes               *[]string `json:"worktreeCopyExcludes"`
 	ThemeAccentColor                   *string   `json:"themeAccentColor"`
-	LegacyAgentCommand                 *string   `json:"agentCommand"`
 }
 
 // LoadSettings reads the settings file, creating it with defaults when missing.
@@ -63,10 +71,35 @@ func LoadSettings() (Settings, error) {
 	return parseSettings(path, contents)
 }
 
-// ValidateAgentPaneCommand checks that the configured agent pane command is usable.
-func ValidateAgentPaneCommand(command string) error {
-	if strings.TrimSpace(command) == "" {
-		return errors.New("agent pane command cannot be empty")
+func ValidateAgents(agents []Agent) error {
+	if len(agents) == 0 {
+		return errors.New("at least one agent is required")
+	}
+
+	defaultAgents := 0
+	seen := make(map[string]struct{}, len(agents))
+	for _, agent := range agents {
+		name := strings.TrimSpace(agent.Name)
+		command := strings.TrimSpace(agent.Command)
+		if name == "" {
+			return errors.New("agent name cannot be empty")
+		}
+		if command == "" {
+			return errors.New("agent command cannot be empty")
+		}
+		if agent.Default {
+			defaultAgents += 1
+		}
+
+		key := strings.ToLower(name)
+		if _, ok := seen[key]; ok {
+			return fmt.Errorf("agent name %q is configured more than once", name)
+		}
+		seen[key] = struct{}{}
+	}
+
+	if defaultAgents != 1 {
+		return errors.New("exactly one default agent is required")
 	}
 
 	return nil
@@ -141,9 +174,9 @@ func (s Settings) Save() error {
 		return fmt.Errorf("encoding project directories: %w", err)
 	}
 
-	agentPaneCommand, err := json.Marshal(s.AgentPaneCommand)
+	agents, err := json.Marshal(s.Agents)
 	if err != nil {
-		return fmt.Errorf("encoding agent pane command: %w", err)
+		return fmt.Errorf("encoding agents: %w", err)
 	}
 
 	copyIgnoredFilesOnWorktreeCreation, err := json.Marshal(s.CopyIgnoredFilesOnWorktreeCreation)
@@ -162,8 +195,9 @@ func (s Settings) Save() error {
 	}
 
 	delete(raw, "agentCommand")
+	delete(raw, "agentPaneCommand")
 	raw["projectDirectories"] = projectDirectories
-	raw["agentPaneCommand"] = agentPaneCommand
+	raw["agents"] = agents
 	raw["copyIgnoredFilesOnWorktreeCreation"] = copyIgnoredFilesOnWorktreeCreation
 	raw["worktreeCopyExcludes"] = worktreeCopyExcludes
 	raw["themeAccentColor"] = themeAccentColor
@@ -175,7 +209,7 @@ func (s Settings) Save() error {
 func defaultSettings(path string) Settings {
 	return Settings{
 		ProjectDirectories:                 []string{"~/Personal", "~/Work"},
-		AgentPaneCommand:                   defaultAgentPaneCommand,
+		Agents:                             cloneAgents(defaultAgents),
 		CopyIgnoredFilesOnWorktreeCreation: false,
 		WorktreeCopyExcludes:               []string{},
 		ThemeAccentColor:                   ThemeAccentColorWhite,
@@ -201,10 +235,8 @@ func parseSettings(path string, contents []byte) (Settings, error) {
 	if file.ProjectDirectories != nil {
 		settings.ProjectDirectories = *file.ProjectDirectories
 	}
-	if file.AgentPaneCommand != nil {
-		settings.AgentPaneCommand = *file.AgentPaneCommand
-	} else if file.LegacyAgentCommand != nil {
-		settings.AgentPaneCommand = *file.LegacyAgentCommand
+	if file.Agents != nil {
+		settings.Agents = cloneAgents(*file.Agents)
 	}
 	if file.CopyIgnoredFilesOnWorktreeCreation != nil {
 		settings.CopyIgnoredFilesOnWorktreeCreation = *file.CopyIgnoredFilesOnWorktreeCreation
@@ -222,6 +254,18 @@ func parseSettings(path string, contents []byte) (Settings, error) {
 	return settings, nil
 }
 
+func trimAgents(agents []Agent) []Agent {
+	trimmed := make([]Agent, 0, len(agents))
+	for _, agent := range agents {
+		trimmed = append(trimmed, Agent{
+			Name:    strings.TrimSpace(agent.Name),
+			Command: strings.TrimSpace(agent.Command),
+			Default: agent.Default,
+		})
+	}
+	return trimmed
+}
+
 func trimStrings(values []string) []string {
 	trimmed := make([]string, 0, len(values))
 	for _, value := range values {
@@ -232,6 +276,12 @@ func trimStrings(values []string) []string {
 		trimmed = append(trimmed, value)
 	}
 	return trimmed
+}
+
+func cloneAgents(agents []Agent) []Agent {
+	cloned := make([]Agent, len(agents))
+	copy(cloned, agents)
+	return cloned
 }
 
 // cloneRawSettings copies raw JSON values so saves cannot mutate loaded state.

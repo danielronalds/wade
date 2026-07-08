@@ -30,8 +30,8 @@ type Client struct {
 	once    sync.Once
 }
 
-func startProjectSession(manager *Manager, key string, shell string, agentPaneCommand string, terminalName string, directory string) (*ProjectSession, error) {
-	session, err := startTerminalSession(shell, agentPaneCommand, terminalName, directory)
+func startProjectSession(manager *Manager, key string, shell string, agentCommand string, terminalName string, directory string) (*ProjectSession, error) {
+	session, err := startTerminalSession(shell, agentCommand, terminalName, directory)
 	if err != nil {
 		return nil, err
 	}
@@ -49,16 +49,16 @@ func startProjectSession(manager *Manager, key string, shell string, agentPaneCo
 	return projectSession, nil
 }
 
-func startTerminalSession(shell string, agentPaneCommand string, terminalName string, directory string) (*terminal.Session, error) {
-	if shouldStartAgentPaneCommand(terminalName, agentPaneCommand) {
-		return terminal.StartShellCommand(shell, directory, agentPaneCommand, terminal.Size{Cols: 80, Rows: 24})
+func startTerminalSession(shell string, agentCommand string, terminalName string, directory string) (*terminal.Session, error) {
+	if shouldStartAgentCommand(terminalName, agentCommand) {
+		return terminal.StartShellCommand(shell, directory, agentCommand, terminal.Size{Cols: 80, Rows: 24})
 	}
 
 	return terminal.Start(shell, directory, terminal.Size{Cols: 80, Rows: 24})
 }
 
-func shouldStartAgentPaneCommand(terminalName string, agentPaneCommand string) bool {
-	return terminalName == agentTerminalName && agentPaneCommand != ""
+func shouldStartAgentCommand(terminalName string, agentCommand string) bool {
+	return terminalName == agentTerminalName && agentCommand != ""
 }
 
 func (s *ProjectSession) IsClosed() bool {
