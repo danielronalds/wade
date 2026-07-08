@@ -5,6 +5,7 @@ const projectShortcutPrefixKey = 'b';
 const nextTerminalPaneKey = 'o';
 const terminalZoomKey = 'z';
 const scratchpadTerminalKey = 't';
+const scratchpadTerminalCode = 'KeyT';
 
 type ProjectKeyboardShortcutsOptions = {
   selectSidebarItemBySlot: (slot: number) => void;
@@ -19,11 +20,11 @@ const isCtrlShortcut = (event: KeyboardEvent, key: string) => event.ctrlKey
   && !event.shiftKey
   && event.key.toLowerCase() === key;
 
-const isCtrlAltShortcut = (event: KeyboardEvent, key: string) => event.ctrlKey
+const isCtrlAltShortcut = (event: KeyboardEvent, key: string, code?: string) => event.ctrlKey
   && event.altKey
   && !event.metaKey
   && !event.shiftKey
-  && event.key.toLowerCase() === key;
+  && (event.key.toLowerCase() === key || event.code === code);
 
 const isShortcutPrefix = (event: KeyboardEvent) => isCtrlShortcut(event, projectShortcutPrefixKey);
 
@@ -80,7 +81,7 @@ export const useProjectKeyboardShortcuts = ({
   };
 
   const handleKeydown = (event: KeyboardEvent) => {
-    if (isCtrlAltShortcut(event, scratchpadTerminalKey)) {
+    if (isCtrlAltShortcut(event, scratchpadTerminalKey, scratchpadTerminalCode)) {
       stopEvent(event);
       clearPrefix();
       toggleScratchpadTerminal();
