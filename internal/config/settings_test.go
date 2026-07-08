@@ -16,6 +16,14 @@ func TestDefaultSettingsIncludesAgents(t *testing.T) {
 	}
 }
 
+func TestDefaultSettingsUsesEnvironmentShell(t *testing.T) {
+	settings := defaultSettings(filepath.Join(t.TempDir(), "config.json"))
+
+	if settings.Shell != "" {
+		t.Fatalf("Shell = %q, want empty", settings.Shell)
+	}
+}
+
 func TestParseSettingsDefaultsAgentsWhenMissing(t *testing.T) {
 	settings, err := parseSettings("config.json", []byte(`{"projectDirectories":["~/Code"]}`))
 	if err != nil {
@@ -39,10 +47,22 @@ func TestParseSettingsUsesConfiguredAgents(t *testing.T) {
 	}
 }
 
+func TestParseSettingsUsesConfiguredShell(t *testing.T) {
+	settings, err := parseSettings("config.json", []byte(`{"projectDirectories":["~/Code"],"shell":" /bin/zsh "}`))
+	if err != nil {
+		t.Fatalf("parseSettings() error = %v, want nil", err)
+	}
+
+	if settings.Shell != "/bin/zsh" {
+		t.Fatalf("Shell = %q, want %q", settings.Shell, "/bin/zsh")
+	}
+}
+
 func TestSettingsSaveWritesAgentsAndPreservesUnknownKeys(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.json")
 	settings := Settings{
 		ProjectDirectories: []string{"~/Code"},
+		Shell:              " /bin/zsh ",
 		Agents:             []Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
 		path:               path,
 		raw: map[string]json.RawMessage{
@@ -79,6 +99,10 @@ func TestSettingsSaveWritesAgentsAndPreservesUnknownKeys(t *testing.T) {
 		t.Fatalf("agents[0] = %#v, want Custom custom-agent default", agent)
 	}
 
+	if saved["shell"] != "/bin/zsh" {
+		t.Fatalf("shell = %#v, want %q", saved["shell"], "/bin/zsh")
+	}
+
 	if _, ok := saved["agentCommand"]; ok {
 		t.Fatalf("agentCommand was preserved, want it removed")
 	}
@@ -88,6 +112,113 @@ func TestSettingsSaveWritesAgentsAndPreservesUnknownKeys(t *testing.T) {
 
 	if saved["theme"] != "dark" {
 		t.Fatalf("theme = %#v, want %q", saved["theme"], "dark")
+	}
+}
+
+func TestValidateShellAllowsEmptyShell(t *testing.T) {
+	if err := ValidateShell(""); err != nil {
+		t.Fatalf("ValidateShell() error = %v, want nil", err)
+	}
+}
+
+func TestValidateShellAllowsAbsoluteExecutableShell(t *testing.T) {
+	shell := writeExecutable(t, t.TempDir(), "custom-shell")
+
+	if err := ValidateShell(shell); err != nil {
+		t.Fatalf("ValidateShell() error = %v, want nil", err)
+	}
+}
+
+func TestValidateShellAllowsCommandOnPath(t *testing.T) {
+	directory := t.TempDir()
+	writeExecutable(t, directory, "custom-shell")
+	t.Setenv("PATH", directory)
+
+	if err := ValidateShell("custom-shell"); err != nil {
+		t.Fatalf("ValidateShell() error = %v, want nil", err)
+	}
+}
+
+func TestValidateShellRejectsShellWithArguments(t *testing.T) {
+	if err := ValidateShell("/bin/zsh -l"); err == nil {
+		t.Fatal("ValidateShell() error = nil, want error")
+	}
+}
+
+func TestValidateShellRejectsMissingShell(t *testing.T) {
+	if err := ValidateShell(filepath.Join(t.TempDir(), "missing-shell")); err == nil {
+		t.Fatal("ValidateShell() error = nil, want error")
+	}
+}
+
+func TestResolveRuntimeShellUsesConfiguredShellOverEnvironment(t *testing.T) {
+	directory := t.TempDir()
+	shell := writeExecutable(t, directory, "custom-shell")
+	t.Setenv("PATH", directory)
+
+	resolvedShell, err := resolveRuntimeShell("custom-shell", "/bin/zsh")
+	if err != nil {
+		t.Fatalf("resolveRuntimeShell() error = %v, want nil", err)
+	}
+
+	if resolvedShell != shell {
+		t.Fatalf("resolveRuntimeShell() shell = %q, want %q", resolvedShell, shell)
+	}
+}
+
+func TestLoadUsesConfiguredShellOverEnvironment(t *testing.T) {
+	homeDir := t.TempDir()
+	shell := writeExecutable(t, homeDir, "custom-shell")
+	t.Setenv("HOME", homeDir)
+	t.Setenv("SHELL", "/bin/zsh")
+
+	path := filepath.Join(homeDir, ".config", "wade", "config.json")
+	settings := Settings{
+		ProjectDirectories: []string{},
+		Shell:              shell,
+		Agents:             []Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
+		path:               path,
+		raw:                map[string]json.RawMessage{},
+	}
+	if err := settings.Save(); err != nil {
+		t.Fatalf("Save() error = %v, want nil", err)
+	}
+
+	configuration, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+
+	if configuration.Shell != shell {
+		t.Fatalf("Shell = %q, want %q", configuration.Shell, shell)
+	}
+}
+
+func TestLoadUsesEnvironmentShellWhenShellSettingIsEmpty(t *testing.T) {
+	homeDir := t.TempDir()
+	environmentShell := "/bin/custom-shell"
+	t.Setenv("HOME", homeDir)
+	t.Setenv("SHELL", environmentShell)
+
+	path := filepath.Join(homeDir, ".config", "wade", "config.json")
+	settings := Settings{
+		ProjectDirectories: []string{},
+		Shell:              "",
+		Agents:             []Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
+		path:               path,
+		raw:                map[string]json.RawMessage{},
+	}
+	if err := settings.Save(); err != nil {
+		t.Fatalf("Save() error = %v, want nil", err)
+	}
+
+	configuration, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+
+	if configuration.Shell != environmentShell {
+		t.Fatalf("Shell = %q, want %q", configuration.Shell, environmentShell)
 	}
 }
 
@@ -183,4 +314,15 @@ func TestEnsureFileDoesNotParseExistingConfig(t *testing.T) {
 	if actualPath != path {
 		t.Fatalf("EnsureFile() path = %q, want %q", actualPath, path)
 	}
+}
+
+func writeExecutable(t *testing.T, directory string, name string) string {
+	t.Helper()
+
+	path := filepath.Join(directory, name)
+	if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("WriteFile() error = %v, want nil", err)
+	}
+
+	return path
 }

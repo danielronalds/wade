@@ -13,6 +13,7 @@ type ConfigHandler struct{}
 
 type configPayload struct {
 	ProjectDirectories                 []string       `json:"projectDirectories"`
+	Shell                              string         `json:"shell"`
 	Agents                             []config.Agent `json:"agents"`
 	CopyIgnoredFilesOnWorktreeCreation bool           `json:"copyIgnoredFilesOnWorktreeCreation"`
 	WorktreeCopyExcludes               []string       `json:"worktreeCopyExcludes"`
@@ -33,6 +34,7 @@ func (h ConfigHandler) GetConfig(w http.ResponseWriter, _ *http.Request) {
 
 	writeJSON(w, http.StatusOK, configPayload{
 		ProjectDirectories:                 settings.ProjectDirectories,
+		Shell:                              settings.Shell,
 		Agents:                             settings.Agents,
 		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
 		WorktreeCopyExcludes:               settings.WorktreeCopyExcludes,
@@ -49,6 +51,12 @@ func (h ConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 
 	projectDirectories := trimProjectDirectories(request.ProjectDirectories)
 	if err := config.ValidateProjectDirectories(projectDirectories); err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	shell := strings.TrimSpace(request.Shell)
+	if err := config.ValidateShell(shell); err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -78,6 +86,7 @@ func (h ConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	settings.ProjectDirectories = projectDirectories
+	settings.Shell = shell
 	settings.Agents = agents
 	settings.CopyIgnoredFilesOnWorktreeCreation = request.CopyIgnoredFilesOnWorktreeCreation
 	settings.WorktreeCopyExcludes = worktreeCopyExcludes

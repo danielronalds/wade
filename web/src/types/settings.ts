@@ -8,6 +8,7 @@ export type Agent = {
 
 export type Settings = {
   projectDirectories: string[];
+  shell: string;
   agents: Agent[];
   copyIgnoredFilesOnWorktreeCreation: boolean;
   worktreeCopyExcludes: string[];
@@ -21,6 +22,7 @@ export const defaultAgents: Agent[] = [
 
 export const createEmptySettings = (): Settings => ({
   projectDirectories: [],
+  shell: '',
   agents: defaultAgents.map((agent) => ({ ...agent })),
   copyIgnoredFilesOnWorktreeCreation: false,
   worktreeCopyExcludes: [],
@@ -31,6 +33,7 @@ export const cloneAgents = (agents: readonly Agent[]): Agent[] => agents.map((ag
 
 export const cloneSettings = (settings: Settings): Settings => ({
   projectDirectories: [...settings.projectDirectories],
+  shell: settings.shell,
   agents: cloneAgents(settings.agents),
   copyIgnoredFilesOnWorktreeCreation: settings.copyIgnoredFilesOnWorktreeCreation,
   worktreeCopyExcludes: [...settings.worktreeCopyExcludes],
@@ -38,6 +41,8 @@ export const cloneSettings = (settings: Settings): Settings => ({
 });
 
 export const normaliseProjectDirectories = (directories: readonly string[]) => directories.map((directory) => directory.trim());
+
+export const normaliseShell = (shell: string) => shell.trim();
 
 export const normaliseAgents = (agents: readonly Agent[]) => agents.map((agent) => ({
   name: agent.name.trim(),
@@ -51,11 +56,14 @@ export const normaliseWorktreeCopyExcludes = (excludes: readonly string[]) => ex
 
 export const normaliseSettings = (settings: Settings): Settings => ({
   projectDirectories: normaliseProjectDirectories(settings.projectDirectories),
+  shell: normaliseShell(settings.shell),
   agents: normaliseAgents(settings.agents),
   copyIgnoredFilesOnWorktreeCreation: settings.copyIgnoredFilesOnWorktreeCreation,
   worktreeCopyExcludes: normaliseWorktreeCopyExcludes(settings.worktreeCopyExcludes),
   themeAccentColor: normaliseThemeAccentColor(settings.themeAccentColor)
 });
+
+export const isValidShell = (shell: string) => shell.trim().split(/\s+/).filter(Boolean).length <= 1;
 
 export const isValidProjectDirectory = (directory: string) => {
   const trimmedDirectory = directory.trim();
@@ -115,6 +123,7 @@ export const isSettings = (value: unknown): value is Settings => {
 
   return Array.isArray(response.projectDirectories)
     && response.projectDirectories.every((directory) => typeof directory === 'string')
+    && typeof response.shell === 'string'
     && Array.isArray(response.agents)
     && response.agents.every(isAgent)
     && typeof response.copyIgnoredFilesOnWorktreeCreation === 'boolean'

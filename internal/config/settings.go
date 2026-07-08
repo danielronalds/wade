@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -31,6 +32,7 @@ type Agent struct {
 // Settings is the editable user configuration stored on disk.
 type Settings struct {
 	ProjectDirectories                 []string `json:"projectDirectories"`
+	Shell                              string   `json:"shell"`
 	Agents                             []Agent  `json:"agents"`
 	CopyIgnoredFilesOnWorktreeCreation bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
 	WorktreeCopyExcludes               []string `json:"worktreeCopyExcludes"`
@@ -41,6 +43,7 @@ type Settings struct {
 
 type settingsFile struct {
 	ProjectDirectories                 *[]string `json:"projectDirectories"`
+	Shell                              *string   `json:"shell"`
 	Agents                             *[]Agent  `json:"agents"`
 	CopyIgnoredFilesOnWorktreeCreation *bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
 	WorktreeCopyExcludes               *[]string `json:"worktreeCopyExcludes"`
@@ -69,6 +72,73 @@ func LoadSettings() (Settings, error) {
 	}
 
 	return parseSettings(path, contents)
+}
+
+func ValidateShell(shell string) error {
+	_, err := resolveConfiguredShell(shell)
+	return err
+}
+
+func resolveConfiguredShell(shell string) (string, error) {
+	shell = strings.TrimSpace(shell)
+	if shell == "" {
+		return "", nil
+	}
+
+	if len(strings.Fields(shell)) != 1 {
+		return "", errors.New("shell must be a program path or command without arguments")
+	}
+
+	shell = expandHomePath(shell)
+	if filepath.IsAbs(shell) {
+		return executablePath(shell)
+	}
+
+	if strings.ContainsRune(shell, filepath.Separator) {
+		return "", fmt.Errorf("shell %q must be an absolute path or command on PATH", shell)
+	}
+
+	path, err := exec.LookPath(shell)
+	if err != nil {
+		return "", fmt.Errorf("shell %q was not found on PATH", shell)
+	}
+
+	return path, nil
+}
+
+func expandHomePath(path string) string {
+	if path == "~" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return path
+		}
+
+		return homeDir
+	}
+
+	if strings.HasPrefix(path, "~/") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return path
+		}
+
+		return filepath.Join(homeDir, strings.TrimPrefix(path, "~/"))
+	}
+
+	return path
+}
+
+func executablePath(path string) (string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("shell %q is not executable", path)
+	}
+
+	if info.IsDir() || info.Mode().Perm()&0o111 == 0 {
+		return "", fmt.Errorf("shell %q is not executable", path)
+	}
+
+	return filepath.Clean(path), nil
 }
 
 func ValidateAgents(agents []Agent) error {
@@ -174,6 +244,11 @@ func (s Settings) Save() error {
 		return fmt.Errorf("encoding project directories: %w", err)
 	}
 
+	shell, err := json.Marshal(strings.TrimSpace(s.Shell))
+	if err != nil {
+		return fmt.Errorf("encoding shell: %w", err)
+	}
+
 	agents, err := json.Marshal(s.Agents)
 	if err != nil {
 		return fmt.Errorf("encoding agents: %w", err)
@@ -197,6 +272,7 @@ func (s Settings) Save() error {
 	delete(raw, "agentCommand")
 	delete(raw, "agentPaneCommand")
 	raw["projectDirectories"] = projectDirectories
+	raw["shell"] = shell
 	raw["agents"] = agents
 	raw["copyIgnoredFilesOnWorktreeCreation"] = copyIgnoredFilesOnWorktreeCreation
 	raw["worktreeCopyExcludes"] = worktreeCopyExcludes
@@ -209,6 +285,7 @@ func (s Settings) Save() error {
 func defaultSettings(path string) Settings {
 	return Settings{
 		ProjectDirectories:                 []string{"~/Personal", "~/Work"},
+		Shell:                              "",
 		Agents:                             cloneAgents(defaultAgents),
 		CopyIgnoredFilesOnWorktreeCreation: false,
 		WorktreeCopyExcludes:               []string{},
@@ -234,6 +311,9 @@ func parseSettings(path string, contents []byte) (Settings, error) {
 	settings.raw = raw
 	if file.ProjectDirectories != nil {
 		settings.ProjectDirectories = *file.ProjectDirectories
+	}
+	if file.Shell != nil {
+		settings.Shell = strings.TrimSpace(*file.Shell)
 	}
 	if file.Agents != nil {
 		settings.Agents = cloneAgents(*file.Agents)

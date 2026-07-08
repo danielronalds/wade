@@ -6,6 +6,7 @@ import {
   createEmptySettings,
   isValidAgents,
   isValidProjectDirectory,
+  isValidShell,
   normaliseSettings,
   type Settings
 } from '../types/settings';
@@ -14,6 +15,7 @@ import { useRecentProjects } from './useRecentProjects';
 
 const settingsHaveChanged = (current: Settings, saved: Settings) => JSON.stringify(current.projectDirectories)
   !== JSON.stringify(saved.projectDirectories)
+  || current.shell !== saved.shell
   || JSON.stringify(current.agents) !== JSON.stringify(saved.agents)
   || current.copyIgnoredFilesOnWorktreeCreation !== saved.copyIgnoredFilesOnWorktreeCreation
   || JSON.stringify(current.worktreeCopyExcludes) !== JSON.stringify(saved.worktreeCopyExcludes)
@@ -42,12 +44,14 @@ export const useSettingsForm = () => {
   const hasInvalidProjectDirectories = computed(() => form.projectDirectories.some(
     (directory) => !isValidProjectDirectory(directory)
   ));
+  const hasInvalidShell = computed(() => !isValidShell(form.shell));
   const hasInvalidAgents = computed(() => !isValidAgents(normalisedSettings.value.agents));
   const hasChanges = computed(() => settingsHaveChanged(normalisedSettings.value, savedSettings.value));
   const canSave = computed(() => !isLoading.value
     && !isSaving.value
     && hasChanges.value
     && !hasInvalidProjectDirectories.value
+    && !hasInvalidShell.value
     && !hasInvalidAgents.value);
 
   const clearMessages = () => {
@@ -57,6 +61,7 @@ export const useSettingsForm = () => {
 
   const replaceForm = (settings: Settings) => {
     form.projectDirectories = [...settings.projectDirectories];
+    form.shell = settings.shell;
     form.agents = settings.agents.map((agent) => ({ ...agent }));
     form.copyIgnoredFilesOnWorktreeCreation = settings.copyIgnoredFilesOnWorktreeCreation;
     form.worktreeCopyExcludes = [...settings.worktreeCopyExcludes];
@@ -101,6 +106,16 @@ export const useSettingsForm = () => {
 
   const removeProjectDirectory = (index: number) => {
     form.projectDirectories = form.projectDirectories.filter((_, directoryIndex) => directoryIndex !== index);
+    clearMessages();
+  };
+
+  const updateShell = (event: Event) => {
+    const nextShell = inputValue(event);
+    if (nextShell === undefined) {
+      return;
+    }
+
+    form.shell = nextShell;
     clearMessages();
   };
 
@@ -251,12 +266,14 @@ export const useSettingsForm = () => {
     error: readonly(error),
     statusMessage: readonly(statusMessage),
     hasInvalidProjectDirectories,
+    hasInvalidShell,
     hasInvalidAgents,
     canSave,
     isValidProjectDirectory,
     updateProjectDirectory,
     addProjectDirectory,
     removeProjectDirectory,
+    updateShell,
     updateAgentName,
     updateAgentCommand,
     setDefaultAgent,

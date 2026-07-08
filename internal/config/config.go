@@ -54,10 +54,15 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	shell, err := resolveRuntimeShell(settings.Shell, os.Getenv("SHELL"))
+	if err != nil {
+		return Config{}, err
+	}
+
 	return Config{
 		Address:                            envOrDefault(addressEnv, defaultAddress(os.Getenv(devModeEnv))),
 		ProjectDirs:                        projectDirs,
-		Shell:                              terminal.ResolveShell(os.Getenv("SHELL")),
+		Shell:                              shell,
 		Agents:                             agents,
 		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
 		WorktreeCopyExcludes:               worktreeCopyExcludes,
@@ -81,6 +86,15 @@ func isEnabled(value string) bool {
 	default:
 		return true
 	}
+}
+
+func resolveRuntimeShell(configuredShell string, environmentShell string) (string, error) {
+	configuredShell = strings.TrimSpace(configuredShell)
+	if configuredShell == "" {
+		return terminal.ResolveShell(environmentShell), nil
+	}
+
+	return resolveConfiguredShell(configuredShell)
 }
 
 // envOrDefault returns an environment value when present, otherwise fallback.

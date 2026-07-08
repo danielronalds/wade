@@ -12,12 +12,14 @@ const {
   error,
   statusMessage,
   hasInvalidProjectDirectories,
+  hasInvalidShell,
   hasInvalidAgents,
   canSave,
   isValidProjectDirectory,
   updateProjectDirectory,
   addProjectDirectory,
   removeProjectDirectory,
+  updateShell,
   updateAgentName,
   updateAgentCommand,
   setDefaultAgent,
@@ -93,6 +95,29 @@ onMounted(() => {
           </p>
         </section>
 
+        <section id="shell-section" aria-labelledby="shell-title">
+          <header class="settings-section-header">
+            <section>
+              <h2 id="shell-title">Shell</h2>
+              <p>Leave blank to use the server's <code>$SHELL</code>. Existing terminals keep their current shell until reloaded.</p>
+            </section>
+          </header>
+
+          <label class="shell-row" for="shell">
+            <span>Shell</span>
+            <input
+              id="shell"
+              :value="form.shell"
+              type="text"
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="$SHELL"
+              :aria-invalid="hasInvalidShell"
+              @input="updateShell"
+            >
+          </label>
+        </section>
+
         <AgentSettingsEditor
           :agents="form.agents"
           :is-loading="isLoading"
@@ -142,6 +167,9 @@ onMounted(() => {
         <footer id="settings-actions">
           <p v-if="!isLoading && hasInvalidProjectDirectories" class="settings-error">
             Project directories must use ~ or an absolute path.
+          </p>
+          <p v-else-if="!isLoading && hasInvalidShell" class="settings-error">
+            Shell must be a program path or command without arguments.
           </p>
           <p v-else-if="!isLoading && hasInvalidAgents" class="settings-error">
             At least one agent is required. Agent names and commands cannot be empty, names must be unique, and exactly one agent must be default.
@@ -266,6 +294,7 @@ onMounted(() => {
 }
 
 #project-directories-section,
+#shell-section,
 #worktree-copy-section {
   width: min(860px, 100%);
   display: grid;
@@ -332,6 +361,7 @@ onMounted(() => {
 }
 
 .project-directory-row,
+.shell-row,
 .worktree-copy-exclude-row,
 .checkbox-setting-row {
   display: grid;
@@ -344,12 +374,17 @@ onMounted(() => {
   grid-template-columns: 120px minmax(0, 1fr) auto;
 }
 
+.shell-row {
+  grid-template-columns: 120px minmax(0, 1fr);
+}
+
 .checkbox-setting-row {
   grid-template-columns: auto minmax(0, 1fr);
   justify-content: start;
 }
 
 .project-directory-row label,
+.shell-row span,
 .worktree-copy-exclude-row label,
 .checkbox-setting-row span {
   color: var(--muted);
@@ -357,6 +392,7 @@ onMounted(() => {
 }
 
 .project-directory-row input,
+.shell-row input,
 .worktree-copy-exclude-row input {
   min-width: 0;
   border: 1px solid rgb(var(--accent-rgb) / 30%);
@@ -368,12 +404,14 @@ onMounted(() => {
 }
 
 .project-directory-row input:focus,
+.shell-row input:focus,
 .worktree-copy-exclude-row input:focus {
   border-color: var(--text);
   outline: none;
 }
 
 .project-directory-row input[aria-invalid="true"],
+.shell-row input[aria-invalid="true"],
 .worktree-copy-exclude-row input[aria-invalid="true"] {
   border-color: var(--disconnected);
 }
@@ -413,6 +451,7 @@ onMounted(() => {
   }
 
   .project-directory-row,
+  .shell-row,
   .worktree-copy-exclude-row {
     grid-template-columns: 1fr;
   }

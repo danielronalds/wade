@@ -26,16 +26,24 @@ func StartShellCommand(shell string, directory string, command string, size Size
 }
 
 func interactiveShell(shell string) *exec.Cmd {
-	return exec.Command(shell)
+	return withShellEnvironment(exec.Command(shell), shell)
 }
 
 func shellCommand(shell string, command string) *exec.Cmd {
-	return exec.Command(shell, "-lc", command)
+	return withShellEnvironment(exec.Command(shell, "-lc", command), shell)
+}
+
+func withShellEnvironment(command *exec.Cmd, shell string) *exec.Cmd {
+	command.Env = append(os.Environ(), "SHELL="+shell)
+	return command
 }
 
 func start(command *exec.Cmd, directory string, size Size) (*Session, error) {
 	command.Dir = directory
-	command.Env = append(os.Environ(), "TERM=xterm-256color", "COLORTERM=truecolor")
+	if command.Env == nil {
+		command.Env = os.Environ()
+	}
+	command.Env = append(command.Env, "TERM=xterm-256color", "COLORTERM=truecolor")
 
 	terminalFile, err := pty.StartWithSize(command, &pty.Winsize{Cols: size.Cols, Rows: size.Rows})
 	if err != nil {
