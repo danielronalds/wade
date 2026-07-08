@@ -3,11 +3,13 @@ import { onBeforeUnmount, onMounted } from 'vue';
 import { registerEventHandlers } from '../events/registerEventHandlers';
 
 type ProjectEventHandlersOptions = {
+  cancelReview: () => Promise<void>;
   getProjectName: () => string;
   startReview: () => Promise<void>;
 };
 
 export const useProjectEventHandlers = ({
+  cancelReview,
   getProjectName,
   startReview
 }: ProjectEventHandlersOptions) => {
@@ -15,6 +17,13 @@ export const useProjectEventHandlers = ({
 
   onMounted(() => {
     unregisterEventHandlers = registerEventHandlers({
+      cancelReview: async ({ projectName }) => {
+        if (projectName !== getProjectName()) {
+          return;
+        }
+
+        await cancelReview();
+      },
       startReview: async ({ projectName }) => {
         if (projectName !== getProjectName()) {
           return;

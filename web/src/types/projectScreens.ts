@@ -6,5 +6,6 @@ export interface ProjectScreenComponent {
 }
 
 export interface ReviewScreenComponent extends ProjectScreenComponent {
+  cancelReview: () => Promise<void>;
   startReview: () => Promise<void>;
 }

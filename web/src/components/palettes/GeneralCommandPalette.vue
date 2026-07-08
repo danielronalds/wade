@@ -6,6 +6,8 @@ import { useFuzzyItems } from '../../composables/useFuzzyProjects';
 import { isProjectDetails, type ProjectDetails } from '../../composables/useProjectDetails';
 import { useProjects } from '../../composables/useProjects';
 import { useRecentProjects } from '../../composables/useRecentProjects';
+import { isReviewInProgressState, useReviewSessionState } from '../../composables/useReviewSessionState';
+import { dispatchCancelReviewEvent } from '../../events/cancelReview';
 import { dispatchStartReviewEvent } from '../../events/startReview';
 import PaletteShell from './PaletteShell.vue';
 import type { PaletteNotice, PaletteResult } from './types';
@@ -34,6 +36,8 @@ let detailsLoadRun = 0;
 const currentProjectName = computed(() => route.name === 'project'
   ? String(route.params.projectName ?? '')
   : '');
+const currentReviewState = useReviewSessionState(currentProjectName);
+const isReviewInProgress = computed(() => isReviewInProgressState(currentReviewState.value));
 
 const closeSessionActionLabel = computed(() => {
   if (currentProjectName.value === '') {
@@ -110,6 +114,15 @@ const startReview = () => {
   dispatchStartReviewEvent(currentProjectName.value);
 };
 
+const cancelReview = () => {
+  if (currentProjectName.value === '' || !isReviewInProgress.value) {
+    return;
+  }
+
+  closePaletteWithoutRestoringFocus();
+  dispatchCancelReviewEvent(currentProjectName.value);
+};
+
 const openCreateWorktree = () => {
   if (currentProjectName.value === '') {
     return;
@@ -176,6 +189,26 @@ const createExternalCommand = (
   run: () => openExternalUrl(url)
 });
 
+const reviewCommand = computed<PaletteResult>(() => {
+  if (isReviewInProgress.value) {
+    return {
+      id: 'cancel-review',
+      label: 'Cancel Review',
+      actionLabel: currentReviewState.value === 'loading' ? 'Stop starting review' : 'Discard review',
+      isDisabled: false,
+      run: cancelReview
+    };
+  }
+
+  return {
+    id: 'start-review',
+    label: 'Start Review',
+    actionLabel: currentProjectName.value === '' ? 'No project open' : 'Open review tab',
+    isDisabled: currentProjectName.value === '',
+    run: startReview
+  };
+});
+
 const commandDefinitions = computed<PaletteResult[]>(() => [
   {
     id: 'open-project-picker',
@@ -198,13 +231,7 @@ const commandDefinitions = computed<PaletteResult[]>(() => [
     isDisabled: false,
     run: () => emit('openRemoteProjectPicker')
   },
-  {
-    id: 'start-review',
-    label: 'Start Review',
-    actionLabel: currentProjectName.value === '' ? 'No project open' : 'Open review tab',
-    isDisabled: currentProjectName.value === '',
-    run: startReview
-  },
+  reviewCommand.value,
   {
     id: 'close-current-session',
     label: 'Close Current Session',

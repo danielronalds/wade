@@ -14,6 +14,12 @@ import {
 } from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { pasteIntoAgentTerminal } from '../composables/useAgentTerminalInput';
+import {
+  clearReviewSessionState,
+  isReviewInProgressState,
+  setReviewSessionState,
+  type ReviewSessionState
+} from '../composables/useReviewSessionState';
 import type {
   CommentSide,
   ReviewComment,
@@ -35,7 +41,7 @@ const emit = defineEmits<{
   requestTerminalTab: [];
 }>();
 
-type ReviewState = 'idle' | 'loading' | 'ready' | 'error';
+type ReviewState = ReviewSessionState;
 
 type FileRequestState = {
   contents: ReviewFileContents | null;
@@ -92,6 +98,9 @@ const startButton = ref<HTMLButtonElement | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
 const draftCommentTextarea = ref<HTMLTextAreaElement | null>(null);
 const overallNoteTextarea = ref<HTMLTextAreaElement | null>(null);
+let reviewLoadRun = 0;
+let reviewLoadAbortController: AbortController | null = null;
+const fileRequestAbortControllers = new Map<string, AbortController>();
 
 const scopeOptions = computed<Array<{ id: ReviewScope; label: string }>>(() => {
   const localScopeOptions: Array<{ id: ReviewScope; label: string }> = [
@@ -335,6 +344,7 @@ const isActiveFileLoading = computed(() => activeFileRequestState.value?.isLoadi
 const activeFileError = computed(() => activeFileRequestState.value?.error ?? '');
 const visibleErrorMessage = computed(() => sendErrorMessage.value || activeFileError.value);
 const canStartReview = computed(() => state.value === 'idle' || state.value === 'error');
+const canCancelReview = computed(() => isReviewInProgressState(state.value));
 const hasReviewableFiles = computed(() => (reviewData.value?.files.length ?? 0) > 0);
 const activeFileComments = computed(() => comments.value.filter((comment) => comment.fileId === activeFileId.value && comment.scope === activeScope.value));
 const activeFileInlineComments = computed(() => activeFileComments.value.filter((comment) => comment.side !== 'file'));
@@ -520,7 +530,24 @@ const handleReviewKeydown = (event: KeyboardEvent) => {
   }
 };
 
+const isAbortError = (error: unknown) => typeof error === 'object'
+  && error !== null
+  && 'name' in error
+  && (error as { name?: unknown }).name === 'AbortError';
+
+const abortReviewRequests = () => {
+  reviewLoadAbortController?.abort();
+  reviewLoadAbortController = null;
+
+  fileRequestAbortControllers.forEach((abortController) => {
+    abortController.abort();
+  });
+  fileRequestAbortControllers.clear();
+};
+
 const resetReview = () => {
+  reviewLoadRun += 1;
+  abortReviewRequests();
   state.value = 'idle';
   reviewData.value = null;
   activeScope.value = 'git-diff';
@@ -537,12 +564,20 @@ const resetReview = () => {
   renderSideBySide.value = true;
   wrapLines.value = true;
   draftComment.value = null;
+  draftCommentBody.value = '';
+  draftCommentKind.value = 'feedback';
   isOverallNoteOpen.value = false;
+  overallNoteDraft.value = '';
 };
 
-const closeReview = () => {
+const cancelReview = async () => {
+  if (!canCancelReview.value) {
+    return;
+  }
+
   resetReview();
   emit('requestTerminalTab');
+  await nextTick();
 };
 
 const setFileRequestState = (key: string, value: FileRequestState) => {
@@ -567,6 +602,12 @@ const startReview = async () => {
     return;
   }
 
+  reviewLoadRun += 1;
+  const run = reviewLoadRun;
+  abortReviewRequests();
+  const abortController = new AbortController();
+  reviewLoadAbortController = abortController;
+
   state.value = 'loading';
   errorMessage.value = '';
   sendErrorMessage.value = '';
@@ -581,17 +622,29 @@ const startReview = async () => {
 
   try {
     const params = new URLSearchParams({ project: props.projectName });
-    const data = await requestJSON<ReviewData>(`/api/review?${params}`);
+    const data = await requestJSON<ReviewData>(`/api/review?${params}`, { signal: abortController.signal });
+    if (reviewLoadRun !== run || abortController.signal.aborted) {
+      return;
+    }
+
     reviewData.value = data;
     activeScope.value = selectInitialScope(data);
     state.value = 'ready';
     ensureActiveFile();
     await loadActiveFileContents();
   } catch (error) {
+    if (reviewLoadRun !== run || abortController.signal.aborted || isAbortError(error)) {
+      return;
+    }
+
     errorMessage.value = error instanceof Error ? error.message : 'Could not start review';
     state.value = 'error';
     await nextTick();
     startButton.value?.focus();
+  } finally {
+    if (reviewLoadAbortController === abortController) {
+      reviewLoadAbortController = null;
+    }
   }
 };
 
@@ -607,6 +660,8 @@ const loadActiveFileContents = async () => {
     return;
   }
 
+  const abortController = new AbortController();
+  fileRequestAbortControllers.set(key, abortController);
   setFileRequestState(key, { contents: null, error: '', isLoading: true });
 
   try {
@@ -614,15 +669,28 @@ const loadActiveFileContents = async () => {
     const contents = await requestJSON<ReviewFileContents>(`/api/review/file?${params}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ fileId: file.id, scope: activeScope.value })
+      body: JSON.stringify({ fileId: file.id, scope: activeScope.value }),
+      signal: abortController.signal
     });
+    if (abortController.signal.aborted || state.value !== 'ready') {
+      return;
+    }
+
     setFileRequestState(key, { contents, error: '', isLoading: false });
   } catch (error) {
+    if (abortController.signal.aborted || state.value !== 'ready' || isAbortError(error)) {
+      return;
+    }
+
     setFileRequestState(key, {
       contents: null,
       error: error instanceof Error ? error.message : 'Could not load file',
       isLoading: false
     });
+  } finally {
+    if (fileRequestAbortControllers.get(key) === abortController) {
+      fileRequestAbortControllers.delete(key);
+    }
   }
 };
 
@@ -842,8 +910,15 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  reviewLoadRun += 1;
+  abortReviewRequests();
+  clearReviewSessionState(props.projectName);
   window.removeEventListener('keydown', handleReviewKeydown, true);
 });
+
+watch(state, (nextState) => {
+  setReviewSessionState(props.projectName, nextState);
+}, { immediate: true });
 
 watch(activeScope, () => {
   ensureActiveFile();
@@ -865,6 +940,7 @@ watch(() => props.isActive, (isActive) => {
 });
 
 defineExpose({
+  cancelReview,
   focusActiveTerminal,
   startReview,
   switchToNextTerminal
@@ -999,7 +1075,7 @@ defineExpose({
               </button>
             </section>
             <section class="review-action-group" aria-label="Review lifecycle actions">
-              <button class="review-icon-button" type="button" title="Cancel review" aria-label="Cancel review" @click="closeReview">
+              <button class="review-icon-button" type="button" title="Cancel review" aria-label="Cancel review" @click="cancelReview">
                 <X :size="15" :stroke-width="1.8" aria-hidden="true" />
               </button>
               <button class="review-finish-button" type="button" :disabled="!canFinishReview" @click="finishReview">

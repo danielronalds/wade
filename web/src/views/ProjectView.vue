@@ -146,7 +146,12 @@ const startReviewFromCommandPalette = async () => {
   await reviewTab.value?.focusActiveTerminal();
 };
 
+const cancelReviewFromCommandPalette = async () => {
+  await reviewTab.value?.cancelReview();
+};
+
 useProjectEventHandlers({
+  cancelReview: cancelReviewFromCommandPalette,
   getProjectName: () => props.projectName,
   startReview: startReviewFromCommandPalette
 });
