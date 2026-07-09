@@ -432,14 +432,14 @@ paths:
     post:
       operationId: reloadConfig
       produces:
-      - text/plain
+      - application/json
       responses:
         "204":
           description: No Content
         "400":
-          description: unable to reload config
+          description: Bad Request
           schema:
-            type: string
+            $ref: '#/definitions/handlers.errorResponse'
       summary: Reload runtime config
       tags:
       - Config
@@ -665,14 +665,14 @@ paths:
         name: agent
         type: string
       produces:
-      - text/plain
+      - application/json
       responses:
         "204":
           description: No Content
         "404":
-          description: project not found
+          description: Not Found
           schema:
-            type: string
+            $ref: '#/definitions/handlers.errorResponse'
       summary: Reload terminal session
       tags:
       - Terminals

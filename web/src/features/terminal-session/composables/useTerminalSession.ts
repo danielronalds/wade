@@ -353,10 +353,12 @@ export const useTerminalSession = ({
       }
 
       await start();
-    } catch {
+    } catch (error) {
       if (isSessionRunActive(run)) {
+        const message = error instanceof Error ? `: ${error.message}` : '';
+
         setConnectionStatus(false, 'Error');
-        terminal?.write('\r\nReload failed.\r\n');
+        terminal?.write(`\r\nReload failed${message}.\r\n`);
       }
     } finally {
       if (reloadingRun === run) {

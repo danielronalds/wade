@@ -87,7 +87,7 @@
         "/api/config/reload": {
             "post": {
                 "produces": [
-                    "text/plain"
+                    "application/json"
                 ],
                 "tags": [
                     "Config"
@@ -99,9 +99,9 @@
                         "description": "No Content"
                     },
                     "400": {
-                        "description": "unable to reload config",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     }
                 }
@@ -421,7 +421,7 @@
         "/api/terminal/reload": {
             "post": {
                 "produces": [
-                    "text/plain"
+                    "application/json"
                 ],
                 "tags": [
                     "Terminals"
@@ -454,9 +454,9 @@
                         "description": "No Content"
                     },
                     "404": {
-                        "description": "project not found",
+                        "description": "Not Found",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     }
                 }

@@ -5,20 +5,21 @@ import (
 	"net/http"
 
 	"wade/internal/config"
+	"wade/internal/server/handlers"
 )
 
 // handleConfigReload reloads runtime-safe settings on demand.
 // @Summary Reload runtime config
 // @ID reloadConfig
 // @Tags Config
-// @Produce plain
+// @Produce json
 // @Success 204 "No Content"
-// @Failure 400 {string} string "unable to reload config"
+// @Failure 400 {object} handlers.errorResponse
 // @Router /api/config/reload [post]
 func (s *Server) handleConfigReload(w http.ResponseWriter, r *http.Request) {
 	if err := s.reloadConfig(); err != nil {
 		log.Printf("config reload failed: %v", err)
-		http.Error(w, "unable to reload config", http.StatusBadRequest)
+		handlers.WriteJSONError(w, http.StatusBadRequest, "unable to reload config")
 		return
 	}
 

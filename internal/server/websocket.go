@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"wade/internal/server/handlers"
 	terminalmanager "wade/internal/terminal/manager"
 
 	"github.com/gorilla/websocket"
@@ -16,17 +17,17 @@ var websocketUpgrader = websocket.Upgrader{
 // @Summary Reload terminal session
 // @ID reloadTerminalSession
 // @Tags Terminals
-// @Produce plain
+// @Produce json
 // @Param project query string true "Project name"
 // @Param terminal query string false "Terminal name"
 // @Param agent query string false "Agent name"
 // @Success 204 "No Content"
-// @Failure 404 {string} string "project not found"
+// @Failure 404 {object} handlers.errorResponse
 // @Router /api/terminal/reload [post]
 func (s *Server) handleTerminalReload(w http.ResponseWriter, r *http.Request) {
 	projectPath, err := s.projects.Path(r.URL.Query().Get("project"))
 	if err != nil {
-		http.Error(w, "project not found", http.StatusNotFound)
+		handlers.WriteJSONError(w, http.StatusNotFound, "project not found")
 		return
 	}
 
