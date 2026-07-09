@@ -1,5 +1,9 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, readonly, ref } from 'vue';
-import { fetchSettings, reloadConfig, saveSettings } from '@/api/settings';
+import {
+  getSettings,
+  reloadConfig,
+  updateSettings
+} from '@/api/generated/wade';
 import { applyThemeAccentColor, type ThemeAccentColor } from '@/utils/theme';
 import {
   cloneSettings,
@@ -73,7 +77,7 @@ export const useSettingsForm = () => {
     clearMessages();
 
     try {
-      const settings = await fetchSettings();
+      const settings = await getSettings() as Settings;
       replaceForm(settings);
       savedSettings.value = normaliseSettings(settings);
       applyThemeAccentColor(settings.themeAccentColor);
@@ -222,7 +226,7 @@ export const useSettingsForm = () => {
   const persistSettings = async () => {
     const settings = cloneSettings(normalisedSettings.value);
 
-    await saveSettings(settings);
+    await updateSettings(settings);
     await reloadConfig();
     await refreshProjects();
 

@@ -14,6 +14,7 @@ var websocketUpgrader = websocket.Upgrader{
 }
 
 // @Summary Reload terminal session
+// @ID reloadTerminalSession
 // @Tags Terminals
 // @Produce plain
 // @Param project query string true "Project name"

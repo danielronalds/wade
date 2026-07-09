@@ -12,19 +12,17 @@ run = "npm --prefix web install"
 
 [tasks.dev]
 description = "Runs the project with live reload"
-depends = ["gen:embed"]
+depends = ["install"]
 env = { WADE_ADDR = "editor-dev.localhost:8090" }
 run = "air"
 
 [tasks.build]
 description = "Builds the wade binary"
-depends = ["gen:embed"]
-run = "go build -o .tmp/wade ./cmd/wade"
+run = "mise run gen:openapi && mise run gen:embed && go build -o .tmp/wade ./cmd/wade"
 
 [tasks."build:install"]
 description = "Builds embedded assets and installs the wade binary"
-depends = ["gen:embed"]
-run = "go install ./cmd/wade"
+run = "mise run gen:openapi && mise run gen:embed && go install ./cmd/wade"
 
 [tasks.fmt]
 description = "Formats Go code"
@@ -32,19 +30,19 @@ run = "go fmt ./..."
 
 [tasks."gen:embed"]
 description = "Stages embedded web assets"
-depends = ["install", "gen:openapi"]
+depends = ["install"]
 run = "go generate ./..."
 
 [tasks."gen:openapi"]
 description = "Generates the OpenAPI spec"
-run = "swag init --quiet --generalInfo cmd/wade/main.go --dir . --parseInternal --output internal/server/openapi --outputTypes json,yaml"
+run = "swag init --quiet --generalInfo cmd/wade/main.go --dir . --parseInternal --requiredByDefault --output internal/server/openapi --outputTypes json,yaml"
 
 [tasks."lint:openapi"]
 description = "Checks generated OpenAPI spec"
 run = """
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
-swag init --quiet --generalInfo cmd/wade/main.go --dir . --parseInternal --output "$tmp_dir" --outputTypes json,yaml
+swag init --quiet --generalInfo cmd/wade/main.go --dir . --parseInternal --requiredByDefault --output "$tmp_dir" --outputTypes json,yaml
 diff -u internal/server/openapi/swagger.json "$tmp_dir/swagger.json"
 diff -u internal/server/openapi/swagger.yaml "$tmp_dir/swagger.yaml"
 """
@@ -55,10 +53,8 @@ run = "test -z $(gofmt -l .)"
 
 [tasks."lint:vet"]
 description = "Runs go vet"
-depends = ["gen:embed"]
-run = "go vet ./..."
+run = "mise run gen:openapi && mise run gen:embed && go vet ./..."
 
 [tasks.test]
 description = "Runs tests"
-depends = ["gen:embed"]
-run = "gotestsum -- ./..."
+run = "mise run gen:openapi && mise run gen:embed && gotestsum -- ./..."

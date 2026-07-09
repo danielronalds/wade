@@ -9,6 +9,7 @@ import (
 
 // handleConfigReload reloads runtime-safe settings on demand.
 // @Summary Reload runtime config
+// @ID reloadConfig
 // @Tags Config
 // @Produce plain
 // @Success 204 "No Content"

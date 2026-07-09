@@ -35,6 +35,7 @@ func NewReview(projects project.Store) Review {
 }
 
 // @Summary Get review window data
+// @ID getReviewWindowData
 // @Tags Review
 // @Produce json
 // @Param project query string true "Project name"
@@ -59,6 +60,7 @@ func (h Review) GetReviewWindowData(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Get review file contents
+// @ID getReviewFileContents
 // @Tags Review
 // @Accept json
 // @Produce json

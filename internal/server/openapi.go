@@ -9,6 +9,7 @@ import (
 )
 
 // @Summary Get OpenAPI spec
+// @ID getOpenAPISpec
 // @Tags OpenAPI
 // @Produce json
 // @Success 200 {object} object

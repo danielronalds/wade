@@ -30,6 +30,7 @@ type worktreesResponse struct {
 }
 
 // @Summary List worktrees
+// @ID listWorktrees
 // @Tags Worktrees
 // @Produce json
 // @Param project query string true "Project name"
@@ -62,6 +63,7 @@ type worktreeResponse struct {
 }
 
 // @Summary Create worktree
+// @ID createWorktree
 // @Tags Worktrees
 // @Accept json
 // @Produce json
@@ -102,6 +104,7 @@ type removeWorktreeRequest struct {
 }
 
 // @Summary Remove worktree
+// @ID removeWorktree
 // @Tags Worktrees
 // @Accept json
 // @Produce json
@@ -150,6 +153,7 @@ func (h Worktrees) RemoveWorktree(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary List remote branches
+// @ID listRemoteBranches
 // @Tags Worktrees
 // @Produce json
 // @Param project query string true "Project name"

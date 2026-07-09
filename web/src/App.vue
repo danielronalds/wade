@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { RouterView } from 'vue-router';
-import { fetchSettings } from '@/api/settings';
+import { getSettings } from '@/api/generated/wade';
 import CommandPalette from '@/features/command-palette/CommandPalette.vue';
+import type { Settings } from '@/types/settings';
 import { applyThemeAccentColor, storedThemeAccentColor } from '@/utils/theme';
 
 applyThemeAccentColor(storedThemeAccentColor());
 
 onMounted(async () => {
   try {
-    const settings = await fetchSettings();
+    const settings = await getSettings() as Settings;
     applyThemeAccentColor(settings.themeAccentColor);
   } catch {
     return;

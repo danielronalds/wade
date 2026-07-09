@@ -36,6 +36,7 @@ func NewRemoteProjects(projects project.Store, remote remoteProjectService) Remo
 }
 
 // @Summary List remote projects
+// @ID listRemoteProjects
 // @Tags Remote projects
 // @Produce json
 // @Success 200 {object} remoteProjectsResponse
@@ -59,6 +60,7 @@ func (h RemoteProjects) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Clone remote project
+// @ID cloneRemoteProject
 // @Tags Remote projects
 // @Accept json
 // @Produce json

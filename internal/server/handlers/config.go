@@ -26,6 +26,7 @@ func NewConfig() ConfigHandler {
 }
 
 // @Summary Get settings
+// @ID getSettings
 // @Tags Config
 // @Produce json
 // @Success 200 {object} configPayload
@@ -49,6 +50,7 @@ func (h ConfigHandler) GetConfig(w http.ResponseWriter, _ *http.Request) {
 }
 
 // @Summary Update settings
+// @ID updateSettings
 // @Tags Config
 // @Accept json
 // @Produce json

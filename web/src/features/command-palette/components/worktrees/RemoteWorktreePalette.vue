@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { createWorktree, listRemoteBranches } from '@/api/worktrees';
+import { createWorktree, listRemoteBranches } from '@/api/generated/wade';
 import { useFuzzyItems } from '@/composables/useFuzzyItems';
 import { useProjects } from '@/features/projects/composables/useProjects';
 import type { RemoteBranch, Worktree } from '@/types/worktree';
@@ -87,9 +87,9 @@ const loadRemoteBranches = async () => {
   clearErrors();
 
   try {
-    const branchList = await listRemoteBranches(props.projectName);
-    remote.value = branchList.remote;
-    remoteBranches.value = branchList.branches;
+    const { remote: remoteName, branches } = await listRemoteBranches({ project: props.projectName });
+    remote.value = remoteName;
+    remoteBranches.value = branches;
   } catch (requestError) {
     setLoadError(requestError, 'Remote branches request failed');
   } finally {
@@ -107,7 +107,7 @@ const createOrOpenRemoteBranch = async (branch: RemoteBranch) => {
   createdWorktree.value = undefined;
 
   try {
-    const worktree = await createWorktree(props.projectName, branch.name);
+    const { worktree } = await createWorktree({ project: props.projectName, branch: branch.name });
     if ((worktree.ignoredFileCopyWarnings?.length ?? 0) > 0) {
       createdWorktree.value = worktree;
       query.value = '';

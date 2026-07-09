@@ -1,4 +1,5 @@
 import { readonly, ref } from 'vue';
+import { getProjectDetails } from '@/api/generated/wade';
 
 export type ProjectDetails = {
   name: string;
@@ -6,20 +7,6 @@ export type ProjectDetails = {
   linearTicketUrl: string;
   pullRequestUrl: string;
   githubUrl: string;
-};
-
-export const isProjectDetails = (value: unknown): value is ProjectDetails => {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const details = value as Partial<ProjectDetails>;
-
-  return typeof details.name === 'string'
-    && typeof details.gitBranch === 'string'
-    && typeof details.linearTicketUrl === 'string'
-    && typeof details.pullRequestUrl === 'string'
-    && typeof details.githubUrl === 'string';
 };
 
 export const useProjectDetails = (projectName: string) => {
@@ -35,18 +22,7 @@ export const useProjectDetails = (projectName: string) => {
     error.value = '';
 
     try {
-      const params = new URLSearchParams({ project: projectName });
-      const response = await fetch(`/api/project?${params}`);
-
-      if (!response.ok) {
-        throw new Error(`Project details request failed with ${response.status}`);
-      }
-
-      const details: unknown = await response.json();
-
-      if (!isProjectDetails(details)) {
-        throw new Error('Project details response was invalid');
-      }
+      const details = await getProjectDetails({ project: projectName });
 
       gitBranch.value = details.gitBranch;
       linearTicketUrl.value = details.linearTicketUrl;

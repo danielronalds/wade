@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { listWorktrees, removeWorktree as requestRemoveWorktree } from '@/api/worktrees';
+import { listWorktrees, removeWorktree as requestRemoveWorktree } from '@/api/generated/wade';
 import { useFuzzyItems } from '@/composables/useFuzzyItems';
 import { useProjects } from '@/features/projects/composables/useProjects';
 import type { Worktree } from '@/types/worktree';
@@ -77,7 +77,8 @@ const loadWorktrees = async () => {
   clearErrors();
 
   try {
-    worktrees.value = await listWorktrees(props.projectName);
+    const { worktrees: availableWorktrees } = await listWorktrees({ project: props.projectName });
+    worktrees.value = availableWorktrees;
   } catch (requestError) {
     setLoadError(requestError, 'Worktrees request failed');
   } finally {
@@ -106,7 +107,7 @@ const removeSelectedWorktree = async () => {
   clearActionError();
 
   try {
-    await requestRemoveWorktree(props.projectName, target.projectName);
+    await requestRemoveWorktree({ project: props.projectName, worktree: target.projectName });
     await syncProjects();
 
     if (target.isCurrent) {

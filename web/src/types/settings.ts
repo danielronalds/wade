@@ -1,4 +1,4 @@
-import { defaultThemeAccentColor, isThemeAccentColor, normaliseThemeAccentColor, type ThemeAccentColor } from '@/utils/theme';
+import { defaultThemeAccentColor, normaliseThemeAccentColor, type ThemeAccentColor } from '@/utils/theme';
 
 export type Agent = {
   name: string;
@@ -102,32 +102,3 @@ export const isValidAgents = (agents: readonly Agent[]) => {
   return true;
 };
 
-const isAgent = (value: unknown): value is Agent => {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const response = value as Partial<Agent>;
-
-  return typeof response.name === 'string'
-    && typeof response.command === 'string'
-    && typeof response.default === 'boolean';
-};
-
-export const isSettings = (value: unknown): value is Settings => {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const response = value as Partial<Settings>;
-
-  return Array.isArray(response.projectDirectories)
-    && response.projectDirectories.every((directory) => typeof directory === 'string')
-    && typeof response.shell === 'string'
-    && Array.isArray(response.agents)
-    && response.agents.every(isAgent)
-    && typeof response.copyIgnoredFilesOnWorktreeCreation === 'boolean'
-    && Array.isArray(response.worktreeCopyExcludes)
-    && response.worktreeCopyExcludes.every((exclude) => typeof exclude === 'string')
-    && isThemeAccentColor(response.themeAccentColor);
-};

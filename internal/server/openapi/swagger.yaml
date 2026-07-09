@@ -10,6 +10,10 @@ definitions:
         type: boolean
       name:
         type: string
+    required:
+    - command
+    - default
+    - name
     type: object
   handlers.cloneRemoteProjectRequest:
     properties:
@@ -17,11 +21,16 @@ definitions:
         type: integer
       nameWithOwner:
         type: string
+    required:
+    - directoryIndex
+    - nameWithOwner
     type: object
   handlers.cloneRemoteProjectResponse:
     properties:
       project:
         $ref: '#/definitions/remote.ClonedProject'
+    required:
+    - project
     type: object
   handlers.configPayload:
     properties:
@@ -43,6 +52,13 @@ definitions:
         items:
           type: string
         type: array
+    required:
+    - agents
+    - copyIgnoredFilesOnWorktreeCreation
+    - projectDirectories
+    - shell
+    - themeAccentColor
+    - worktreeCopyExcludes
     type: object
   handlers.createWorktreeRequest:
     properties:
@@ -50,11 +66,16 @@ definitions:
         type: string
       project:
         type: string
+    required:
+    - branch
+    - project
     type: object
   handlers.errorResponse:
     properties:
       message:
         type: string
+    required:
+    - message
     type: object
   handlers.projectResponse:
     properties:
@@ -68,6 +89,12 @@ definitions:
         type: string
       pullRequestUrl:
         type: string
+    required:
+    - gitBranch
+    - githubUrl
+    - linearTicketUrl
+    - name
+    - pullRequestUrl
     type: object
   handlers.projectsResponse:
     properties:
@@ -75,6 +102,8 @@ definitions:
         items:
           type: string
         type: array
+    required:
+    - projects
     type: object
   handlers.remoteProjectsResponse:
     properties:
@@ -82,6 +111,8 @@ definitions:
         items:
           $ref: '#/definitions/remote.Project'
         type: array
+    required:
+    - projects
     type: object
   handlers.removeWorktreeRequest:
     properties:
@@ -89,6 +120,9 @@ definitions:
         type: string
       worktree:
         type: string
+    required:
+    - project
+    - worktree
     type: object
   handlers.reviewFileRequest:
     properties:
@@ -96,6 +130,9 @@ definitions:
         type: string
       scope:
         $ref: '#/definitions/review.Scope'
+    required:
+    - fileId
+    - scope
     type: object
   handlers.sessionsResponse:
     properties:
@@ -103,11 +140,15 @@ definitions:
         items:
           type: string
         type: array
+    required:
+    - sessions
     type: object
   handlers.worktreeResponse:
     properties:
       worktree:
         $ref: '#/definitions/worktree.Worktree'
+    required:
+    - worktree
     type: object
   handlers.worktreesResponse:
     properties:
@@ -115,6 +156,8 @@ definitions:
         items:
           $ref: '#/definitions/worktree.Worktree'
         type: array
+    required:
+    - worktrees
     type: object
   remote.ClonedProject:
     properties:
@@ -122,6 +165,9 @@ definitions:
         type: string
       path:
         type: string
+    required:
+    - name
+    - path
     type: object
   remote.Project:
     properties:
@@ -137,6 +183,13 @@ definitions:
         type: string
       url:
         type: string
+    required:
+    - isLocal
+    - localName
+    - name
+    - nameWithOwner
+    - sshUrl
+    - url
     type: object
   review.ChangeStatus:
     enum:
@@ -172,6 +225,17 @@ definitions:
         $ref: '#/definitions/review.FileComparison'
       worktreeStatus:
         $ref: '#/definitions/review.ChangeStatus'
+    required:
+    - gitDiff
+    - hasWorkingTreeFile
+    - id
+    - inGitDiff
+    - inLastCommit
+    - inPullRequest
+    - lastCommit
+    - path
+    - pullRequest
+    - worktreeStatus
     type: object
   review.FileComparison:
     properties:
@@ -187,6 +251,13 @@ definitions:
         type: string
       status:
         $ref: '#/definitions/review.ChangeStatus'
+    required:
+    - displayPath
+    - hasModified
+    - hasOriginal
+    - newPath
+    - oldPath
+    - status
     type: object
   review.FileContents:
     properties:
@@ -194,6 +265,9 @@ definitions:
         type: string
       originalContent:
         type: string
+    required:
+    - modifiedContent
+    - originalContent
     type: object
   review.PullRequest:
     properties:
@@ -205,6 +279,11 @@ definitions:
         type: integer
       url:
         type: string
+    required:
+    - baseRefName
+    - headRefName
+    - number
+    - url
     type: object
   review.Scope:
     enum:
@@ -230,6 +309,11 @@ definitions:
         $ref: '#/definitions/review.PullRequest'
       repoRoot:
         type: string
+    required:
+    - branchName
+    - files
+    - pullRequest
+    - repoRoot
     type: object
   worktree.RemoteBranch:
     properties:
@@ -245,6 +329,13 @@ definitions:
         type: string
       worktreeProjectName:
         type: string
+    required:
+    - branch
+    - hasLocalBranch
+    - isCheckedOut
+    - name
+    - worktreeName
+    - worktreeProjectName
     type: object
   worktree.RemoteBranchList:
     properties:
@@ -254,6 +345,9 @@ definitions:
         type: array
       remote:
         type: string
+    required:
+    - branches
+    - remote
     type: object
   worktree.Worktree:
     properties:
@@ -275,6 +369,14 @@ definitions:
         type: string
       projectName:
         type: string
+    required:
+    - branch
+    - isBase
+    - isCurrent
+    - isRemovable
+    - name
+    - path
+    - projectName
     type: object
 info:
   contact: {}
@@ -284,6 +386,7 @@ info:
 paths:
   /api/config:
     get:
+      operationId: getSettings
       produces:
       - application/json
       responses:
@@ -301,6 +404,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: updateSettings
       parameters:
       - description: Settings
         in: body
@@ -326,6 +430,7 @@ paths:
       - Config
   /api/config/reload:
     post:
+      operationId: reloadConfig
       produces:
       - text/plain
       responses:
@@ -340,6 +445,7 @@ paths:
       - Config
   /api/openapi.json:
     get:
+      operationId: getOpenAPISpec
       produces:
       - application/json
       responses:
@@ -352,6 +458,7 @@ paths:
       - OpenAPI
   /api/project:
     get:
+      operationId: getProjectDetails
       parameters:
       - description: Project name
         in: query
@@ -374,6 +481,7 @@ paths:
       - Projects
   /api/projects:
     get:
+      operationId: listProjects
       produces:
       - application/json
       responses:
@@ -390,6 +498,7 @@ paths:
       - Projects
   /api/remote-projects:
     get:
+      operationId: listRemoteProjects
       produces:
       - application/json
       responses:
@@ -412,6 +521,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: cloneRemoteProject
       parameters:
       - description: Remote project clone request
         in: body
@@ -439,6 +549,7 @@ paths:
       - Remote projects
   /api/review:
     get:
+      operationId: getReviewWindowData
       parameters:
       - description: Project name
         in: query
@@ -467,6 +578,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: getReviewFileContents
       parameters:
       - description: Project name
         in: query
@@ -499,6 +611,7 @@ paths:
       - Review
   /api/session/{sessionName}:
     delete:
+      operationId: closeProjectSession
       parameters:
       - description: Session project name
         in: path
@@ -523,6 +636,7 @@ paths:
       - Sessions
   /api/sessions:
     get:
+      operationId: listActiveProjectSessions
       produces:
       - application/json
       responses:
@@ -535,6 +649,7 @@ paths:
       - Sessions
   /api/terminal/reload:
     post:
+      operationId: reloadTerminalSession
       parameters:
       - description: Project name
         in: query
@@ -565,6 +680,7 @@ paths:
     delete:
       consumes:
       - application/json
+      operationId: removeWorktree
       parameters:
       - description: Worktree removal request
         in: body
@@ -598,6 +714,7 @@ paths:
       tags:
       - Worktrees
     get:
+      operationId: listWorktrees
       parameters:
       - description: Project name
         in: query
@@ -625,6 +742,7 @@ paths:
     post:
       consumes:
       - application/json
+      operationId: createWorktree
       parameters:
       - description: Worktree creation request
         in: body
@@ -652,6 +770,7 @@ paths:
       - Worktrees
   /api/worktrees/remote-branches:
     get:
+      operationId: listRemoteBranches
       parameters:
       - description: Project name
         in: query

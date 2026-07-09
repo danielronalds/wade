@@ -1,11 +1,61 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"wade/internal/server/openapi"
 )
+
+func TestOpenAPISpecIncludesOperationIDs(t *testing.T) {
+	var spec struct {
+		Paths map[string]map[string]struct {
+			OperationID string `json:"operationId"`
+		} `json:"paths"`
+	}
+	if err := json.Unmarshal(openapi.JSON(), &spec); err != nil {
+		t.Fatalf("expected generated OpenAPI spec to be valid JSON: %v", err)
+	}
+
+	expectedOperationIDs := map[string]string{
+		"GET /api/config":                    "getSettings",
+		"POST /api/config":                   "updateSettings",
+		"POST /api/config/reload":            "reloadConfig",
+		"GET /api/openapi.json":              "getOpenAPISpec",
+		"GET /api/project":                   "getProjectDetails",
+		"GET /api/projects":                  "listProjects",
+		"GET /api/remote-projects":           "listRemoteProjects",
+		"POST /api/remote-projects/clone":    "cloneRemoteProject",
+		"GET /api/review":                    "getReviewWindowData",
+		"POST /api/review/file":              "getReviewFileContents",
+		"DELETE /api/session/{sessionName}":  "closeProjectSession",
+		"GET /api/sessions":                  "listActiveProjectSessions",
+		"POST /api/terminal/reload":          "reloadTerminalSession",
+		"GET /api/worktrees":                 "listWorktrees",
+		"POST /api/worktrees":                "createWorktree",
+		"DELETE /api/worktrees":              "removeWorktree",
+		"GET /api/worktrees/remote-branches": "listRemoteBranches",
+	}
+
+	for endpoint, expectedOperationID := range expectedOperationIDs {
+		method, path, found := strings.Cut(endpoint, " ")
+		if !found {
+			t.Fatalf("invalid endpoint key %q", endpoint)
+		}
+
+		operation, ok := spec.Paths[path][strings.ToLower(method)]
+		if !ok {
+			t.Fatalf("expected operation %s", endpoint)
+		}
+
+		if operation.OperationID != expectedOperationID {
+			t.Fatalf("expected operation %s to have ID %q, got %q", endpoint, expectedOperationID, operation.OperationID)
+		}
+	}
+}
 
 func TestOpenAPIDocsHandlerRedirectsDocsRoots(t *testing.T) {
 	handler := newOpenAPIDocsHandler()

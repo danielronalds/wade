@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { closeProjectSession } from '@/api/sessions';
+import {
+  closeProjectSession,
+  getProjectDetails,
+  reloadConfig as requestReloadConfig
+} from '@/api/generated/wade';
 import { useFuzzyItems } from '@/composables/useFuzzyItems';
-import { isProjectDetails, type ProjectDetails } from '@/views/project/composables/useProjectDetails';
+import type { ProjectDetails } from '@/views/project/composables/useProjectDetails';
 import { useProjects } from '@/features/projects/composables/useProjects';
 import { useRecentProjects } from '@/features/projects/composables/useRecentProjects';
 import { isReviewInProgressState, useReviewSessionState } from '@/views/project/tabs/review/composables/useReviewSessionState';
@@ -159,10 +163,7 @@ const openSettings = async () => {
 
 const reloadConfig = async () => {
   try {
-    const response = await fetch('/api/config/reload', { method: 'POST' });
-    if (!response.ok) {
-      throw new Error(`Config reload failed with ${response.status}`);
-    }
+    await requestReloadConfig();
 
     const availableProjects = await syncProjects();
     if (availableProjects) {
@@ -343,15 +344,8 @@ const loadCurrentProjectDetails = async () => {
   isProjectDetailsLoading.value = true;
 
   try {
-    const params = new URLSearchParams({ project: currentProjectName.value });
-    const response = await fetch(`/api/project?${params}`);
-
-    if (!response.ok) {
-      throw new Error(`Project details request failed with ${response.status}`);
-    }
-
-    const details: unknown = await response.json();
-    if (!isProjectDetails(details) || detailsLoadRun !== run) {
+    const details = await getProjectDetails({ project: currentProjectName.value });
+    if (detailsLoadRun !== run) {
       return;
     }
 

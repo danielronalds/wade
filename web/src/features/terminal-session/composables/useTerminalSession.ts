@@ -3,6 +3,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
+import { reloadTerminalSession } from '@/api/generated/wade';
 import { useRecentProjects } from '@/features/projects/composables/useRecentProjects';
 
 type Disposable = {
@@ -331,12 +332,7 @@ export const useTerminalSession = ({
   };
 
   const closeRemoteTerminal = async () => {
-    const params = terminalRequestParams();
-    const response = await fetch(`/api/terminal/reload?${params}`, { method: 'POST' });
-
-    if (!response.ok) {
-      throw new Error('Failed to reload terminal');
-    }
+    await reloadTerminalSession({ project: projectName, terminal: terminalName, agent: agentName });
   };
 
   const reload = async () => {

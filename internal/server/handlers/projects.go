@@ -27,6 +27,7 @@ func NewProjects(projects project.Store) Projects {
 }
 
 // @Summary Get project details
+// @ID getProjectDetails
 // @Tags Projects
 // @Produce json
 // @Param project query string true "Project name"
@@ -53,6 +54,7 @@ func (h Projects) GetProjectDetails(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary List projects
+// @ID listProjects
 // @Tags Projects
 // @Produce json
 // @Success 200 {object} projectsResponse

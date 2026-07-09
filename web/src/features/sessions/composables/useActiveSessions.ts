@@ -1,6 +1,6 @@
 import { createSharedComposable } from '@vueuse/core';
 import { computed, readonly, ref } from 'vue';
-import { listActiveProjectSessions } from '@/api/sessions';
+import { listActiveProjectSessions } from '@/api/generated/wade';
 
 const normaliseActiveSessions = (sessions: unknown): string[] => {
   if (!Array.isArray(sessions)) {
@@ -31,7 +31,7 @@ export const useActiveSessions = createSharedComposable(() => {
 
     syncRequest = (async () => {
       try {
-        const sessions = await listActiveProjectSessions();
+        const { sessions } = await listActiveProjectSessions();
         storedActiveSessions.value = normaliseActiveSessions(sessions);
 
         return activeSessions.value;

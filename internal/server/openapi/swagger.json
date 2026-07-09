@@ -26,6 +26,7 @@
                     "Config"
                 ],
                 "summary": "Get settings",
+                "operationId": "getSettings",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -52,6 +53,7 @@
                     "Config"
                 ],
                 "summary": "Update settings",
+                "operationId": "updateSettings",
                 "parameters": [
                     {
                         "description": "Settings",
@@ -91,6 +93,7 @@
                     "Config"
                 ],
                 "summary": "Reload runtime config",
+                "operationId": "reloadConfig",
                 "responses": {
                     "204": {
                         "description": "No Content"
@@ -113,6 +116,7 @@
                     "OpenAPI"
                 ],
                 "summary": "Get OpenAPI spec",
+                "operationId": "getOpenAPISpec",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -132,6 +136,7 @@
                     "Projects"
                 ],
                 "summary": "Get project details",
+                "operationId": "getProjectDetails",
                 "parameters": [
                     {
                         "type": "string",
@@ -166,6 +171,7 @@
                     "Projects"
                 ],
                 "summary": "List projects",
+                "operationId": "listProjects",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -191,6 +197,7 @@
                     "Remote projects"
                 ],
                 "summary": "List remote projects",
+                "operationId": "listRemoteProjects",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -225,6 +232,7 @@
                     "Remote projects"
                 ],
                 "summary": "Clone remote project",
+                "operationId": "cloneRemoteProject",
                 "parameters": [
                     {
                         "description": "Remote project clone request",
@@ -267,6 +275,7 @@
                     "Review"
                 ],
                 "summary": "Get review window data",
+                "operationId": "getReviewWindowData",
                 "parameters": [
                     {
                         "type": "string",
@@ -310,6 +319,7 @@
                     "Review"
                 ],
                 "summary": "Get review file contents",
+                "operationId": "getReviewFileContents",
                 "parameters": [
                     {
                         "type": "string",
@@ -359,6 +369,7 @@
                     "Sessions"
                 ],
                 "summary": "Close project session",
+                "operationId": "closeProjectSession",
                 "parameters": [
                     {
                         "type": "string",
@@ -396,6 +407,7 @@
                     "Sessions"
                 ],
                 "summary": "List active project sessions",
+                "operationId": "listActiveProjectSessions",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -415,6 +427,7 @@
                     "Terminals"
                 ],
                 "summary": "Reload terminal session",
+                "operationId": "reloadTerminalSession",
                 "parameters": [
                     {
                         "type": "string",
@@ -458,6 +471,7 @@
                     "Worktrees"
                 ],
                 "summary": "List worktrees",
+                "operationId": "listWorktrees",
                 "parameters": [
                     {
                         "type": "string",
@@ -499,6 +513,7 @@
                     "Worktrees"
                 ],
                 "summary": "Create worktree",
+                "operationId": "createWorktree",
                 "parameters": [
                     {
                         "description": "Worktree creation request",
@@ -542,6 +557,7 @@
                     "Worktrees"
                 ],
                 "summary": "Remove worktree",
+                "operationId": "removeWorktree",
                 "parameters": [
                     {
                         "description": "Worktree removal request",
@@ -595,6 +611,7 @@
                     "Worktrees"
                 ],
                 "summary": "List remote branches",
+                "operationId": "listRemoteBranches",
                 "parameters": [
                     {
                         "type": "string",
@@ -630,6 +647,11 @@
     "definitions": {
         "config.Agent": {
             "type": "object",
+            "required": [
+                "command",
+                "default",
+                "name"
+            ],
             "properties": {
                 "command": {
                     "type": "string"
@@ -644,6 +666,10 @@
         },
         "handlers.cloneRemoteProjectRequest": {
             "type": "object",
+            "required": [
+                "directoryIndex",
+                "nameWithOwner"
+            ],
             "properties": {
                 "directoryIndex": {
                     "type": "integer"
@@ -655,6 +681,9 @@
         },
         "handlers.cloneRemoteProjectResponse": {
             "type": "object",
+            "required": [
+                "project"
+            ],
             "properties": {
                 "project": {
                     "$ref": "#/definitions/remote.ClonedProject"
@@ -663,6 +692,14 @@
         },
         "handlers.configPayload": {
             "type": "object",
+            "required": [
+                "agents",
+                "copyIgnoredFilesOnWorktreeCreation",
+                "projectDirectories",
+                "shell",
+                "themeAccentColor",
+                "worktreeCopyExcludes"
+            ],
             "properties": {
                 "agents": {
                     "type": "array",
@@ -695,6 +732,10 @@
         },
         "handlers.createWorktreeRequest": {
             "type": "object",
+            "required": [
+                "branch",
+                "project"
+            ],
             "properties": {
                 "branch": {
                     "type": "string"
@@ -706,6 +747,9 @@
         },
         "handlers.errorResponse": {
             "type": "object",
+            "required": [
+                "message"
+            ],
             "properties": {
                 "message": {
                     "type": "string"
@@ -714,6 +758,13 @@
         },
         "handlers.projectResponse": {
             "type": "object",
+            "required": [
+                "gitBranch",
+                "githubUrl",
+                "linearTicketUrl",
+                "name",
+                "pullRequestUrl"
+            ],
             "properties": {
                 "gitBranch": {
                     "type": "string"
@@ -734,6 +785,9 @@
         },
         "handlers.projectsResponse": {
             "type": "object",
+            "required": [
+                "projects"
+            ],
             "properties": {
                 "projects": {
                     "type": "array",
@@ -745,6 +799,9 @@
         },
         "handlers.remoteProjectsResponse": {
             "type": "object",
+            "required": [
+                "projects"
+            ],
             "properties": {
                 "projects": {
                     "type": "array",
@@ -756,6 +813,10 @@
         },
         "handlers.removeWorktreeRequest": {
             "type": "object",
+            "required": [
+                "project",
+                "worktree"
+            ],
             "properties": {
                 "project": {
                     "type": "string"
@@ -767,6 +828,10 @@
         },
         "handlers.reviewFileRequest": {
             "type": "object",
+            "required": [
+                "fileId",
+                "scope"
+            ],
             "properties": {
                 "fileId": {
                     "type": "string"
@@ -778,6 +843,9 @@
         },
         "handlers.sessionsResponse": {
             "type": "object",
+            "required": [
+                "sessions"
+            ],
             "properties": {
                 "sessions": {
                     "type": "array",
@@ -789,6 +857,9 @@
         },
         "handlers.worktreeResponse": {
             "type": "object",
+            "required": [
+                "worktree"
+            ],
             "properties": {
                 "worktree": {
                     "$ref": "#/definitions/worktree.Worktree"
@@ -797,6 +868,9 @@
         },
         "handlers.worktreesResponse": {
             "type": "object",
+            "required": [
+                "worktrees"
+            ],
             "properties": {
                 "worktrees": {
                     "type": "array",
@@ -808,6 +882,10 @@
         },
         "remote.ClonedProject": {
             "type": "object",
+            "required": [
+                "name",
+                "path"
+            ],
             "properties": {
                 "name": {
                     "type": "string"
@@ -819,6 +897,14 @@
         },
         "remote.Project": {
             "type": "object",
+            "required": [
+                "isLocal",
+                "localName",
+                "name",
+                "nameWithOwner",
+                "sshUrl",
+                "url"
+            ],
             "properties": {
                 "isLocal": {
                     "type": "boolean"
@@ -857,6 +943,18 @@
         },
         "review.File": {
             "type": "object",
+            "required": [
+                "gitDiff",
+                "hasWorkingTreeFile",
+                "id",
+                "inGitDiff",
+                "inLastCommit",
+                "inPullRequest",
+                "lastCommit",
+                "path",
+                "pullRequest",
+                "worktreeStatus"
+            ],
             "properties": {
                 "gitDiff": {
                     "$ref": "#/definitions/review.FileComparison"
@@ -892,6 +990,14 @@
         },
         "review.FileComparison": {
             "type": "object",
+            "required": [
+                "displayPath",
+                "hasModified",
+                "hasOriginal",
+                "newPath",
+                "oldPath",
+                "status"
+            ],
             "properties": {
                 "displayPath": {
                     "type": "string"
@@ -915,6 +1021,10 @@
         },
         "review.FileContents": {
             "type": "object",
+            "required": [
+                "modifiedContent",
+                "originalContent"
+            ],
             "properties": {
                 "modifiedContent": {
                     "type": "string"
@@ -926,6 +1036,12 @@
         },
         "review.PullRequest": {
             "type": "object",
+            "required": [
+                "baseRefName",
+                "headRefName",
+                "number",
+                "url"
+            ],
             "properties": {
                 "baseRefName": {
                     "type": "string"
@@ -958,6 +1074,12 @@
         },
         "review.WindowData": {
             "type": "object",
+            "required": [
+                "branchName",
+                "files",
+                "pullRequest",
+                "repoRoot"
+            ],
             "properties": {
                 "branchName": {
                     "type": "string"
@@ -978,6 +1100,14 @@
         },
         "worktree.RemoteBranch": {
             "type": "object",
+            "required": [
+                "branch",
+                "hasLocalBranch",
+                "isCheckedOut",
+                "name",
+                "worktreeName",
+                "worktreeProjectName"
+            ],
             "properties": {
                 "branch": {
                     "type": "string"
@@ -1001,6 +1131,10 @@
         },
         "worktree.RemoteBranchList": {
             "type": "object",
+            "required": [
+                "branches",
+                "remote"
+            ],
             "properties": {
                 "branches": {
                     "type": "array",
@@ -1015,6 +1149,15 @@
         },
         "worktree.Worktree": {
             "type": "object",
+            "required": [
+                "branch",
+                "isBase",
+                "isCurrent",
+                "isRemovable",
+                "name",
+                "path",
+                "projectName"
+            ],
             "properties": {
                 "branch": {
                     "type": "string"

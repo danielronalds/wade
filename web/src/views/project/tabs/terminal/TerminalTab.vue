@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, toRef, watch } from 'vue';
-import { fetchSettings } from '@/api/settings';
+import { getSettings } from '@/api/generated/wade';
 import { loadSelectedAgentName, storeSelectedAgentName } from '@/features/terminal-session/composables/useSelectedAgent';
 import { defaultAgents, type Agent } from '@/types/settings';
 import { useTerminalTabPaneZoom } from '@/views/project/tabs/terminal/composables/useTerminalTabPaneZoom';
@@ -118,7 +118,7 @@ const selectAgent = async (agentName: string) => {
 
 const loadAgents = async () => {
   try {
-    const settings = await fetchSettings();
+    const settings = await getSettings();
     agents.value = settings.agents;
   } catch {
     agents.value = defaultAgents.map((agent) => ({ ...agent }));

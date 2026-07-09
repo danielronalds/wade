@@ -105,8 +105,18 @@ is currently set to `1`.
 
 Frontend dependencies are installed with npm in `web/node_modules`.
 `go generate ./...` runs `npm --prefix ../../web run build` from
-`internal/web`, which typechecks with `vue-tsc` and bundles with esbuild. The
-generated `internal/web/.dist` directory is embedded into the Go binary.
+`internal/web`, which regenerates the TypeScript API client, typechecks with
+`vue-tsc` and bundles with esbuild. The generated `internal/web/.dist`
+directory is embedded into the Go binary.
+
+## OpenAPI and API client generation
+
+The backend OpenAPI spec is generated with Swaggo annotations, stable `@ID`
+operation IDs, and `--requiredByDefault`; run `mise run gen:openapi` after API
+annotation changes and `mise run lint:openapi` to check drift. Frontend API
+generation stays under `web/`: Orval uses `web/orval.config.ts` to generate the
+fetch client at `web/src/api/generated/wade.ts`. Import generated API functions
+directly, avoid thin wrapper modules.
 
 ## Internal packages
 
@@ -142,8 +152,9 @@ web/src/
 
 Follow these rules when adding or moving frontend code:
 
-- Keep backend-facing clients in `web/src/api`. Reuse `api/http.ts` for shared
-  response handling rather than duplicating fetch error parsing.
+- Use the generated Orval client for backend API calls. Keep shared fetch/error
+  behaviour in `web/src/api/httpClient.ts` and `web/src/api/http.ts` rather
+  than adding hand-written endpoint clients.
 - Put route-level screens in `web/src/views/<route>/<RouteView>.vue`.
 - Put UI that is private to a route under that route's `components`, `tabs`, or
   `composables` folders. For example, project tab containers live under
@@ -164,11 +175,10 @@ Current high-level shape:
 ```text
 web/src/
   api/
+    generated/
+      wade.ts
     http.ts
-    remoteProjects.ts
-    sessions.ts
-    settings.ts
-    worktrees.ts
+    httpClient.ts
   assets/
     styles.css
   components/

@@ -13,6 +13,10 @@ import {
   X
 } from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+  getReviewFileContents as requestReviewFileContents,
+  getReviewWindowData
+} from '@/api/generated/wade';
 import { pasteIntoAgentTerminal } from '@/features/terminal-session/composables/useAgentTerminalInput';
 import {
   clearReviewSessionState,
@@ -587,16 +591,6 @@ const setFileRequestState = (key: string, value: FileRequestState) => {
   };
 };
 
-const requestJSON = async <T>(url: string, options?: RequestInit): Promise<T> => {
-  const response = await fetch(url, options);
-  if (!response.ok) {
-    const body = await response.json().catch(() => null) as { message?: string } | null;
-    throw new Error(body?.message || 'Review request failed');
-  }
-
-  return response.json() as Promise<T>;
-};
-
 const startReview = async () => {
   if (!canStartReview.value) {
     return;
@@ -621,8 +615,10 @@ const startReview = async () => {
   wrapLines.value = true;
 
   try {
-    const params = new URLSearchParams({ project: props.projectName });
-    const data = await requestJSON<ReviewData>(`/api/review?${params}`, { signal: abortController.signal });
+    const data = await getReviewWindowData(
+      { project: props.projectName },
+      { signal: abortController.signal }
+    ) as ReviewData;
     if (reviewLoadRun !== run || abortController.signal.aborted) {
       return;
     }
@@ -665,13 +661,11 @@ const loadActiveFileContents = async () => {
   setFileRequestState(key, { contents: null, error: '', isLoading: true });
 
   try {
-    const params = new URLSearchParams({ project: props.projectName });
-    const contents = await requestJSON<ReviewFileContents>(`/api/review/file?${params}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ fileId: file.id, scope: activeScope.value }),
-      signal: abortController.signal
-    });
+    const contents = await requestReviewFileContents(
+      { fileId: file.id, scope: activeScope.value },
+      { project: props.projectName },
+      { signal: abortController.signal }
+    ) as ReviewFileContents;
     if (abortController.signal.aborted || state.value !== 'ready') {
       return;
     }

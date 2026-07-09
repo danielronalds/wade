@@ -34,6 +34,7 @@ func NewSessions(projects project.Store, terminals sessionManager) Sessions {
 }
 
 // @Summary List active project sessions
+// @ID listActiveProjectSessions
 // @Tags Sessions
 // @Produce json
 // @Success 200 {object} sessionsResponse
@@ -45,6 +46,7 @@ func (h Sessions) ListSessions(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Close project session
+// @ID closeProjectSession
 // @Tags Sessions
 // @Produce json
 // @Param sessionName path string true "Session project name"

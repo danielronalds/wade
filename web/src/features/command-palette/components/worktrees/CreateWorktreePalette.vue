@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { createWorktree } from '@/api/worktrees';
+import { createWorktree } from '@/api/generated/wade';
 import { useProjects } from '@/features/projects/composables/useProjects';
 import type { Worktree } from '@/types/worktree';
 import PaletteShell from '@/features/command-palette/components/PaletteShell.vue';
@@ -64,7 +64,7 @@ const createOrOpenWorktree = async () => {
   createdWorktree.value = undefined;
 
   try {
-    const worktree = await createWorktree(props.projectName, branchName.value);
+    const { worktree } = await createWorktree({ project: props.projectName, branch: branchName.value });
     if ((worktree.ignoredFileCopyWarnings?.length ?? 0) > 0) {
       createdWorktree.value = worktree;
       query.value = '';

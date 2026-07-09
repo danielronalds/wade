@@ -152,9 +152,10 @@ Vue and TypeScript source files live in `web/src`. Static public assets live in
 `web/node_modules`.
 
 `go generate ./...` runs `npm --prefix ../../web run build` from
-`internal/web`. That typechecks with `vue-tsc`, bundles the frontend with
-esbuild into `internal/web/.dist`, and the Go binary embeds that directory with
-`go:embed`. There is no Vite dev server. Go serves the built assets.
+`internal/web`. That regenerates the TypeScript API client with Orval,
+typechecks with `vue-tsc`, bundles the frontend with esbuild into
+`internal/web/.dist`, and the Go binary embeds that directory with `go:embed`.
+There is no Vite dev server. Go serves the built assets.
 
 The generated `internal/web/.dist` directory and `web/node_modules` are ignored
 by git.
@@ -167,6 +168,13 @@ The HTTP API annotations generate a Swagger/OpenAPI spec at
 
 ```sh
 mise run gen:openapi
+```
+
+The frontend generates a fetch-based TypeScript client from that spec at
+`web/src/api/generated/wade.ts`.
+
+```sh
+npm --prefix web run gen:api
 ```
 
 The generated JSON spec is also served by the app at `/api/openapi.json`.

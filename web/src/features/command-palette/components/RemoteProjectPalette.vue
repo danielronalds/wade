@@ -2,11 +2,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { cloneRemoteProject, listRemoteProjects } from '@/api/remoteProjects';
-import { fetchSettings } from '@/api/settings';
+import {
+  cloneRemoteProject,
+  getSettings,
+  listRemoteProjects
+} from '@/api/generated/wade';
 import { useFuzzyItems } from '@/composables/useFuzzyItems';
 import { useProjects } from '@/features/projects/composables/useProjects';
 import type { RemoteProject } from '@/types/remoteProject';
+import type { Settings } from '@/types/settings';
 import PaletteShell from '@/features/command-palette/components/PaletteShell.vue';
 import type { PaletteResult } from '@/features/command-palette/types';
 import { usePaletteRequestState } from '@/features/command-palette/composables/usePaletteRequestState';
@@ -137,7 +141,7 @@ const cloneProject = async (project: RemoteProject, directoryIndex: number) => {
   clearActionError();
 
   try {
-    const clonedProject = await cloneRemoteProject(project.nameWithOwner, directoryIndex);
+    const { project: clonedProject } = await cloneRemoteProject({ nameWithOwner: project.nameWithOwner, directoryIndex });
     await openProject(clonedProject.name, true);
   } catch (requestError) {
     setActionError(requestError, 'Remote project clone failed');
@@ -171,9 +175,9 @@ const loadRemoteProjects = async () => {
   clearErrors();
 
   try {
-    const [projects, settings] = await Promise.all([
+    const [{ projects }, settings] = await Promise.all([
       listRemoteProjects(),
-      fetchSettings()
+      getSettings() as Promise<Settings>
     ]);
 
     remoteProjects.value = projects;
