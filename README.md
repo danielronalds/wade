@@ -159,6 +159,26 @@ esbuild into `internal/web/.dist`, and the Go binary embeds that directory with
 The generated `internal/web/.dist` directory and `web/node_modules` are ignored
 by git.
 
+## OpenAPI generation
+
+The HTTP API annotations generate a Swagger/OpenAPI spec at
+`internal/server/openapi/swagger.json` and
+`internal/server/openapi/swagger.yaml`.
+
+```sh
+mise run gen:openapi
+```
+
+The generated JSON spec is also served by the app at `/api/openapi.json`.
+Swagger UI renders the docs at `/api/docs`. WebSocket, static asset, and page
+routes are intentionally excluded from the client API surface.
+
+Use this before committing API changes to check the generated files are current:
+
+```sh
+mise run lint:openapi
+```
+
 ## Nerd Fonts
 
 The frontend includes `JetBrainsMonoNerdFontMono-Regular.ttf` so Nerd Font

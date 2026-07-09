@@ -29,6 +29,14 @@ type worktreesResponse struct {
 	Worktrees []worktree.Worktree `json:"worktrees"`
 }
 
+// @Summary List worktrees
+// @Tags Worktrees
+// @Produce json
+// @Param project query string true "Project name"
+// @Success 200 {object} worktreesResponse
+// @Failure 400 {object} errorResponse
+// @Failure 404 {object} errorResponse
+// @Router /api/worktrees [get]
 func (h Worktrees) ListWorktrees(w http.ResponseWriter, r *http.Request) {
 	projectPath, ok := h.resolveProjectPath(w, r.URL.Query().Get("project"))
 	if !ok {
@@ -53,6 +61,15 @@ type worktreeResponse struct {
 	Worktree worktree.Worktree `json:"worktree"`
 }
 
+// @Summary Create worktree
+// @Tags Worktrees
+// @Accept json
+// @Produce json
+// @Param request body createWorktreeRequest true "Worktree creation request"
+// @Success 200 {object} worktreeResponse
+// @Failure 400 {object} errorResponse
+// @Failure 404 {object} errorResponse
+// @Router /api/worktrees [post]
 func (h Worktrees) CreateWorktree(w http.ResponseWriter, r *http.Request) {
 	var request createWorktreeRequest
 	if err := decodeJSONBody(r, &request); err != nil {
@@ -84,6 +101,17 @@ type removeWorktreeRequest struct {
 	Worktree string `json:"worktree"`
 }
 
+// @Summary Remove worktree
+// @Tags Worktrees
+// @Accept json
+// @Produce json
+// @Param request body removeWorktreeRequest false "Worktree removal request"
+// @Param project query string false "Project name"
+// @Param worktree query string false "Worktree name"
+// @Success 200 {object} worktreeResponse
+// @Failure 400 {object} errorResponse
+// @Failure 404 {object} errorResponse
+// @Router /api/worktrees [delete]
 func (h Worktrees) RemoveWorktree(w http.ResponseWriter, r *http.Request) {
 	var request removeWorktreeRequest
 	if err := decodeJSONBody(r, &request); err != nil {
@@ -121,6 +149,14 @@ func (h Worktrees) RemoveWorktree(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, worktreeResponse{Worktree: target})
 }
 
+// @Summary List remote branches
+// @Tags Worktrees
+// @Produce json
+// @Param project query string true "Project name"
+// @Success 200 {object} worktree.RemoteBranchList
+// @Failure 400 {object} errorResponse
+// @Failure 404 {object} errorResponse
+// @Router /api/worktrees/remote-branches [get]
 func (h Worktrees) ListRemoteBranches(w http.ResponseWriter, r *http.Request) {
 	projectPath, ok := h.resolveProjectPath(w, r.URL.Query().Get("project"))
 	if !ok {

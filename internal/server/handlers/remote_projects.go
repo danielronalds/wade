@@ -35,6 +35,13 @@ func NewRemoteProjects(projects project.Store, remote remoteProjectService) Remo
 	return RemoteProjects{projects: projects, remote: remote}
 }
 
+// @Summary List remote projects
+// @Tags Remote projects
+// @Produce json
+// @Success 200 {object} remoteProjectsResponse
+// @Failure 400 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /api/remote-projects [get]
 func (h RemoteProjects) List(w http.ResponseWriter, r *http.Request) {
 	localProjectNames, err := h.projects.Names()
 	if err != nil {
@@ -51,6 +58,15 @@ func (h RemoteProjects) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, remoteProjectsResponse{Projects: projects})
 }
 
+// @Summary Clone remote project
+// @Tags Remote projects
+// @Accept json
+// @Produce json
+// @Param request body cloneRemoteProjectRequest true "Remote project clone request"
+// @Success 200 {object} cloneRemoteProjectResponse
+// @Failure 400 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /api/remote-projects/clone [post]
 func (h RemoteProjects) Clone(w http.ResponseWriter, r *http.Request) {
 	var request cloneRemoteProjectRequest
 	if err := decodeJSONBody(r, &request); err != nil {

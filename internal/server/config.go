@@ -8,6 +8,12 @@ import (
 )
 
 // handleConfigReload reloads runtime-safe settings on demand.
+// @Summary Reload runtime config
+// @Tags Config
+// @Produce plain
+// @Success 204 "No Content"
+// @Failure 400 {string} string "unable to reload config"
+// @Router /api/config/reload [post]
 func (s *Server) handleConfigReload(w http.ResponseWriter, r *http.Request) {
 	if err := s.reloadConfig(); err != nil {
 		log.Printf("config reload failed: %v", err)

@@ -13,6 +13,15 @@ var websocketUpgrader = websocket.Upgrader{
 	CheckOrigin: allowSameOrigin,
 }
 
+// @Summary Reload terminal session
+// @Tags Terminals
+// @Produce plain
+// @Param project query string true "Project name"
+// @Param terminal query string false "Terminal name"
+// @Param agent query string false "Agent name"
+// @Success 204 "No Content"
+// @Failure 404 {string} string "project not found"
+// @Router /api/terminal/reload [post]
 func (s *Server) handleTerminalReload(w http.ResponseWriter, r *http.Request) {
 	projectPath, err := s.projects.Path(r.URL.Query().Get("project"))
 	if err != nil {

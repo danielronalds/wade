@@ -4,6 +4,7 @@ go = "1.26.3"
 node = "24.18.0"
 air = "latest"
 "go:gotest.tools/gotestsum" = "latest"
+"go:github.com/swaggo/swag/cmd/swag" = "1.16.6"
 
 [tasks.install]
 description = "Installs frontend dependencies"
@@ -31,8 +32,22 @@ run = "go fmt ./..."
 
 [tasks."gen:embed"]
 description = "Stages embedded web assets"
-depends = ["install"]
+depends = ["install", "gen:openapi"]
 run = "go generate ./..."
+
+[tasks."gen:openapi"]
+description = "Generates the OpenAPI spec"
+run = "swag init --quiet --generalInfo cmd/wade/main.go --dir . --parseInternal --output internal/server/openapi --outputTypes json,yaml"
+
+[tasks."lint:openapi"]
+description = "Checks generated OpenAPI spec"
+run = """
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "$tmp_dir"' EXIT
+swag init --quiet --generalInfo cmd/wade/main.go --dir . --parseInternal --output "$tmp_dir" --outputTypes json,yaml
+diff -u internal/server/openapi/swagger.json "$tmp_dir/swagger.json"
+diff -u internal/server/openapi/swagger.yaml "$tmp_dir/swagger.yaml"
+"""
 
 [tasks."lint:fmt"]
 description = "Checks Go formatting"

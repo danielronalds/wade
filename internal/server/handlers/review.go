@@ -34,6 +34,14 @@ func NewReview(projects project.Store) Review {
 	}
 }
 
+// @Summary Get review window data
+// @Tags Review
+// @Produce json
+// @Param project query string true "Project name"
+// @Success 200 {object} review.WindowData
+// @Failure 400 {object} errorResponse
+// @Failure 404 {object} errorResponse
+// @Router /api/review [get]
 func (h Review) GetReviewWindowData(w http.ResponseWriter, r *http.Request) {
 	projectPath, ok := resolveProjectPath(w, r, h.projects)
 	if !ok {
@@ -50,6 +58,16 @@ func (h Review) GetReviewWindowData(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, data)
 }
 
+// @Summary Get review file contents
+// @Tags Review
+// @Accept json
+// @Produce json
+// @Param project query string true "Project name"
+// @Param request body reviewFileRequest true "Review file request"
+// @Success 200 {object} review.FileContents
+// @Failure 400 {object} errorResponse
+// @Failure 404 {object} errorResponse
+// @Router /api/review/file [post]
 func (h Review) GetReviewFileContents(w http.ResponseWriter, r *http.Request) {
 	projectPath, ok := resolveProjectPath(w, r, h.projects)
 	if !ok {

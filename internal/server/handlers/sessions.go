@@ -33,12 +33,25 @@ func NewSessions(projects project.Store, terminals sessionManager) Sessions {
 	return Sessions{projects: projects, terminals: terminals}
 }
 
+// @Summary List active project sessions
+// @Tags Sessions
+// @Produce json
+// @Success 200 {object} sessionsResponse
+// @Router /api/sessions [get]
 func (h Sessions) ListSessions(w http.ResponseWriter, r *http.Request) {
 	activeProjects := h.projects.NamesForDirectories(h.terminals.ActiveDirectories())
 
 	writeJSON(w, http.StatusOK, sessionsResponse{Sessions: activeProjects})
 }
 
+// @Summary Close project session
+// @Tags Sessions
+// @Produce json
+// @Param sessionName path string true "Session project name"
+// @Success 204 "No Content"
+// @Failure 400 {object} errorResponse
+// @Failure 404 {object} errorResponse
+// @Router /api/session/{sessionName} [delete]
 func (h Sessions) CloseSession(w http.ResponseWriter, r *http.Request) {
 	sessionName := strings.TrimSpace(r.PathValue("sessionName"))
 	if sessionName == "" {

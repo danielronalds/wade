@@ -25,6 +25,12 @@ func NewConfig() ConfigHandler {
 	return ConfigHandler{}
 }
 
+// @Summary Get settings
+// @Tags Config
+// @Produce json
+// @Success 200 {object} configPayload
+// @Failure 500 {object} errorResponse
+// @Router /api/config [get]
 func (h ConfigHandler) GetConfig(w http.ResponseWriter, _ *http.Request) {
 	settings, err := config.LoadSettings()
 	if err != nil {
@@ -42,6 +48,15 @@ func (h ConfigHandler) GetConfig(w http.ResponseWriter, _ *http.Request) {
 	})
 }
 
+// @Summary Update settings
+// @Tags Config
+// @Accept json
+// @Produce json
+// @Param request body configPayload true "Settings"
+// @Success 204 "No Content"
+// @Failure 400 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /api/config [post]
 func (h ConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	var request configPayload
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {

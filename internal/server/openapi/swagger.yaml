@@ -1,0 +1,683 @@
+basePath: /
+consumes:
+- application/json
+definitions:
+  config.Agent:
+    properties:
+      command:
+        type: string
+      default:
+        type: boolean
+      name:
+        type: string
+    type: object
+  handlers.cloneRemoteProjectRequest:
+    properties:
+      directoryIndex:
+        type: integer
+      nameWithOwner:
+        type: string
+    type: object
+  handlers.cloneRemoteProjectResponse:
+    properties:
+      project:
+        $ref: '#/definitions/remote.ClonedProject'
+    type: object
+  handlers.configPayload:
+    properties:
+      agents:
+        items:
+          $ref: '#/definitions/config.Agent'
+        type: array
+      copyIgnoredFilesOnWorktreeCreation:
+        type: boolean
+      projectDirectories:
+        items:
+          type: string
+        type: array
+      shell:
+        type: string
+      themeAccentColor:
+        type: string
+      worktreeCopyExcludes:
+        items:
+          type: string
+        type: array
+    type: object
+  handlers.createWorktreeRequest:
+    properties:
+      branch:
+        type: string
+      project:
+        type: string
+    type: object
+  handlers.errorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  handlers.projectResponse:
+    properties:
+      gitBranch:
+        type: string
+      githubUrl:
+        type: string
+      linearTicketUrl:
+        type: string
+      name:
+        type: string
+      pullRequestUrl:
+        type: string
+    type: object
+  handlers.projectsResponse:
+    properties:
+      projects:
+        items:
+          type: string
+        type: array
+    type: object
+  handlers.remoteProjectsResponse:
+    properties:
+      projects:
+        items:
+          $ref: '#/definitions/remote.Project'
+        type: array
+    type: object
+  handlers.removeWorktreeRequest:
+    properties:
+      project:
+        type: string
+      worktree:
+        type: string
+    type: object
+  handlers.reviewFileRequest:
+    properties:
+      fileId:
+        type: string
+      scope:
+        $ref: '#/definitions/review.Scope'
+    type: object
+  handlers.sessionsResponse:
+    properties:
+      sessions:
+        items:
+          type: string
+        type: array
+    type: object
+  handlers.worktreeResponse:
+    properties:
+      worktree:
+        $ref: '#/definitions/worktree.Worktree'
+    type: object
+  handlers.worktreesResponse:
+    properties:
+      worktrees:
+        items:
+          $ref: '#/definitions/worktree.Worktree'
+        type: array
+    type: object
+  remote.ClonedProject:
+    properties:
+      name:
+        type: string
+      path:
+        type: string
+    type: object
+  remote.Project:
+    properties:
+      isLocal:
+        type: boolean
+      localName:
+        type: string
+      name:
+        type: string
+      nameWithOwner:
+        type: string
+      sshUrl:
+        type: string
+      url:
+        type: string
+    type: object
+  review.ChangeStatus:
+    enum:
+    - modified
+    - added
+    - deleted
+    - renamed
+    type: string
+    x-enum-varnames:
+    - StatusModified
+    - StatusAdded
+    - StatusDeleted
+    - StatusRenamed
+  review.File:
+    properties:
+      gitDiff:
+        $ref: '#/definitions/review.FileComparison'
+      hasWorkingTreeFile:
+        type: boolean
+      id:
+        type: string
+      inGitDiff:
+        type: boolean
+      inLastCommit:
+        type: boolean
+      inPullRequest:
+        type: boolean
+      lastCommit:
+        $ref: '#/definitions/review.FileComparison'
+      path:
+        type: string
+      pullRequest:
+        $ref: '#/definitions/review.FileComparison'
+      worktreeStatus:
+        $ref: '#/definitions/review.ChangeStatus'
+    type: object
+  review.FileComparison:
+    properties:
+      displayPath:
+        type: string
+      hasModified:
+        type: boolean
+      hasOriginal:
+        type: boolean
+      newPath:
+        type: string
+      oldPath:
+        type: string
+      status:
+        $ref: '#/definitions/review.ChangeStatus'
+    type: object
+  review.FileContents:
+    properties:
+      modifiedContent:
+        type: string
+      originalContent:
+        type: string
+    type: object
+  review.PullRequest:
+    properties:
+      baseRefName:
+        type: string
+      headRefName:
+        type: string
+      number:
+        type: integer
+      url:
+        type: string
+    type: object
+  review.Scope:
+    enum:
+    - pull-request
+    - git-diff
+    - last-commit
+    - all-files
+    type: string
+    x-enum-varnames:
+    - ScopePullRequest
+    - ScopeGitDiff
+    - ScopeLastCommit
+    - ScopeAllFiles
+  review.WindowData:
+    properties:
+      branchName:
+        type: string
+      files:
+        items:
+          $ref: '#/definitions/review.File'
+        type: array
+      pullRequest:
+        $ref: '#/definitions/review.PullRequest'
+      repoRoot:
+        type: string
+    type: object
+  worktree.RemoteBranch:
+    properties:
+      branch:
+        type: string
+      hasLocalBranch:
+        type: boolean
+      isCheckedOut:
+        type: boolean
+      name:
+        type: string
+      worktreeName:
+        type: string
+      worktreeProjectName:
+        type: string
+    type: object
+  worktree.RemoteBranchList:
+    properties:
+      branches:
+        items:
+          $ref: '#/definitions/worktree.RemoteBranch'
+        type: array
+      remote:
+        type: string
+    type: object
+  worktree.Worktree:
+    properties:
+      branch:
+        type: string
+      ignoredFileCopyWarnings:
+        items:
+          type: string
+        type: array
+      isBase:
+        type: boolean
+      isCurrent:
+        type: boolean
+      isRemovable:
+        type: boolean
+      name:
+        type: string
+      path:
+        type: string
+      projectName:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Local HTTP API for the WADE browser workspace.
+  title: WADE API
+  version: 0.1.0
+paths:
+  /api/config:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.configPayload'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: Get settings
+      tags:
+      - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Settings
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.configPayload'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: Update settings
+      tags:
+      - Config
+  /api/config/reload:
+    post:
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: unable to reload config
+          schema:
+            type: string
+      summary: Reload runtime config
+      tags:
+      - Config
+  /api/openapi.json:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+      summary: Get OpenAPI spec
+      tags:
+      - OpenAPI
+  /api/project:
+    get:
+      parameters:
+      - description: Project name
+        in: query
+        name: project
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.projectResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: Get project details
+      tags:
+      - Projects
+  /api/projects:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.projectsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: List projects
+      tags:
+      - Projects
+  /api/remote-projects:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.remoteProjectsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: List remote projects
+      tags:
+      - Remote projects
+  /api/remote-projects/clone:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Remote project clone request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.cloneRemoteProjectRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.cloneRemoteProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: Clone remote project
+      tags:
+      - Remote projects
+  /api/review:
+    get:
+      parameters:
+      - description: Project name
+        in: query
+        name: project
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/review.WindowData'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: Get review window data
+      tags:
+      - Review
+  /api/review/file:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Project name
+        in: query
+        name: project
+        required: true
+        type: string
+      - description: Review file request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.reviewFileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/review.FileContents'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: Get review file contents
+      tags:
+      - Review
+  /api/session/{sessionName}:
+    delete:
+      parameters:
+      - description: Session project name
+        in: path
+        name: sessionName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: Close project session
+      tags:
+      - Sessions
+  /api/sessions:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.sessionsResponse'
+      summary: List active project sessions
+      tags:
+      - Sessions
+  /api/terminal/reload:
+    post:
+      parameters:
+      - description: Project name
+        in: query
+        name: project
+        required: true
+        type: string
+      - description: Terminal name
+        in: query
+        name: terminal
+        type: string
+      - description: Agent name
+        in: query
+        name: agent
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: project not found
+          schema:
+            type: string
+      summary: Reload terminal session
+      tags:
+      - Terminals
+  /api/worktrees:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Worktree removal request
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/handlers.removeWorktreeRequest'
+      - description: Project name
+        in: query
+        name: project
+        type: string
+      - description: Worktree name
+        in: query
+        name: worktree
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.worktreeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: Remove worktree
+      tags:
+      - Worktrees
+    get:
+      parameters:
+      - description: Project name
+        in: query
+        name: project
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.worktreesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: List worktrees
+      tags:
+      - Worktrees
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Worktree creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createWorktreeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.worktreeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: Create worktree
+      tags:
+      - Worktrees
+  /api/worktrees/remote-branches:
+    get:
+      parameters:
+      - description: Project name
+        in: query
+        name: project
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/worktree.RemoteBranchList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: List remote branches
+      tags:
+      - Worktrees
+produces:
+- application/json
+schemes:
+- http
+swagger: "2.0"

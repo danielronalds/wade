@@ -42,6 +42,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 
 	reviewHandler := handlers.NewReview(server.projects)
 
+	openAPIDocsHandler := newOpenAPIDocsHandler()
 	pageHandler := handlers.NewPage(server.staticFiles)
 
 	server.Mux.HandleFunc("GET /ws", server.handleTerminal)
@@ -65,6 +66,10 @@ func New(configuration config.Config, staticFiles fs.FS) *Server {
 
 	server.Mux.HandleFunc("GET /api/review", reviewHandler.GetReviewWindowData)
 	server.Mux.HandleFunc("POST /api/review/file", reviewHandler.GetReviewFileContents)
+
+	server.Mux.HandleFunc("GET /api/openapi.json", server.handleOpenAPISpec)
+	server.Mux.HandleFunc("GET /api/docs", openAPIDocsHandler)
+	server.Mux.HandleFunc("GET /api/docs/", openAPIDocsHandler)
 
 	server.Mux.Handle("GET /static/", http.FileServer(http.FS(staticFiles)))
 	server.Mux.HandleFunc("GET /", pageHandler.GetApplicationPage)

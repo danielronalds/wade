@@ -1,0 +1,1049 @@
+{
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Local HTTP API for the WADE browser workspace.",
+        "title": "WADE API",
+        "contact": {},
+        "version": "0.1.0"
+    },
+    "basePath": "/",
+    "paths": {
+        "/api/config": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Get settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.configPayload"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Update settings",
+                "parameters": [
+                    {
+                        "description": "Settings",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.configPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/config/reload": {
+            "post": {
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Reload runtime config",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "unable to reload config",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/openapi.json": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OpenAPI"
+                ],
+                "summary": "Get OpenAPI spec",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/project": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Get project details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project name",
+                        "name": "project",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.projectResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/projects": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "List projects",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.projectsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/remote-projects": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Remote projects"
+                ],
+                "summary": "List remote projects",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.remoteProjectsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/remote-projects/clone": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Remote projects"
+                ],
+                "summary": "Clone remote project",
+                "parameters": [
+                    {
+                        "description": "Remote project clone request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.cloneRemoteProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.cloneRemoteProjectResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/review": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Review"
+                ],
+                "summary": "Get review window data",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project name",
+                        "name": "project",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/review.WindowData"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/review/file": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Review"
+                ],
+                "summary": "Get review file contents",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project name",
+                        "name": "project",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Review file request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.reviewFileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/review.FileContents"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/session/{sessionName}": {
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Sessions"
+                ],
+                "summary": "Close project session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session project name",
+                        "name": "sessionName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sessions": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Sessions"
+                ],
+                "summary": "List active project sessions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.sessionsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/terminal/reload": {
+            "post": {
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Terminals"
+                ],
+                "summary": "Reload terminal session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project name",
+                        "name": "project",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Terminal name",
+                        "name": "terminal",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Agent name",
+                        "name": "agent",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "project not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/worktrees": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Worktrees"
+                ],
+                "summary": "List worktrees",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project name",
+                        "name": "project",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.worktreesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Worktrees"
+                ],
+                "summary": "Create worktree",
+                "parameters": [
+                    {
+                        "description": "Worktree creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.createWorktreeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.worktreeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Worktrees"
+                ],
+                "summary": "Remove worktree",
+                "parameters": [
+                    {
+                        "description": "Worktree removal request",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.removeWorktreeRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Project name",
+                        "name": "project",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Worktree name",
+                        "name": "worktree",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.worktreeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/worktrees/remote-branches": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Worktrees"
+                ],
+                "summary": "List remote branches",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project name",
+                        "name": "project",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/worktree.RemoteBranchList"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "config.Agent": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                },
+                "default": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.cloneRemoteProjectRequest": {
+            "type": "object",
+            "properties": {
+                "directoryIndex": {
+                    "type": "integer"
+                },
+                "nameWithOwner": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.cloneRemoteProjectResponse": {
+            "type": "object",
+            "properties": {
+                "project": {
+                    "$ref": "#/definitions/remote.ClonedProject"
+                }
+            }
+        },
+        "handlers.configPayload": {
+            "type": "object",
+            "properties": {
+                "agents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/config.Agent"
+                    }
+                },
+                "copyIgnoredFilesOnWorktreeCreation": {
+                    "type": "boolean"
+                },
+                "projectDirectories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "shell": {
+                    "type": "string"
+                },
+                "themeAccentColor": {
+                    "type": "string"
+                },
+                "worktreeCopyExcludes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "handlers.createWorktreeRequest": {
+            "type": "object",
+            "properties": {
+                "branch": {
+                    "type": "string"
+                },
+                "project": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.errorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.projectResponse": {
+            "type": "object",
+            "properties": {
+                "gitBranch": {
+                    "type": "string"
+                },
+                "githubUrl": {
+                    "type": "string"
+                },
+                "linearTicketUrl": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pullRequestUrl": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.projectsResponse": {
+            "type": "object",
+            "properties": {
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "handlers.remoteProjectsResponse": {
+            "type": "object",
+            "properties": {
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/remote.Project"
+                    }
+                }
+            }
+        },
+        "handlers.removeWorktreeRequest": {
+            "type": "object",
+            "properties": {
+                "project": {
+                    "type": "string"
+                },
+                "worktree": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.reviewFileRequest": {
+            "type": "object",
+            "properties": {
+                "fileId": {
+                    "type": "string"
+                },
+                "scope": {
+                    "$ref": "#/definitions/review.Scope"
+                }
+            }
+        },
+        "handlers.sessionsResponse": {
+            "type": "object",
+            "properties": {
+                "sessions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "handlers.worktreeResponse": {
+            "type": "object",
+            "properties": {
+                "worktree": {
+                    "$ref": "#/definitions/worktree.Worktree"
+                }
+            }
+        },
+        "handlers.worktreesResponse": {
+            "type": "object",
+            "properties": {
+                "worktrees": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/worktree.Worktree"
+                    }
+                }
+            }
+        },
+        "remote.ClonedProject": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                }
+            }
+        },
+        "remote.Project": {
+            "type": "object",
+            "properties": {
+                "isLocal": {
+                    "type": "boolean"
+                },
+                "localName": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nameWithOwner": {
+                    "type": "string"
+                },
+                "sshUrl": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "review.ChangeStatus": {
+            "type": "string",
+            "enum": [
+                "modified",
+                "added",
+                "deleted",
+                "renamed"
+            ],
+            "x-enum-varnames": [
+                "StatusModified",
+                "StatusAdded",
+                "StatusDeleted",
+                "StatusRenamed"
+            ]
+        },
+        "review.File": {
+            "type": "object",
+            "properties": {
+                "gitDiff": {
+                    "$ref": "#/definitions/review.FileComparison"
+                },
+                "hasWorkingTreeFile": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "inGitDiff": {
+                    "type": "boolean"
+                },
+                "inLastCommit": {
+                    "type": "boolean"
+                },
+                "inPullRequest": {
+                    "type": "boolean"
+                },
+                "lastCommit": {
+                    "$ref": "#/definitions/review.FileComparison"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "pullRequest": {
+                    "$ref": "#/definitions/review.FileComparison"
+                },
+                "worktreeStatus": {
+                    "$ref": "#/definitions/review.ChangeStatus"
+                }
+            }
+        },
+        "review.FileComparison": {
+            "type": "object",
+            "properties": {
+                "displayPath": {
+                    "type": "string"
+                },
+                "hasModified": {
+                    "type": "boolean"
+                },
+                "hasOriginal": {
+                    "type": "boolean"
+                },
+                "newPath": {
+                    "type": "string"
+                },
+                "oldPath": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/review.ChangeStatus"
+                }
+            }
+        },
+        "review.FileContents": {
+            "type": "object",
+            "properties": {
+                "modifiedContent": {
+                    "type": "string"
+                },
+                "originalContent": {
+                    "type": "string"
+                }
+            }
+        },
+        "review.PullRequest": {
+            "type": "object",
+            "properties": {
+                "baseRefName": {
+                    "type": "string"
+                },
+                "headRefName": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "review.Scope": {
+            "type": "string",
+            "enum": [
+                "pull-request",
+                "git-diff",
+                "last-commit",
+                "all-files"
+            ],
+            "x-enum-varnames": [
+                "ScopePullRequest",
+                "ScopeGitDiff",
+                "ScopeLastCommit",
+                "ScopeAllFiles"
+            ]
+        },
+        "review.WindowData": {
+            "type": "object",
+            "properties": {
+                "branchName": {
+                    "type": "string"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/review.File"
+                    }
+                },
+                "pullRequest": {
+                    "$ref": "#/definitions/review.PullRequest"
+                },
+                "repoRoot": {
+                    "type": "string"
+                }
+            }
+        },
+        "worktree.RemoteBranch": {
+            "type": "object",
+            "properties": {
+                "branch": {
+                    "type": "string"
+                },
+                "hasLocalBranch": {
+                    "type": "boolean"
+                },
+                "isCheckedOut": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "worktreeName": {
+                    "type": "string"
+                },
+                "worktreeProjectName": {
+                    "type": "string"
+                }
+            }
+        },
+        "worktree.RemoteBranchList": {
+            "type": "object",
+            "properties": {
+                "branches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/worktree.RemoteBranch"
+                    }
+                },
+                "remote": {
+                    "type": "string"
+                }
+            }
+        },
+        "worktree.Worktree": {
+            "type": "object",
+            "properties": {
+                "branch": {
+                    "type": "string"
+                },
+                "ignoredFileCopyWarnings": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "isBase": {
+                    "type": "boolean"
+                },
+                "isCurrent": {
+                    "type": "boolean"
+                },
+                "isRemovable": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "projectName": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
