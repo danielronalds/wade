@@ -1,6 +1,4 @@
-type ErrorResponse = {
-  message: string;
-};
+import { responseErrorMessage } from '@/api/http';
 
 type SessionsResponse = {
   sessions: string[];
@@ -8,14 +6,6 @@ type SessionsResponse = {
 
 const sessionPath = '/api/session';
 const sessionsPath = '/api/sessions';
-
-const isErrorResponse = (value: unknown): value is ErrorResponse => {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  return typeof (value as Partial<ErrorResponse>).message === 'string';
-};
 
 const isSessionsResponse = (value: unknown): value is SessionsResponse => {
   if (!value || typeof value !== 'object') {
@@ -26,24 +16,6 @@ const isSessionsResponse = (value: unknown): value is SessionsResponse => {
 
   return Array.isArray(response.sessions)
     && response.sessions.every((session) => typeof session === 'string');
-};
-
-const responseErrorMessage = async (response: Response, fallback: string) => {
-  const text = await response.text();
-  if (text.trim() === '') {
-    return fallback;
-  }
-
-  try {
-    const body: unknown = JSON.parse(text);
-    if (isErrorResponse(body) && body.message.trim() !== '') {
-      return body.message;
-    }
-  } catch {
-    return text.trim();
-  }
-
-  return fallback;
 };
 
 export const listActiveProjectSessions = async (): Promise<string[]> => {

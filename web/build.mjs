@@ -160,6 +160,9 @@ const main = async () => {
   await esbuild.build({
     entryPoints: [join(root, 'src/main.ts')],
     bundle: true,
+    alias: {
+      '@': join(root, 'src')
+    },
     platform: 'browser',
     format: 'esm',
     target: ['es2022'],

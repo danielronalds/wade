@@ -1,10 +1,11 @@
 // NOTE: Vibecoded and not suppppppper reviewed
+import { responseErrorMessage } from '@/api/http';
 import {
   isClonedProject,
   isRemoteProject,
   type ClonedProject,
   type RemoteProject
-} from '../types/remoteProject';
+} from '@/types/remoteProject';
 
 type RemoteProjectsResponse = {
   projects: RemoteProject[];
@@ -14,20 +15,8 @@ type CloneRemoteProjectResponse = {
   project: ClonedProject;
 };
 
-type ErrorResponse = {
-  message: string;
-};
-
 const remoteProjectsPath = '/api/remote-projects';
 const cloneRemoteProjectPath = '/api/remote-projects/clone';
-
-const isErrorResponse = (value: unknown): value is ErrorResponse => {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  return typeof (value as Partial<ErrorResponse>).message === 'string';
-};
 
 const isRemoteProjectsResponse = (value: unknown): value is RemoteProjectsResponse => {
   if (!value || typeof value !== 'object') {
@@ -46,24 +35,6 @@ const isCloneRemoteProjectResponse = (value: unknown): value is CloneRemoteProje
   }
 
   return isClonedProject((value as Partial<CloneRemoteProjectResponse>).project);
-};
-
-const responseErrorMessage = async (response: Response, fallback: string) => {
-  const text = await response.text();
-  if (text.trim() === '') {
-    return fallback;
-  }
-
-  try {
-    const body: unknown = JSON.parse(text);
-    if (isErrorResponse(body) && body.message.trim() !== '') {
-      return body.message;
-    }
-  } catch {
-    return text.trim();
-  }
-
-  return fallback;
 };
 
 export const listRemoteProjects = async (): Promise<RemoteProject[]> => {

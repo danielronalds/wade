@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { RouterView } from 'vue-router';
-import { fetchSettings } from './api/settings';
-import CommandPalette from './components/CommandPalette.vue';
-import { applyThemeAccentColor, storedThemeAccentColor } from './theme';
+import { fetchSettings } from '@/api/settings';
+import CommandPalette from '@/features/command-palette/CommandPalette.vue';
+import { applyThemeAccentColor, storedThemeAccentColor } from '@/utils/theme';
 
 applyThemeAccentColor(storedThemeAccentColor());
 

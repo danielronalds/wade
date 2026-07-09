@@ -122,29 +122,86 @@ generated `internal/web/.dist` directory is embedded into the Go binary.
 - `internal/web`: Embeds built frontend assets for serving.
 - `internal/worktree`: Lists, creates and removes Git worktrees.
 
+## Frontend structure
+
+The frontend is organised by route views and features. Prefer the `@/*` import
+alias for frontend imports instead of deep relative paths.
+
+```text
+web/src/
+  api/                 Backend API clients and shared HTTP helpers
+  assets/              Global CSS and frontend assets
+  components/          App-wide reusable Vue components only
+  composables/         App-wide reusable composables only
+  features/            Cross-route feature areas
+  router/              Vue Router setup
+  types/               Shared TypeScript types
+  utils/               Pure app-wide helpers
+  views/               Route-level screens and their private UI
+```
+
+Follow these rules when adding or moving frontend code:
+
+- Keep backend-facing clients in `web/src/api`. Reuse `api/http.ts` for shared
+  response handling rather than duplicating fetch error parsing.
+- Put route-level screens in `web/src/views/<route>/<RouteView>.vue`.
+- Put UI that is private to a route under that route's `components`, `tabs`, or
+  `composables` folders. For example, project tab containers live under
+  `web/src/views/project/tabs`.
+- Put code that represents a cross-route workflow in `web/src/features`. Feature
+  folders can contain `components`, `composables`, and local `types.ts` files.
+- Keep truly generic shared composables in `web/src/composables`. For example,
+  `useFuzzyItems` is generic, while project-specific fuzzy matching belongs in
+  `features/projects`.
+- Keep app-wide reusable components in `web/src/components`. Do not put
+  route-only components there.
+- Put pure app-wide helpers in `web/src/utils`, such as theme utilities.
+- Do not introduce new components during a folder-structure refactor unless the
+  task explicitly asks for component decomposition.
+
+Current high-level shape:
+
+```text
+web/src/
+  api/
+    http.ts
+    remoteProjects.ts
+    sessions.ts
+    settings.ts
+    worktrees.ts
+  assets/
+    styles.css
+  components/
+    icons/
+  composables/
+    useFuzzyItems.ts
+  features/
+    command-palette/
+    projects/
+    sessions/
+    terminal-session/
+  router/
+    index.ts
+  types/
+  utils/
+    theme.ts
+  views/
+    home/
+    project/
+      components/
+      composables/
+      tabs/
+        review/
+        server/
+        terminal/
+    settings/
+```
+
 ## Coding standards
 
 When declaring several local variables together, group related variables and
 separate unrelated groups with an empty line. This keeps setup and wiring blocks
 easy to scan as they grow.
-
-For non-trivial frontend components, prefer a feature folder under
-`web/src/components` named after the component or feature in kebab-case. Put the
-main component at the top level of that folder, private child components in a
-`components` subfolder, and component-specific composables in a `composable`
-subfolder. Keep shared components and shared composables in the existing shared
-locations instead.
-
-Example:
-
-```text
-web/src/components/terminal-tab/
-  TerminalTab.vue
-  components/
-    CollapsedTerminalRail.vue
-  composable/
-    useTerminalTabPaneZoom.ts
-```
 
 ## Validation
 

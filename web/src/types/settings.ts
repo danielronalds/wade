@@ -1,4 +1,4 @@
-import { defaultThemeAccentColor, isThemeAccentColor, normaliseThemeAccentColor, type ThemeAccentColor } from '../theme';
+import { defaultThemeAccentColor, isThemeAccentColor, normaliseThemeAccentColor, type ThemeAccentColor } from '@/utils/theme';
 
 export type Agent = {
   name: string;

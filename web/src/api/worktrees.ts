@@ -1,9 +1,10 @@
+import { responseErrorMessage } from '@/api/http';
 import {
   isRemoteBranchList,
   isWorktree,
   type RemoteBranchList,
   type Worktree
-} from '../types/worktree';
+} from '@/types/worktree';
 
 type WorktreesResponse = {
   worktrees: Worktree[];
@@ -13,20 +14,8 @@ type WorktreeResponse = {
   worktree: Worktree;
 };
 
-type ErrorResponse = {
-  message: string;
-};
-
 const worktreesPath = '/api/worktrees';
 const remoteBranchesPath = '/api/worktrees/remote-branches';
-
-const isErrorResponse = (value: unknown): value is ErrorResponse => {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  return typeof (value as Partial<ErrorResponse>).message === 'string';
-};
 
 const isWorktreesResponse = (value: unknown): value is WorktreesResponse => {
   if (!value || typeof value !== 'object') {
@@ -45,24 +34,6 @@ const isWorktreeResponse = (value: unknown): value is WorktreeResponse => {
   }
 
   return isWorktree((value as Partial<WorktreeResponse>).worktree);
-};
-
-const responseErrorMessage = async (response: Response, fallback: string) => {
-  const text = await response.text();
-  if (text.trim() === '') {
-    return fallback;
-  }
-
-  try {
-    const body: unknown = JSON.parse(text);
-    if (isErrorResponse(body) && body.message.trim() !== '') {
-      return body.message;
-    }
-  } catch {
-    return text.trim();
-  }
-
-  return fallback;
 };
 
 export const listWorktrees = async (project: string): Promise<Worktree[]> => {
