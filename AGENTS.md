@@ -118,19 +118,41 @@ generation stays under `web/`: Orval uses `web/orval.config.ts` to generate the
 fetch client at `web/src/api/generated/wade.ts`. Import generated API functions
 directly, avoid thin wrapper modules.
 
-## Internal packages
+## Backend structure
 
-- `internal/config`: Loads, validates and persists WADE runtime settings.
-- `internal/project`: Discovers local projects and resolves project metadata.
-- `internal/remote`: Lists and clones remote GitHub repositories.
-- `internal/review`: Builds Git-based review data and file contents.
-- `internal/server`: Wires HTTP routes, WebSockets and long-lived server state.
-- `internal/server/handlers`: Implements HTTP API and page handlers.
-- `internal/terminal`: Starts and controls PTY-backed terminal sessions.
-- `internal/terminal/manager`: Manages persistent project terminal sessions and
-  clients.
+Use a Controllers, Services, Repositories structure for the Go backend.
+
+- `internal/app`: Composition root. Wires repositories, services, controllers,
+  and shutdown behaviour.
+- `internal/server`: HTTP server runtime. Owns the mux, route registration,
+  origin checks, and server lifecycle.
+- `internal/controllers`: One package with separate files per controller.
+  Controllers handle HTTP/WebSocket request and response concerns only.
+- `internal/services/<service>`: One package per service. Services own
+  application behaviour, orchestration, and validation.
+- `internal/repositories`: One package with separate files per repository.
+  Repositories own filesystem, process, command, cache, and external IO.
 - `internal/web`: Embeds built frontend assets for serving.
-- `internal/worktree`: Lists, creates and removes Git worktrees.
+- `internal/openapi`: Generated OpenAPI Go package and JSON spec.
+
+Dependency direction rules:
+
+- Controllers may depend on services.
+- Services may depend on repository interfaces.
+- Repository interfaces should live in the service package that consumes them.
+- Repositories should provide concrete implementations.
+- Repositories must not depend on services or controllers.
+
+Service package rules:
+
+- Put the public service and its methods in `service.go`.
+- Put pure validation helpers in `validators.go`.
+- Put validation tests in `validators_test.go`.
+- Put service request/result/domain types in `types.go` where needed.
+- Put typed service errors in `errors.go` where needed.
+- Keep OpenAPI annotations on controllers.
+- Terminal PTY code belongs inside `internal/services/terminalsessions`, behind
+  the public terminal session service API.
 
 ## Frontend structure
 

@@ -35,7 +35,7 @@ run = "go generate ./..."
 
 [tasks."gen:openapi"]
 description = "Generates the OpenAPI spec"
-run = "swag init --quiet --generalInfo cmd/wade/main.go --dir . --parseInternal --requiredByDefault --output internal/server/openapi --outputTypes json,yaml"
+run = "swag init --quiet --generalInfo cmd/wade/main.go --dir . --parseInternal --requiredByDefault --output internal/openapi --outputTypes json,yaml"
 
 [tasks."lint:openapi"]
 description = "Checks generated OpenAPI spec"
@@ -43,8 +43,8 @@ run = """
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
 swag init --quiet --generalInfo cmd/wade/main.go --dir . --parseInternal --requiredByDefault --output "$tmp_dir" --outputTypes json,yaml
-diff -u internal/server/openapi/swagger.json "$tmp_dir/swagger.json"
-diff -u internal/server/openapi/swagger.yaml "$tmp_dir/swagger.yaml"
+diff -u internal/openapi/swagger.json "$tmp_dir/swagger.json"
+diff -u internal/openapi/swagger.yaml "$tmp_dir/swagger.yaml"
 """
 
 [tasks."lint:fmt"]

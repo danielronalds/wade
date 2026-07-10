@@ -4,7 +4,7 @@ import (
 	"os"
 	"os/exec"
 
-	"wade/internal/config"
+	"wade/internal/services/config"
 )
 
 type ConfigController struct{}

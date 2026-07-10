@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"wade/internal/config"
-	"wade/internal/server"
+	"wade/internal/app"
+	"wade/internal/services/config"
 	"wade/internal/web"
 )
 
@@ -33,7 +33,7 @@ func (c ServerController) HandleArgs(args []string) error {
 		return fmt.Errorf("failed to load web assets: %w", err)
 	}
 
-	application := server.New(configuration, staticFiles)
+	application := app.New(configuration, staticFiles)
 	httpServer := &http.Server{
 		Addr:    configuration.Address,
 		Handler: application.Mux,

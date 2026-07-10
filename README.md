@@ -163,8 +163,8 @@ by git.
 ## OpenAPI generation
 
 The HTTP API annotations generate a Swagger/OpenAPI spec at
-`internal/server/openapi/swagger.json` and
-`internal/server/openapi/swagger.yaml`.
+`internal/openapi/swagger.json` and
+`internal/openapi/swagger.yaml`.
 
 ```sh
 mise run gen:openapi

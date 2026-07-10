@@ -6,7 +6,7 @@ import (
 )
 
 // Prevents arbitrary browser tabs from connecting to the local shell via WebSocket.
-func allowSameOrigin(r *http.Request) bool {
+func AllowSameOrigin(r *http.Request) bool {
 	origin := r.Header.Get("Origin")
 	if origin == "" {
 		return true
