@@ -53,7 +53,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Application {
 		Page:           controllers.NewPage(staticFiles),
 	}
 
-	httpServer := server.New(controllerSet)
+	httpServer := server.New(controllerSet, server.Options{SwaggerEnabled: configuration.SwaggerEnabled})
 	return &Application{Mux: httpServer.Mux, terminals: terminalSessionService}
 }
 

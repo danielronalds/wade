@@ -11,9 +11,13 @@ type Server struct {
 	Mux *http.ServeMux
 }
 
+type Options struct {
+	SwaggerEnabled bool
+}
+
 // New registers routes for the supplied controllers.
-func New(controllers controllers.Controllers) *Server {
+func New(controllers controllers.Controllers, options Options) *Server {
 	server := &Server{Mux: http.NewServeMux()}
-	server.registerRoutes(controllers)
+	server.registerRoutes(controllers, options)
 	return server
 }
