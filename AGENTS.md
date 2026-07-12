@@ -167,6 +167,7 @@ web/src/
   composables/         App-wide reusable composables only
   features/            Cross-route feature areas
   router/              Vue Router setup
+  stores/              App-wide Pinia stores shared across features
   types/               Shared TypeScript types
   utils/               Pure app-wide helpers
   views/               Route-level screens and their private UI
@@ -188,6 +189,12 @@ Follow these rules when adding or moving frontend code:
   `features/projects`.
 - Keep app-wide reusable components in `web/src/components`. Do not put
   route-only components there.
+- Put app-wide Pinia stores in `web/src/stores` when the state is shared across
+  multiple routes or feature areas, such as settings, projects, project details,
+  active sessions, or command palette state.
+- Keep feature-local or route-local stores inside the owning feature or view
+  folder. For example, review-only state should stay under the review tab unless
+  it becomes app-wide.
 - Put pure app-wide helpers in `web/src/utils`, such as theme utilities.
 - Do not introduce new components during a folder-structure refactor unless the
   task explicitly asks for component decomposition.
@@ -214,6 +221,8 @@ web/src/
     terminal-session/
   router/
     index.ts
+  stores/
+    useSettingsStore.ts
   types/
   utils/
     theme.ts

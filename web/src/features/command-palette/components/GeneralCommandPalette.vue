@@ -10,6 +10,7 @@ import { useFuzzyItems } from '@/composables/useFuzzyItems';
 import type { ProjectDetails } from '@/views/project/composables/useProjectDetails';
 import { useProjects } from '@/features/projects/composables/useProjects';
 import { useRecentProjects } from '@/features/projects/composables/useRecentProjects';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { isReviewInProgressState, useReviewSessionState } from '@/views/project/tabs/review/composables/useReviewSessionState';
 import { dispatchCancelReviewEvent } from '@/views/project/tabs/review/events/cancelReview';
 import { dispatchStartReviewEvent } from '@/views/project/tabs/review/events/startReview';
@@ -30,6 +31,7 @@ const route = useRoute();
 const router = useRouter();
 const { syncProjects } = useProjects();
 const { removeUnavailableRecentProjects } = useRecentProjects();
+const { loadSettings } = useSettingsStore();
 const query = ref('');
 const projectDetails = ref<ProjectDetails | undefined>();
 const isProjectDetailsLoading = ref(false);
@@ -164,6 +166,12 @@ const openSettings = async () => {
 const reloadConfig = async () => {
   try {
     await requestReloadConfig();
+
+    try {
+      await loadSettings({ force: true });
+    } catch (settingsError) {
+      console.error(settingsError);
+    }
 
     const availableProjects = await syncProjects();
     if (availableProjects) {

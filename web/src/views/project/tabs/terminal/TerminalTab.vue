@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, toRef, watch } from 'vue';
-import { getSettings } from '@/api/generated/wade';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { loadSelectedAgentName, storeSelectedAgentName } from '@/features/terminal-session/composables/useSelectedAgent';
 import { defaultAgents, type Agent } from '@/types/settings';
 import { useTerminalTabPaneZoom } from '@/views/project/tabs/terminal/composables/useTerminalTabPaneZoom';
@@ -21,6 +21,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   connectionStatusChange: [status: TerminalConnectionStatus];
 }>();
+
+const { loadSettings } = useSettingsStore();
 
 type TerminalPaneComponent = {
   focusTerminal: () => Promise<void>;
@@ -118,8 +120,8 @@ const selectAgent = async (agentName: string) => {
 
 const loadAgents = async () => {
   try {
-    const settings = await getSettings();
-    agents.value = settings.agents;
+    const settings = await loadSettings();
+    agents.value = settings.agents.map((agent) => ({ ...agent }));
   } catch {
     agents.value = defaultAgents.map((agent) => ({ ...agent }));
   }

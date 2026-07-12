@@ -1,9 +1,5 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, readonly, ref } from 'vue';
-import {
-  getSettings,
-  reloadConfig,
-  updateSettings
-} from '@/api/generated/wade';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { applyThemeAccentColor, type ThemeAccentColor } from '@/utils/theme';
 import {
   cloneSettings,
@@ -14,8 +10,6 @@ import {
   normaliseSettings,
   type Settings
 } from '@/types/settings';
-import { useProjects } from '@/features/projects/composables/useProjects';
-import { useRecentProjects } from '@/features/projects/composables/useRecentProjects';
 
 const settingsHaveChanged = (current: Settings, saved: Settings) => JSON.stringify(current.projectDirectories)
   !== JSON.stringify(saved.projectDirectories)
@@ -34,8 +28,10 @@ const errorMessage = (error: unknown, fallback: string) => error instanceof Erro
   : fallback;
 
 export const useSettingsForm = () => {
-  const { syncProjects } = useProjects();
-  const { removeUnavailableRecentProjects } = useRecentProjects();
+  const {
+    loadSettings: loadSavedSettings,
+    saveSettings
+  } = useSettingsStore();
 
   const form = reactive<Settings>(createEmptySettings());
   const savedSettings = ref<Settings>(createEmptySettings());
@@ -77,7 +73,7 @@ export const useSettingsForm = () => {
     clearMessages();
 
     try {
-      const settings = await getSettings() as Settings;
+      const settings = await loadSavedSettings({ force: true });
       replaceForm(settings);
       savedSettings.value = normaliseSettings(settings);
       applyThemeAccentColor(settings.themeAccentColor);
@@ -216,19 +212,8 @@ export const useSettingsForm = () => {
     clearMessages();
   };
 
-  const refreshProjects = async () => {
-    const availableProjects = await syncProjects();
-    if (availableProjects) {
-      removeUnavailableRecentProjects(availableProjects);
-    }
-  };
-
   const persistSettings = async () => {
-    const settings = cloneSettings(normalisedSettings.value);
-
-    await updateSettings(settings);
-    await reloadConfig();
-    await refreshProjects();
+    const settings = await saveSettings(cloneSettings(normalisedSettings.value));
 
     replaceForm(settings);
     savedSettings.value = cloneSettings(settings);

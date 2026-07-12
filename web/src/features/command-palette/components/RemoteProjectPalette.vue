@@ -4,13 +4,12 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   cloneRemoteProject,
-  getSettings,
   listRemoteProjects
 } from '@/api/generated/wade';
 import { useFuzzyItems } from '@/composables/useFuzzyItems';
 import { useProjects } from '@/features/projects/composables/useProjects';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import type { RemoteProject } from '@/types/remoteProject';
-import type { Settings } from '@/types/settings';
 import PaletteShell from '@/features/command-palette/components/PaletteShell.vue';
 import type { PaletteResult } from '@/features/command-palette/types';
 import { usePaletteRequestState } from '@/features/command-palette/composables/usePaletteRequestState';
@@ -26,6 +25,7 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const { syncProjects } = useProjects();
+const { loadSettings } = useSettingsStore();
 const remoteProjects = ref<RemoteProject[]>([]);
 const projectDirectories = ref<string[]>([]);
 const selectedRemoteProject = ref<RemoteProject | undefined>();
@@ -177,7 +177,7 @@ const loadRemoteProjects = async () => {
   try {
     const [{ projects }, settings] = await Promise.all([
       listRemoteProjects(),
-      getSettings() as Promise<Settings>
+      loadSettings({ force: true })
     ]);
 
     remoteProjects.value = projects;
