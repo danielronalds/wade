@@ -18,7 +18,13 @@ type TerminalSessionOptions = {
   isActive: Readonly<Ref<boolean>>;
 };
 
+type TerminalControlMessage = {
+  type?: string;
+};
+
 const encoder = new TextEncoder();
+const replayStartMessageType = 'replayStart';
+const replayEndMessageType = 'replayEnd';
 const embeddedFontFamily = 'WebTerminalJetBrainsMonoNerdFont';
 const nerdFontStack = [
   embeddedFontFamily,
@@ -131,6 +137,9 @@ export const useTerminalSession = ({
   let isStopped = true;
   let reloadingRun: number | undefined;
   let sessionRun = 0;
+  let isReceivingReplay = false;
+  let pendingReplayWrites = 0;
+  let queuedLiveOutput: Uint8Array[] = [];
 
   const isSessionRunActive = (run: number) => !isStopped && sessionRun === run;
 
@@ -187,8 +196,85 @@ export const useTerminalSession = ({
     webglContextLossDisposable = contextLossDisposable;
   };
 
+  const hasReplayInProgress = () => isReceivingReplay || pendingReplayWrites > 0;
+
+  const resetReplayState = () => {
+    isReceivingReplay = false;
+    pendingReplayWrites = 0;
+    queuedLiveOutput = [];
+  };
+
+  const flushQueuedLiveOutput = (run: number) => {
+    if (!isSessionRunActive(run) || hasReplayInProgress() || !terminal) {
+      return;
+    }
+
+    const outputs = queuedLiveOutput;
+    queuedLiveOutput = [];
+
+    for (const output of outputs) {
+      terminal.write(output);
+    }
+  };
+
+  const writeReplayOutput = (run: number, output: Uint8Array) => {
+    if (!terminal) {
+      return;
+    }
+
+    pendingReplayWrites += 1;
+    terminal.write(output, () => {
+      if (!isSessionRunActive(run)) {
+        return;
+      }
+
+      pendingReplayWrites = Math.max(0, pendingReplayWrites - 1);
+      flushQueuedLiveOutput(run);
+    });
+  };
+
+  const writeTerminalOutput = (run: number, output: Uint8Array) => {
+    if (isReceivingReplay) {
+      writeReplayOutput(run, output);
+      return;
+    }
+
+    if (hasReplayInProgress()) {
+      queuedLiveOutput.push(output);
+      return;
+    }
+
+    terminal?.write(output);
+  };
+
+  const handleTerminalControlMessage = (run: number, data: string) => {
+    let parsedMessage: unknown;
+
+    try {
+      parsedMessage = JSON.parse(data);
+    } catch {
+      return;
+    }
+
+    if (!parsedMessage || typeof parsedMessage !== 'object' || !('type' in parsedMessage)) {
+      return;
+    }
+
+    const message = parsedMessage as TerminalControlMessage;
+
+    if (message.type === replayStartMessageType) {
+      isReceivingReplay = true;
+      return;
+    }
+
+    if (message.type === replayEndMessageType) {
+      isReceivingReplay = false;
+      flushQueuedLiveOutput(run);
+    }
+  };
+
   const sendTerminalInput = (data: string) => {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
+    if (hasReplayInProgress() || !socket || socket.readyState !== WebSocket.OPEN) {
       return;
     }
 
@@ -255,7 +341,12 @@ export const useTerminalSession = ({
         return;
       }
 
-      terminal.write(new Uint8Array(event.data));
+      if (typeof event.data === 'string') {
+        handleTerminalControlMessage(run, event.data);
+        return;
+      }
+
+      writeTerminalOutput(run, new Uint8Array(event.data));
     });
 
     connection.addEventListener('close', () => {
@@ -281,6 +372,7 @@ export const useTerminalSession = ({
     isStopped = true;
     sessionRun += 1;
     terminalDataDisposable?.dispose();
+    resetReplayState();
     terminalResizeDisposable?.dispose();
     resizeObserver?.disconnect();
     disposeWebglAddon();

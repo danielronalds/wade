@@ -12,6 +12,19 @@ const (
 	projectClientOutputSize   = 128
 )
 
+type ClientOutputKind string
+
+const (
+	ClientOutputKindData        ClientOutputKind = "data"
+	ClientOutputKindReplayStart ClientOutputKind = "replayStart"
+	ClientOutputKindReplayEnd   ClientOutputKind = "replayEnd"
+)
+
+type ClientOutput struct {
+	Kind ClientOutputKind
+	Data []byte
+}
+
 type ProjectSession struct {
 	key      string
 	manager  *Service
@@ -26,7 +39,7 @@ type ProjectSession struct {
 
 type Client struct {
 	session *ProjectSession
-	output  chan []byte
+	output  chan ClientOutput
 	once    sync.Once
 }
 
@@ -37,20 +50,21 @@ func (s *ProjectSession) IsClosed() bool {
 func (s *ProjectSession) Attach() *Client {
 	client := &Client{
 		session: s,
-		output:  make(chan []byte, projectClientOutputSize),
+		output:  make(chan ClientOutput, projectClientOutputSize),
 	}
 
 	s.mu.Lock()
 	replay := s.buffer.Bytes()
 	closed := s.closed.Load()
+	if len(replay) > 0 {
+		client.enqueue(ClientOutput{Kind: ClientOutputKindReplayStart})
+		client.enqueue(ClientOutput{Kind: ClientOutputKindData, Data: replay})
+		client.enqueue(ClientOutput{Kind: ClientOutputKindReplayEnd})
+	}
 	if !closed {
 		s.clients[client] = struct{}{}
 	}
 	s.mu.Unlock()
-
-	if len(replay) > 0 {
-		client.send(replay)
-	}
 
 	if closed {
 		close(client.output)
@@ -93,7 +107,7 @@ func (s *ProjectSession) Close() {
 	})
 }
 
-func (c *Client) Output() <-chan []byte {
+func (c *Client) Output() <-chan ClientOutput {
 	return c.output
 }
 
@@ -160,7 +174,7 @@ func (s *ProjectSession) broadcast(data []byte) {
 
 	s.buffer.Write(message)
 	for client := range s.clients {
-		client.send(message)
+		client.send(ClientOutput{Kind: ClientOutputKindData, Data: message})
 	}
 }
 
@@ -175,15 +189,25 @@ func (s *ProjectSession) detach(client *Client) {
 	}
 }
 
-func (c *Client) send(data []byte) {
+func (c *Client) enqueue(output ClientOutput) {
+	c.output <- cloneClientOutput(output)
+}
+
+func (c *Client) send(output ClientOutput) {
 	defer func() {
 		_ = recover()
 	}()
 
-	message := append([]byte(nil), data...)
 	select {
-	case c.output <- message:
+	case c.output <- cloneClientOutput(output):
 	default:
+	}
+}
+
+func cloneClientOutput(output ClientOutput) ClientOutput {
+	return ClientOutput{
+		Kind: output.Kind,
+		Data: append([]byte(nil), output.Data...),
 	}
 }
 

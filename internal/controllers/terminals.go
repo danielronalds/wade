@@ -89,11 +89,27 @@ func (h Terminals) Connect(w http.ResponseWriter, r *http.Request) {
 	<-done
 }
 
+const (
+	terminalReplayStartMessage = `{"type":"replayStart"}`
+	terminalReplayEndMessage   = `{"type":"replayEnd"}`
+)
+
 func streamTerminalToWebSocket(connection *websocket.Conn, client *terminalsessions.Client) {
-	for data := range client.Output() {
-		if err := connection.WriteMessage(websocket.BinaryMessage, data); err != nil {
+	for output := range client.Output() {
+		if err := writeTerminalOutput(connection, output); err != nil {
 			return
 		}
+	}
+}
+
+func writeTerminalOutput(connection *websocket.Conn, output terminalsessions.ClientOutput) error {
+	switch output.Kind {
+	case terminalsessions.ClientOutputKindReplayStart:
+		return connection.WriteMessage(websocket.TextMessage, []byte(terminalReplayStartMessage))
+	case terminalsessions.ClientOutputKindReplayEnd:
+		return connection.WriteMessage(websocket.TextMessage, []byte(terminalReplayEndMessage))
+	default:
+		return connection.WriteMessage(websocket.BinaryMessage, output.Data)
 	}
 }
 
