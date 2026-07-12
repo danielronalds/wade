@@ -12,6 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: [];
   connectionStatusChange: [status: TerminalConnectionStatus];
+  sessionEnd: [];
 }>();
 
 type TerminalPaneComponent = {
@@ -67,6 +68,7 @@ defineExpose({
           @activate="activateScratchpad"
           @close="emit('close')"
           @connection-status-change="emit('connectionStatusChange', $event)"
+          @session-end="emit('sessionEnd')"
         />
       </section>
     </section>

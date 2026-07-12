@@ -130,6 +130,15 @@ const closeScratchpadTerminal = async () => {
   await focusActiveProjectScreen();
 };
 
+const handleScratchpadSessionEnd = async () => {
+  isScratchpadOpen.value = false;
+  hasScratchpadOpened.value = false;
+  scratchpadConnectionStatus.value = createDisconnectedTerminalConnectionStatus();
+
+  await nextTick();
+  await focusActiveProjectScreen();
+};
+
 const toggleScratchpadTerminal = () => {
   if (isScratchpadOpen.value) {
     void closeScratchpadTerminal();
@@ -210,6 +219,7 @@ useProjectKeyboardShortcuts({
       :is-active="isScratchpadOpen"
       @close="closeScratchpadTerminal"
       @connection-status-change="updateScratchpadConnectionStatus"
+      @session-end="handleScratchpadSessionEnd"
     />
   </section>
 </template>

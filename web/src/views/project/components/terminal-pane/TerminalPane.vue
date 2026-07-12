@@ -33,6 +33,7 @@ const emit = defineEmits<{
   activate: [];
   close: [];
   connectionStatusChange: [status: TerminalConnectionStatus];
+  sessionEnd: [];
   toggleZoom: [];
   agentChange: [agentName: string];
 }>();
@@ -49,7 +50,8 @@ const {
   agentName: props.agentName,
   isActive,
   lazy: props.lazy,
-  onConnectionStatusChange: (status) => emit('connectionStatusChange', status)
+  onConnectionStatusChange: (status) => emit('connectionStatusChange', status),
+  onSessionEnd: () => emit('sessionEnd')
 });
 
 const activate = () => {

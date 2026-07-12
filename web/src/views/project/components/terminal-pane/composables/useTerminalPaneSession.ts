@@ -9,6 +9,7 @@ type TerminalPaneSessionOptions = {
   isActive: Readonly<Ref<boolean>>;
   lazy?: boolean;
   onConnectionStatusChange: (status: TerminalConnectionStatus) => void;
+  onSessionEnd?: () => void;
 };
 
 export const useTerminalPaneSession = ({
@@ -17,7 +18,8 @@ export const useTerminalPaneSession = ({
   agentName,
   isActive,
   lazy = false,
-  onConnectionStatusChange
+  onConnectionStatusChange,
+  onSessionEnd
 }: TerminalPaneSessionOptions) => {
   const terminalElement = ref<HTMLElement | null>(null);
   const terminalSession = useTerminalSession({
@@ -25,7 +27,8 @@ export const useTerminalPaneSession = ({
     terminalName,
     agentName,
     terminalElement,
-    isActive
+    isActive,
+    onSessionEnd
   });
 
   let hasStarted = false;

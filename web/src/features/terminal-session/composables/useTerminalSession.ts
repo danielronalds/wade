@@ -16,6 +16,7 @@ type TerminalSessionOptions = {
   agentName?: string;
   terminalElement: Ref<HTMLElement | null>;
   isActive: Readonly<Ref<boolean>>;
+  onSessionEnd?: () => void;
 };
 
 type TerminalControlMessage = {
@@ -119,7 +120,8 @@ export const useTerminalSession = ({
   terminalName,
   agentName,
   terminalElement,
-  isActive
+  isActive,
+  onSessionEnd
 }: TerminalSessionOptions) => {
   const { recordRecentProject } = useRecentProjects();
   const isConnected = ref(false);
@@ -356,6 +358,7 @@ export const useTerminalSession = ({
 
       setConnectionStatus(false, 'Disconnected');
       terminal?.write('\r\nConnection closed.\r\n');
+      onSessionEnd?.();
     });
 
     connection.addEventListener('error', () => {
