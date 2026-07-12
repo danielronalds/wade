@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { GitBranch, RefreshCw } from '@lucide/vue';
+import { Check, Copy, GitBranch, RefreshCw } from '@lucide/vue';
 import { computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useProjectDetails } from '@/views/project/composables/useProjectDetails';
+import { useProjectLinkClipboard } from '@/views/project/composables/useProjectLinkClipboard';
 import GitHubIcon from '@/components/icons/GitHubIcon.vue';
 import LinearIcon from '@/components/icons/LinearIcon.vue';
 
@@ -21,6 +22,12 @@ const {
   pullRequestUrl
 } = useProjectDetails(props.projectName);
 
+const {
+  clipboardAnnouncement,
+  copiedProjectLink,
+  copyProjectLink
+} = useProjectLinkClipboard();
+
 const projectDisplayName = computed(() => props.projectName.split('-feature')[0] || props.projectName);
 const isLinearTicketButtonDisabled = computed(() => isProjectDetailsLoading.value || linearTicketUrl.value === '');
 const isPullRequestButtonDisabled = computed(() => isProjectDetailsLoading.value || pullRequestUrl.value === '');
@@ -28,12 +35,27 @@ const isGitHubButtonDisabled = computed(() => isProjectDetailsLoading.value || g
 const linearTicketButtonTitle = computed(() => isProjectDetailsLoading.value
   ? 'Loading Linear ticket'
   : linearTicketUrl.value === '' ? 'No Linear ticket found' : 'Open Linear ticket');
+const linearTicketCopyButtonTitle = computed(() => copiedProjectLink.value === 'linear-ticket'
+  ? 'Linear ticket link copied'
+  : isProjectDetailsLoading.value
+    ? 'Loading Linear ticket'
+    : linearTicketUrl.value === '' ? 'No Linear ticket found' : 'Copy Linear ticket link');
 const pullRequestButtonTitle = computed(() => isProjectDetailsLoading.value
   ? 'Loading pull request'
   : pullRequestUrl.value === '' ? 'No pull request found' : 'Open pull request');
+const pullRequestCopyButtonTitle = computed(() => copiedProjectLink.value === 'pull-request'
+  ? 'Pull request link copied'
+  : isProjectDetailsLoading.value
+    ? 'Loading pull request'
+    : pullRequestUrl.value === '' ? 'No pull request found' : 'Copy pull request link');
 const gitHubButtonTitle = computed(() => isProjectDetailsLoading.value
   ? 'Loading GitHub page'
   : githubUrl.value === '' ? 'No GitHub remote found' : 'Open GitHub page');
+const gitHubCopyButtonTitle = computed(() => copiedProjectLink.value === 'github'
+  ? 'GitHub link copied'
+  : isProjectDetailsLoading.value
+    ? 'Loading GitHub page'
+    : githubUrl.value === '' ? 'No GitHub remote found' : 'Copy GitHub link');
 const reloadButtonTitle = computed(() => isProjectDetailsLoading.value
   ? 'Loading project details'
   : 'Reload project details');
@@ -65,6 +87,18 @@ const openGitHubPage = () => {
   openExternalUrl(githubUrl.value);
 };
 
+const copyLinearTicketUrl = () => {
+  void copyProjectLink('linear-ticket', 'Linear ticket', linearTicketUrl.value);
+};
+
+const copyPullRequestUrl = () => {
+  void copyProjectLink('pull-request', 'Pull request', pullRequestUrl.value);
+};
+
+const copyGitHubUrl = () => {
+  void copyProjectLink('github', 'GitHub', githubUrl.value);
+};
+
 const reloadProjectDetails = () => {
   void loadProjectDetails();
 };
@@ -75,7 +109,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <header id="terminal-topbar">
+  <header id="project-topbar">
     <h1 id="project-summary">
       <RouterLink id="brand" :to="{ name: 'home' }">WADE</RouterLink>
       <span id="project-name" :title="projectName">{{ projectDisplayName }}</span>
@@ -95,36 +129,76 @@ onMounted(() => {
       >
         <RefreshCw :size="14" :stroke-width="1.7" aria-hidden="true" />
       </button>
-      <button
-        class="project-action"
-        type="button"
-        :disabled="isLinearTicketButtonDisabled"
-        :title="linearTicketButtonTitle"
-        @click="openLinearTicket"
-      >
-        <LinearIcon class="brand-icon" aria-hidden="true" />
-        <span>Ticket</span>
-      </button>
-      <button
-        class="project-action"
-        type="button"
-        :disabled="isPullRequestButtonDisabled"
-        :title="pullRequestButtonTitle"
-        @click="openPullRequest"
-      >
-        <GitHubIcon class="brand-icon" aria-hidden="true" />
-        <span>PR</span>
-      </button>
-      <button
-        class="project-action"
-        type="button"
-        :disabled="isGitHubButtonDisabled"
-        :title="gitHubButtonTitle"
-        @click="openGitHubPage"
-      >
-        <GitHubIcon class="brand-icon" aria-hidden="true" />
-        <span>GitHub</span>
-      </button>
+      <span class="project-action">
+        <button
+          class="project-action-button project-action-open"
+          type="button"
+          :disabled="isLinearTicketButtonDisabled"
+          :title="linearTicketButtonTitle"
+          @click="openLinearTicket"
+        >
+          <LinearIcon class="brand-icon" aria-hidden="true" />
+          <span>Ticket</span>
+        </button>
+        <button
+          class="project-action-button project-action-copy"
+          type="button"
+          :aria-label="linearTicketCopyButtonTitle"
+          :disabled="isLinearTicketButtonDisabled"
+          :title="linearTicketCopyButtonTitle"
+          @click="copyLinearTicketUrl"
+        >
+          <Check v-if="copiedProjectLink === 'linear-ticket'" class="copy-icon" aria-hidden="true" />
+          <Copy v-else class="copy-icon" aria-hidden="true" />
+        </button>
+      </span>
+      <span class="project-action">
+        <button
+          class="project-action-button project-action-open"
+          type="button"
+          :disabled="isPullRequestButtonDisabled"
+          :title="pullRequestButtonTitle"
+          @click="openPullRequest"
+        >
+          <GitHubIcon class="brand-icon" aria-hidden="true" />
+          <span>PR</span>
+        </button>
+        <button
+          class="project-action-button project-action-copy"
+          type="button"
+          :aria-label="pullRequestCopyButtonTitle"
+          :disabled="isPullRequestButtonDisabled"
+          :title="pullRequestCopyButtonTitle"
+          @click="copyPullRequestUrl"
+        >
+          <Check v-if="copiedProjectLink === 'pull-request'" class="copy-icon" aria-hidden="true" />
+          <Copy v-else class="copy-icon" aria-hidden="true" />
+        </button>
+      </span>
+      <span class="project-action">
+        <button
+          class="project-action-button project-action-open"
+          type="button"
+          :disabled="isGitHubButtonDisabled"
+          :title="gitHubButtonTitle"
+          @click="openGitHubPage"
+        >
+          <GitHubIcon class="brand-icon" aria-hidden="true" />
+          <span>GitHub</span>
+        </button>
+        <button
+          class="project-action-button project-action-copy"
+          type="button"
+          :aria-label="gitHubCopyButtonTitle"
+          :disabled="isGitHubButtonDisabled"
+          :title="gitHubCopyButtonTitle"
+          @click="copyGitHubUrl"
+        >
+          <Check v-if="copiedProjectLink === 'github'" class="copy-icon" aria-hidden="true" />
+          <Copy v-else class="copy-icon" aria-hidden="true" />
+        </button>
+      </span>
+      <span class="visually-hidden" role="status" aria-live="polite">{{ clipboardAnnouncement }}</span>
       <span
         id="connection-status"
         role="status"
@@ -139,7 +213,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-#terminal-topbar {
+#project-topbar {
   height: 42px;
   display: flex;
   align-items: center;
@@ -220,17 +294,36 @@ onMounted(() => {
 .project-action {
   height: 26px;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 9px;
+  align-items: stretch;
+  overflow: hidden;
   border: 1px solid rgb(var(--accent-rgb) / 45%);
   border-radius: 999px;
   background: transparent;
   color: var(--text);
+}
+
+.project-action-button {
+  display: flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
   font: inherit;
   font-size: 12px;
   line-height: 1;
   cursor: pointer;
+}
+
+.project-action-open {
+  gap: 6px;
+  padding: 0 7px 0 9px;
+}
+
+.project-action-copy {
+  width: 25px;
+  justify-content: center;
+  padding: 0;
+  border-left: 1px solid rgb(var(--accent-rgb) / 35%);
 }
 
 .project-reload-action {
@@ -245,16 +338,21 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.project-action:disabled,
+.project-action-button:disabled,
 .project-reload-action:disabled {
   color: var(--muted);
   cursor: not-allowed;
   opacity: 0.45;
 }
 
-.project-action:not(:disabled):hover,
-.project-action:not(:disabled):focus-visible {
+.project-action-button:not(:disabled):hover,
+.project-action-button:not(:disabled):focus-visible {
   background: rgb(var(--accent-rgb) / 10%);
+}
+
+.project-action-button:focus-visible {
+  outline: 1px solid var(--text);
+  outline-offset: -2px;
 }
 
 .project-reload-action:not(:disabled):hover,
@@ -267,6 +365,21 @@ onMounted(() => {
   height: 13px;
   flex: 0 0 auto;
   fill: currentColor;
+}
+
+.copy-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.visually-hidden {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 #connection-status {

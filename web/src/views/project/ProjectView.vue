@@ -5,7 +5,7 @@ import ReviewTab from '@/views/project/tabs/review/ReviewTab.vue';
 import ScratchpadTerminal from '@/views/project/components/ScratchpadTerminal.vue';
 import ServerTab from '@/views/project/tabs/server/ServerTab.vue';
 import TerminalTab from '@/views/project/tabs/terminal/TerminalTab.vue';
-import TerminalTopbar from '@/views/project/components/TerminalTopbar.vue';
+import ProjectTopbar from '@/views/project/components/ProjectTopbar.vue';
 import { useProjectEventHandlers } from '@/views/project/composables/useProjectEventHandlers';
 import { useProjectKeyboardShortcuts } from '@/views/project/composables/useProjectKeyboardShortcuts';
 import type { ProjectScreenComponent, ReviewScreenComponent } from '@/types/projectScreens';
@@ -175,7 +175,7 @@ useProjectKeyboardShortcuts({
 
 <template>
   <section id="project-view" aria-label="Project">
-    <TerminalTopbar
+    <ProjectTopbar
       :project-name="projectName"
       :connection-status-text="activeConnectionStatus.connectionStatusText"
       :is-connected="activeConnectionStatus.isConnected"
