@@ -40,7 +40,7 @@ func (m *Service) Configure(shell string, agents []Agent) {
 	m.agents = cloneAgents(agents)
 }
 
-func (m *Service) GetOrStart(terminalName string, agentName string, directory string) (*ProjectSession, error) {
+func (m *Service) GetOrStart(projectName string, terminalName string, agentName string, directory string) (*ProjectSession, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -58,7 +58,7 @@ func (m *Service) GetOrStart(terminalName string, agentName string, directory st
 		return nil, err
 	}
 
-	session, err := startProjectSession(m, key, m.shell, agentCommand, terminalName, directory)
+	session, err := startProjectSession(m, key, m.shell, agentCommand, terminalName, projectName, directory)
 	if err != nil {
 		return nil, err
 	}

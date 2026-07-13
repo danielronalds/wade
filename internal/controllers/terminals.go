@@ -50,14 +50,15 @@ func (h Terminals) Reload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Terminals) Connect(w http.ResponseWriter, r *http.Request) {
-	projectPath, err := h.projects.Path(r.URL.Query().Get("project"))
+	projectName := r.URL.Query().Get("project")
+	projectPath, err := h.projects.Path(projectName)
 	if err != nil {
 		http.Error(w, "project not found", http.StatusNotFound)
 		return
 	}
 
 	terminalName := r.URL.Query().Get("terminal")
-	projectSession, err := h.terminals.GetOrStart(terminalName, r.URL.Query().Get("agent"), projectPath)
+	projectSession, err := h.terminals.GetOrStart(projectName, terminalName, r.URL.Query().Get("agent"), projectPath)
 	if err != nil {
 		log.Printf("pty start failed: %v", err)
 		http.Error(w, "failed to start terminal", http.StatusInternalServerError)

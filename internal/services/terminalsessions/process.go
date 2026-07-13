@@ -5,6 +5,7 @@ package terminalsessions
 import (
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/creack/pty"
 )
@@ -19,12 +20,12 @@ type Session struct {
 	terminal *os.File
 }
 
-func Start(shell string, directory string, size Size) (*Session, error) {
-	return start(interactiveShell(shell), directory, size)
+func Start(shell string, directory string, projectName string, size Size) (*Session, error) {
+	return start(interactiveShell(shell, projectName), directory, size)
 }
 
-func StartShellCommand(shell string, directory string, command string, size Size) (*Session, error) {
-	return start(shellCommand(shell, command), directory, size)
+func StartShellCommand(shell string, directory string, projectName string, command string, size Size) (*Session, error) {
+	return start(shellCommand(shell, projectName, command), directory, size)
 }
 
 func (s *Session) Read(data []byte) (int, error) {
@@ -49,16 +50,20 @@ func (s *Session) Close() {
 	_ = s.command.Wait()
 }
 
-func interactiveShell(shell string) *exec.Cmd {
-	return withShellEnvironment(exec.Command(shell), shell)
+func interactiveShell(shell string, projectName string) *exec.Cmd {
+	return withShellEnvironment(exec.Command(shell), shell, projectName)
 }
 
-func shellCommand(shell string, command string) *exec.Cmd {
-	return withShellEnvironment(exec.Command(shell, "-lc", command), shell)
+func shellCommand(shell string, projectName string, command string) *exec.Cmd {
+	return withShellEnvironment(exec.Command(shell, "-lc", command), shell, projectName)
 }
 
-func withShellEnvironment(command *exec.Cmd, shell string) *exec.Cmd {
-	command.Env = append(os.Environ(), "SHELL="+shell)
+func withShellEnvironment(command *exec.Cmd, shell string, projectName string) *exec.Cmd {
+	command.Env = setEnvironmentValues(
+		os.Environ(),
+		environmentVariable{name: "SHELL", value: shell},
+		environmentVariable{name: "WADE_SESSION", value: projectName},
+	)
 	return command
 }
 
@@ -67,7 +72,11 @@ func start(command *exec.Cmd, directory string, size Size) (*Session, error) {
 	if command.Env == nil {
 		command.Env = os.Environ()
 	}
-	command.Env = append(command.Env, "TERM=xterm-256color", "COLORTERM=truecolor")
+	command.Env = setEnvironmentValues(
+		command.Env,
+		environmentVariable{name: "TERM", value: "xterm-256color"},
+		environmentVariable{name: "COLORTERM", value: "truecolor"},
+	)
 
 	terminalFile, err := pty.StartWithSize(command, &pty.Winsize{Cols: size.Cols, Rows: size.Rows})
 	if err != nil {
@@ -78,4 +87,41 @@ func start(command *exec.Cmd, directory string, size Size) (*Session, error) {
 		command:  command,
 		terminal: terminalFile,
 	}, nil
+}
+
+type environmentVariable struct {
+	name  string
+	value string
+}
+
+func setEnvironmentValues(environment []string, variables ...environmentVariable) []string {
+	updated := append([]string(nil), environment...)
+	for _, variable := range variables {
+		prefix := variable.name + "="
+		value := prefix + variable.value
+		next := make([]string, 0, len(updated)+1)
+
+		replaced := false
+		for _, entry := range updated {
+			if !strings.HasPrefix(entry, prefix) {
+				next = append(next, entry)
+				continue
+			}
+
+			if replaced {
+				continue
+			}
+
+			next = append(next, value)
+			replaced = true
+		}
+
+		if !replaced {
+			next = append(next, value)
+		}
+
+		updated = next
+	}
+
+	return updated
 }
