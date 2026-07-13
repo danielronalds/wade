@@ -10,6 +10,10 @@ export interface ConfigAgent {
   name: string;
 }
 
+export interface HandlersAgentInputRequest {
+  text: string;
+}
+
 export interface HandlersCloneRemoteProjectRequest {
   directoryIndex: number;
   nameWithOwner: string;
@@ -500,30 +504,6 @@ export const getReviewFileContents = async (handlersReviewFileRequest: HandlersR
 
 
 
-export const getCloseProjectSessionUrl = (sessionName: string,) => {
-
-
-
-
-  return `/api/session/${encodeURIComponent(String(sessionName))}`
-}
-
-/**
- * @summary Close project session
- */
-export const closeProjectSession = async (sessionName: string, options?: RequestInit): Promise<void> => {
-
-  return wadeFetch<void>(getCloseProjectSessionUrl(sessionName),
-  {
-    ...options,
-    method: 'DELETE'
-
-
-  }
-);}
-
-
-
 export const getListActiveProjectSessionsUrl = () => {
 
 
@@ -541,6 +521,55 @@ export const listActiveProjectSessions = async ( options?: RequestInit): Promise
   {
     ...options,
     method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getSendTextToAgentTerminalUrl = (projectName: string,) => {
+
+
+
+
+  return `/api/sessions/${encodeURIComponent(String(projectName))}/agent`
+}
+
+/**
+ * @summary Send text to the active agent terminal
+ */
+export const sendTextToAgentTerminal = async (projectName: string,
+    handlersAgentInputRequest: HandlersAgentInputRequest, options?: RequestInit): Promise<void> => {
+
+  return wadeFetch<void>(getSendTextToAgentTerminalUrl(projectName),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(handlersAgentInputRequest)
+  }
+);}
+
+
+
+export const getCloseProjectSessionUrl = (sessionName: string,) => {
+
+
+
+
+  return `/api/sessions/${encodeURIComponent(String(sessionName))}`
+}
+
+/**
+ * @summary Close project session
+ */
+export const closeProjectSession = async (sessionName: string, options?: RequestInit): Promise<void> => {
+
+  return wadeFetch<void>(getCloseProjectSessionUrl(sessionName),
+  {
+    ...options,
+    method: 'DELETE'
 
 
   }

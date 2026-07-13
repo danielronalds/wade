@@ -15,6 +15,13 @@ definitions:
     - default
     - name
     type: object
+  handlers.agentInputRequest:
+    properties:
+      text:
+        type: string
+    required:
+    - text
+    type: object
   handlers.cloneRemoteProjectRequest:
     properties:
       directoryIndex:
@@ -609,7 +616,61 @@ paths:
       summary: Get review file contents
       tags:
       - Review
-  /api/session/{sessionName}:
+  /api/sessions:
+    get:
+      operationId: listActiveProjectSessions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.sessionsResponse'
+      summary: List active project sessions
+      tags:
+      - Sessions
+  /api/sessions/{projectName}/agent:
+    post:
+      consumes:
+      - application/json
+      operationId: sendTextToAgentTerminal
+      parameters:
+      - description: Project name
+        in: path
+        name: projectName
+        required: true
+        type: string
+      - description: Agent input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.agentInputRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: Send text to the active agent terminal
+      tags:
+      - Sessions
+  /api/sessions/{sessionName}:
     delete:
       operationId: closeProjectSession
       parameters:
@@ -632,19 +693,6 @@ paths:
           schema:
             $ref: '#/definitions/handlers.errorResponse'
       summary: Close project session
-      tags:
-      - Sessions
-  /api/sessions:
-    get:
-      operationId: listActiveProjectSessions
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.sessionsResponse'
-      summary: List active project sessions
       tags:
       - Sessions
   /api/terminal/reload:

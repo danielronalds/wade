@@ -12,7 +12,8 @@ func (s *Server) registerRoutes(controllers controllers.Controllers, options Opt
 	s.Mux.HandleFunc("GET /ws", controllers.Terminals.Connect)
 	s.Mux.HandleFunc("POST /api/terminal/reload", controllers.Terminals.Reload)
 	s.Mux.HandleFunc("GET /api/sessions", controllers.Sessions.ListSessions)
-	s.Mux.HandleFunc("DELETE /api/session/{sessionName}", controllers.Sessions.CloseSession)
+	s.Mux.HandleFunc("DELETE /api/sessions/{sessionName}", controllers.Sessions.CloseSession)
+	s.Mux.HandleFunc("POST /api/sessions/{projectName}/agent", controllers.Sessions.SendToAgent)
 
 	s.Mux.HandleFunc("GET /api/config", controllers.Config.GetConfig)
 	s.Mux.HandleFunc("POST /api/config", controllers.Config.UpdateConfig)

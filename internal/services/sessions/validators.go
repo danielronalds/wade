@@ -11,3 +11,11 @@ func validateSessionName(sessionName string) error {
 
 	return nil
 }
+
+func validateAgentText(text string) error {
+	if text == "" {
+		return ErrAgentTextRequired
+	}
+
+	return nil
+}

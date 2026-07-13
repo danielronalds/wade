@@ -26,15 +26,17 @@ type ClientOutput struct {
 }
 
 type ProjectSession struct {
-	key      string
-	manager  *Service
-	session  *Session
-	buffer   outputBuffer
-	clients  map[*Client]struct{}
-	mu       sync.Mutex
-	writeMu  sync.Mutex
-	closeMux sync.Once
-	closed   atomic.Bool
+	key          string
+	manager      *Service
+	session      *Session
+	terminalName string
+	directory    string
+	buffer       outputBuffer
+	clients      map[*Client]struct{}
+	mu           sync.Mutex
+	writeMu      sync.Mutex
+	closeMux     sync.Once
+	closed       atomic.Bool
 }
 
 type Client struct {
@@ -81,10 +83,23 @@ func (s *ProjectSession) Write(data []byte) (int, error) {
 }
 
 func (s *ProjectSession) ApplyControlMessage(data []byte) {
+	message, ok := parseControlMessage(data)
+	if !ok {
+		return
+	}
+
+	if message.IsActivate() {
+		s.manager.activateAgent(s)
+		return
+	}
+	if !message.IsResize() {
+		return
+	}
+
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
 
-	s.session.ApplyControlMessage(data)
+	_ = s.session.Resize(Size{Cols: message.Cols, Rows: message.Rows})
 }
 
 func (s *ProjectSession) Close() {
@@ -124,11 +139,13 @@ func startProjectSession(manager *Service, key string, shell string, agentComman
 	}
 
 	projectSession := &ProjectSession{
-		key:     key,
-		manager: manager,
-		session: session,
-		buffer:  newOutputBuffer(projectSessionBufferBytes),
-		clients: make(map[*Client]struct{}),
+		key:          key,
+		manager:      manager,
+		session:      session,
+		terminalName: terminalName,
+		directory:    directory,
+		buffer:       newOutputBuffer(projectSessionBufferBytes),
+		clients:      make(map[*Client]struct{}),
 	}
 
 	go projectSession.readLoop()

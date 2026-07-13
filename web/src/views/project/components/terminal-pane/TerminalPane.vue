@@ -39,6 +39,7 @@ const emit = defineEmits<{
 }>();
 
 const isActive = computed(() => props.isActive && !props.isCollapsed);
+const isSelectedAgent = computed(() => props.agentName !== undefined && props.selectedAgentName === props.agentName);
 const {
   focusTerminal,
   reloadTerminal,
@@ -49,6 +50,7 @@ const {
   terminalName: props.terminalName,
   agentName: props.agentName,
   isActive,
+  isSelectedAgent,
   lazy: props.lazy,
   onConnectionStatusChange: (status) => emit('connectionStatusChange', status),
   onSessionEnd: () => emit('sessionEnd')

@@ -4,6 +4,7 @@ package terminalsessions
 
 import (
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 	"sync"
@@ -18,17 +19,19 @@ type Agent struct {
 }
 
 type Service struct {
-	shell    string
-	agents   []Agent
-	mu       sync.Mutex
-	sessions map[string]*ProjectSession
+	shell                 string
+	agents                []Agent
+	mu                    sync.Mutex
+	sessions              map[string]*ProjectSession
+	selectedAgentSessions map[string]*ProjectSession
 }
 
 func NewService(shell string, agents []Agent) *Service {
 	return &Service{
-		shell:    shell,
-		agents:   cloneAgents(agents),
-		sessions: make(map[string]*ProjectSession),
+		shell:                 shell,
+		agents:                cloneAgents(agents),
+		sessions:              make(map[string]*ProjectSession),
+		selectedAgentSessions: make(map[string]*ProjectSession),
 	}
 }
 
@@ -69,6 +72,40 @@ func (m *Service) GetOrStart(projectName string, terminalName string, agentName 
 
 func (m *Service) CloseTerminal(terminalName string, agentName string, directory string) bool {
 	return m.CloseSession(terminalSessionKey(directory, terminalName, m.agentKeyName(terminalName, agentName)))
+}
+
+func (m *Service) WriteToActiveAgent(directory string, data []byte) (int, error) {
+	m.mu.Lock()
+
+	selectedSession := m.selectedAgentSessions[directory]
+	if !m.isActiveAgentSession(selectedSession, directory) {
+		delete(m.selectedAgentSessions, directory)
+		selectedSession = nil
+	}
+
+	activeSessions := make([]*ProjectSession, 0, 1)
+	if selectedSession != nil {
+		activeSessions = append(activeSessions, selectedSession)
+	} else {
+		for _, session := range m.sessions {
+			if m.isActiveAgentSession(session, directory) {
+				activeSessions = append(activeSessions, session)
+			}
+		}
+	}
+
+	m.mu.Unlock()
+
+	if len(activeSessions) != 1 {
+		return len(activeSessions), nil
+	}
+
+	bytesWritten, err := activeSessions[0].Write(data)
+	if err == nil && bytesWritten != len(data) {
+		err = io.ErrShortWrite
+	}
+
+	return 1, err
 }
 
 func (m *Service) CloseSession(key string) bool {
@@ -137,6 +174,7 @@ func (m *Service) Close() {
 		sessions = append(sessions, session)
 	}
 	m.sessions = make(map[string]*ProjectSession)
+	m.selectedAgentSessions = make(map[string]*ProjectSession)
 	m.mu.Unlock()
 
 	for _, session := range sessions {
@@ -151,6 +189,28 @@ func (m *Service) remove(key string, session *ProjectSession) {
 	if m.sessions[key] == session {
 		delete(m.sessions, key)
 	}
+	if m.selectedAgentSessions[session.directory] == session {
+		delete(m.selectedAgentSessions, session.directory)
+	}
+}
+
+func (m *Service) activateAgent(session *ProjectSession) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if !m.isActiveAgentSession(session, session.directory) {
+		return
+	}
+
+	m.selectedAgentSessions[session.directory] = session
+}
+
+func (m *Service) isActiveAgentSession(session *ProjectSession, directory string) bool {
+	return session != nil &&
+		session.directory == directory &&
+		session.terminalName == agentTerminalName &&
+		m.sessions[session.key] == session &&
+		!session.IsClosed()
 }
 
 func (m *Service) agentCommand(terminalName string, agentName string) (string, error) {

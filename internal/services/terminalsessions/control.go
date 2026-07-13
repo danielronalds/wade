@@ -10,19 +10,19 @@ type ControlMessage struct {
 	Rows uint16 `json:"rows"`
 }
 
-func (s *Session) ApplyControlMessage(data []byte) {
+func parseControlMessage(data []byte) (ControlMessage, bool) {
 	var message ControlMessage
 	if err := json.Unmarshal(data, &message); err != nil {
-		return
+		return ControlMessage{}, false
 	}
 
-	if !message.IsResize() {
-		return
-	}
-
-	_ = s.Resize(Size{Cols: message.Cols, Rows: message.Rows})
+	return message, true
 }
 
 func (message ControlMessage) IsResize() bool {
 	return message.Type == "resize" && message.Cols > 0 && message.Rows > 0
+}
+
+func (message ControlMessage) IsActivate() bool {
+	return message.Type == "activate"
 }

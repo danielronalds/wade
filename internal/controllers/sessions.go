@@ -3,6 +3,7 @@ package controllers
 // TODO: Review properly
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -16,6 +17,10 @@ type Sessions struct {
 type sessionsResponse struct {
 	Sessions []string `json:"sessions"`
 } // @name handlers.sessionsResponse
+
+type agentInputRequest struct {
+	Text string `json:"text"`
+} // @name handlers.agentInputRequest
 
 func NewSessions(sessions sessions.Service) Sessions {
 	return Sessions{sessions: sessions}
@@ -39,7 +44,7 @@ func (h Sessions) ListSessions(w http.ResponseWriter, r *http.Request) {
 // @Success 204 "No Content"
 // @Failure 400 {object} errorResponse
 // @Failure 404 {object} errorResponse
-// @Router /api/session/{sessionName} [delete]
+// @Router /api/sessions/{sessionName} [delete]
 func (h Sessions) CloseSession(w http.ResponseWriter, r *http.Request) {
 	err := h.sessions.Close(r.PathValue("sessionName"))
 	if errors.Is(err, sessions.ErrSessionRequired) {
@@ -56,4 +61,43 @@ func (h Sessions) CloseSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// @Summary Send text to the active agent terminal
+// @ID sendTextToAgentTerminal
+// @Tags Sessions
+// @Accept json
+// @Produce json
+// @Param projectName path string true "Project name"
+// @Param request body agentInputRequest true "Agent input"
+// @Success 204 "No Content"
+// @Failure 400 {object} errorResponse
+// @Failure 404 {object} errorResponse
+// @Failure 409 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /api/sessions/{projectName}/agent [post]
+func (h Sessions) SendToAgent(w http.ResponseWriter, r *http.Request) {
+	var request agentInputRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		writeJSONError(w, http.StatusBadRequest, "invalid agent input request")
+		return
+	}
+
+	err := h.sessions.SendToAgent(r.PathValue("projectName"), request.Text)
+	switch {
+	case errors.Is(err, sessions.ErrSessionRequired):
+		writeJSONError(w, http.StatusBadRequest, "session is required")
+	case errors.Is(err, sessions.ErrAgentTextRequired):
+		writeJSONError(w, http.StatusBadRequest, "text is required")
+	case errors.Is(err, sessions.ErrSessionNotFound):
+		writeJSONError(w, http.StatusNotFound, "session not found")
+	case errors.Is(err, sessions.ErrAgentSessionNotFound):
+		writeJSONError(w, http.StatusNotFound, "agent session not found")
+	case errors.Is(err, sessions.ErrAgentSessionAmbiguous):
+		writeJSONError(w, http.StatusConflict, "multiple active agent sessions")
+	case err != nil:
+		writeJSONError(w, http.StatusInternalServerError, "unable to send text to agent session")
+	default:
+		w.WriteHeader(http.StatusNoContent)
+	}
 }

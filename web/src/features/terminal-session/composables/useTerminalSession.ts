@@ -1,4 +1,4 @@
-import { readonly, type Ref, ref } from 'vue';
+import { readonly, type Ref, ref, watch } from 'vue';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
@@ -16,6 +16,7 @@ type TerminalSessionOptions = {
   agentName?: string;
   terminalElement: Ref<HTMLElement | null>;
   isActive: Readonly<Ref<boolean>>;
+  isSelectedAgent: Readonly<Ref<boolean>>;
   onSessionEnd?: () => void;
 };
 
@@ -26,6 +27,7 @@ type TerminalControlMessage = {
 const encoder = new TextEncoder();
 const replayStartMessageType = 'replayStart';
 const replayEndMessageType = 'replayEnd';
+const activateMessageType = 'activate';
 const embeddedFontFamily = 'WebTerminalJetBrainsMonoNerdFont';
 const nerdFontStack = [
   embeddedFontFamily,
@@ -121,6 +123,7 @@ export const useTerminalSession = ({
   agentName,
   terminalElement,
   isActive,
+  isSelectedAgent,
   onSessionEnd
 }: TerminalSessionOptions) => {
   const { recordRecentProject } = useRecentProjects();
@@ -160,6 +163,14 @@ export const useTerminalSession = ({
       cols: terminal.cols,
       rows: terminal.rows
     }));
+  };
+
+  const sendAgentActivation = () => {
+    if (!isSelectedAgent.value || !socket || socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    socket.send(JSON.stringify({ type: activateMessageType }));
   };
 
   const isTerminalVisible = () => Boolean(terminalElement.value?.getClientRects().length);
@@ -335,6 +346,7 @@ export const useTerminalSession = ({
       recordRecentProject(projectName);
       setConnectionStatus(true, 'Connected');
       fitAndResize();
+      sendAgentActivation();
       focusTerminal();
     });
 
@@ -370,6 +382,12 @@ export const useTerminalSession = ({
       terminal?.write('\r\nConnection error.\r\n');
     });
   };
+
+  watch(isSelectedAgent, (selected) => {
+    if (selected) {
+      sendAgentActivation();
+    }
+  });
 
   const stop = () => {
     isStopped = true;

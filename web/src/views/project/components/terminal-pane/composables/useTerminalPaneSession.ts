@@ -7,6 +7,7 @@ type TerminalPaneSessionOptions = {
   terminalName: string;
   agentName?: string;
   isActive: Readonly<Ref<boolean>>;
+  isSelectedAgent: Readonly<Ref<boolean>>;
   lazy?: boolean;
   onConnectionStatusChange: (status: TerminalConnectionStatus) => void;
   onSessionEnd?: () => void;
@@ -17,6 +18,7 @@ export const useTerminalPaneSession = ({
   terminalName,
   agentName,
   isActive,
+  isSelectedAgent,
   lazy = false,
   onConnectionStatusChange,
   onSessionEnd
@@ -28,6 +30,7 @@ export const useTerminalPaneSession = ({
     agentName,
     terminalElement,
     isActive,
+    isSelectedAgent,
     onSessionEnd
   });
 
