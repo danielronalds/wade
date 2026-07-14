@@ -174,21 +174,13 @@ export const useSettingsForm = () => {
     clearMessages();
   };
 
-  const updateCopyIgnoredFilesOnWorktreeCreation = (event: Event) => {
-    if (!(event.target instanceof HTMLInputElement)) {
-      return;
-    }
-
-    form.copyIgnoredFilesOnWorktreeCreation = event.target.checked;
+  const updateCopyIgnoredFilesOnWorktreeCreation = (shouldCopyIgnoredFiles: boolean) => {
+    form.copyIgnoredFilesOnWorktreeCreation = shouldCopyIgnoredFiles;
     clearMessages();
   };
 
-  const updateOpenWorktreesInNewTabs = (event: Event) => {
-    if (!(event.target instanceof HTMLInputElement)) {
-      return;
-    }
-
-    form.openWorktreesInNewTabs = event.target.checked;
+  const updateOpenWorktreesInNewTabs = (shouldOpenWorktreesInNewTabs: boolean) => {
+    form.openWorktreesInNewTabs = shouldOpenWorktreesInNewTabs;
     clearMessages();
   };
 

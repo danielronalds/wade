@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
+import Checkbox from '@/components/Checkbox.vue';
 import AgentSettingsEditor from '@/views/settings/components/AgentSettingsEditor.vue';
 import ThemeAccentPicker from '@/views/settings/components/ThemeAccentPicker.vue';
 import { useSettingsForm } from '@/views/settings/composables/useSettingsForm';
@@ -33,6 +34,16 @@ const {
   removeWorktreeCopyExclude,
   submit
 } = useSettingsForm();
+
+const shouldOpenWorktreesInNewTabs = computed({
+  get: () => form.openWorktreesInNewTabs,
+  set: updateOpenWorktreesInNewTabs
+});
+
+const shouldCopyIgnoredFilesOnWorktreeCreation = computed({
+  get: () => form.copyIgnoredFilesOnWorktreeCreation,
+  set: updateCopyIgnoredFilesOnWorktreeCreation
+});
 
 const selectedThemeAccentColor = computed({
   get: () => form.themeAccentColor,
@@ -129,59 +140,50 @@ onMounted(() => {
           @update-agent-command="updateAgentCommand"
         />
 
-        <section id="worktree-navigation-section" aria-labelledby="worktree-navigation-title">
+        <section id="worktrees-section" aria-labelledby="worktrees-title">
           <header class="settings-section-header">
             <section>
-              <h2 id="worktree-navigation-title">Worktree navigation</h2>
-              <p>Choose where WADE opens worktrees created or selected from the command palette.</p>
+              <h2 id="worktrees-title">Worktrees</h2>
+              <p>Configure how WADE opens worktrees and prepares newly created ones.</p>
             </section>
           </header>
 
-          <label class="checkbox-setting-row" for="open-worktrees-in-new-tabs">
-            <input
-              id="open-worktrees-in-new-tabs"
-              :checked="form.openWorktreesInNewTabs"
-              type="checkbox"
-              @change="updateOpenWorktreesInNewTabs"
-            >
-            <span>Open worktrees in a new tab</span>
-          </label>
-        </section>
+          <Checkbox id="open-worktrees-in-new-tabs" v-model="shouldOpenWorktreesInNewTabs">
+            Open worktrees in a new tab
+          </Checkbox>
 
-        <section id="worktree-copy-section" aria-labelledby="worktree-copy-title">
-          <header class="settings-section-header">
-            <section>
-              <h2 id="worktree-copy-title">Worktree ignored file copy</h2>
-              <p>Copy gitignored files, like .env files, into newly created worktrees.</p>
-            </section>
-            <button type="button" class="secondary-action" @click="addWorktreeCopyExclude">Add exclude</button>
-          </header>
+          <Checkbox
+            id="copy-ignored-files-on-worktree-creation"
+            v-model="shouldCopyIgnoredFilesOnWorktreeCreation"
+          >
+            Copy ignored files when creating a worktree
+          </Checkbox>
 
-          <label class="checkbox-setting-row" for="copy-ignored-files-on-worktree-creation">
-            <input
-              id="copy-ignored-files-on-worktree-creation"
-              :checked="form.copyIgnoredFilesOnWorktreeCreation"
-              type="checkbox"
-              @change="updateCopyIgnoredFilesOnWorktreeCreation"
-            >
-            <span>Copy ignored files when creating a worktree</span>
-          </label>
+          <section id="worktree-copy-excludes-section" aria-labelledby="worktree-copy-excludes-title">
+            <header class="settings-subsection-header">
+              <section>
+                <h3 id="worktree-copy-excludes-title">Ignored file copy excludes</h3>
+                <p>Skip matching gitignored paths when copying files into a new worktree.</p>
+              </section>
+              <button type="button" class="secondary-action" @click="addWorktreeCopyExclude">Add exclude</button>
+            </header>
 
-          <ul id="worktree-copy-excludes-list" aria-label="Worktree ignored file copy excludes">
-            <li v-for="(exclude, index) in form.worktreeCopyExcludes" :key="index" class="worktree-copy-exclude-row">
-              <label :for="`worktree-copy-exclude-${index}`">Exclude {{ index + 1 }}</label>
-              <input
-                :id="`worktree-copy-exclude-${index}`"
-                :value="exclude"
-                type="text"
-                spellcheck="false"
-                autocomplete="off"
-                placeholder="**/node_modules"
-                @input="updateWorktreeCopyExclude(index, $event)"
-              >
-              <button type="button" class="remove-action" @click="removeWorktreeCopyExclude(index)">Remove</button>
-            </li>
-          </ul>
+            <ul id="worktree-copy-excludes-list" aria-label="Worktree ignored file copy excludes">
+              <li v-for="(exclude, index) in form.worktreeCopyExcludes" :key="index" class="worktree-copy-exclude-row">
+                <label :for="`worktree-copy-exclude-${index}`">Exclude {{ index + 1 }}</label>
+                <input
+                  :id="`worktree-copy-exclude-${index}`"
+                  :value="exclude"
+                  type="text"
+                  spellcheck="false"
+                  autocomplete="off"
+                  placeholder="**/node_modules"
+                  @input="updateWorktreeCopyExclude(index, $event)"
+                >
+                <button type="button" class="remove-action" @click="removeWorktreeCopyExclude(index)">Remove</button>
+              </li>
+            </ul>
+          </section>
         </section>
 
         <footer id="settings-actions">
@@ -315,8 +317,7 @@ onMounted(() => {
 
 #project-directories-section,
 #shell-section,
-#worktree-navigation-section,
-#worktree-copy-section {
+#worktrees-section {
   width: min(860px, 100%);
   display: grid;
   gap: 18px;
@@ -344,11 +345,39 @@ onMounted(() => {
 }
 
 .settings-section-header p,
+.settings-subsection-header p,
 .settings-message {
   margin-top: 7px;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
+}
+
+#worktree-copy-excludes-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.settings-subsection-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.settings-subsection-header h3,
+.settings-subsection-header p {
+  margin: 0;
+}
+
+.settings-subsection-header h3 {
+  font-size: 14px;
+}
+
+.settings-subsection-header p {
+  margin-top: 5px;
+  font-size: 12px;
 }
 
 #settings-content button {
@@ -383,8 +412,7 @@ onMounted(() => {
 
 .project-directory-row,
 .shell-row,
-.worktree-copy-exclude-row,
-.checkbox-setting-row {
+.worktree-copy-exclude-row {
   display: grid;
   align-items: center;
   gap: 10px;
@@ -399,15 +427,9 @@ onMounted(() => {
   grid-template-columns: 120px minmax(0, 1fr);
 }
 
-.checkbox-setting-row {
-  grid-template-columns: auto minmax(0, 1fr);
-  justify-content: start;
-}
-
 .project-directory-row label,
 .shell-row span,
-.worktree-copy-exclude-row label,
-.checkbox-setting-row span {
+.worktree-copy-exclude-row label {
   color: var(--muted);
   font-size: 13px;
 }
@@ -466,6 +488,7 @@ onMounted(() => {
 
 @media (max-width: 720px) {
   .settings-section-header,
+  .settings-subsection-header,
   #settings-actions {
     align-items: stretch;
     flex-direction: column;
