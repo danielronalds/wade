@@ -74,6 +74,7 @@ when you run `wade config` if it does not exist:
     "~/Personal",
     "~/Work"
   ],
+  "openWorktreesInNewTabs": false,
   "themeAccentColor": "white"
 }
 ```

@@ -26,6 +26,14 @@ func TestDefaultSettingsUsesEnvironmentShell(t *testing.T) {
 	}
 }
 
+func TestDefaultSettingsOpensWorktreesInCurrentTab(t *testing.T) {
+	settings := defaultSettings(filepath.Join(t.TempDir(), "config.json"))
+
+	if settings.OpenWorktreesInNewTabs {
+		t.Fatal("OpenWorktreesInNewTabs = true, want false")
+	}
+}
+
 func TestParseSettingsDefaultsAgentsWhenMissing(t *testing.T) {
 	settings, err := parseSettings("config.json", []byte(`{"projectDirectories":["~/Code"]}`))
 	if err != nil {
@@ -60,13 +68,25 @@ func TestParseSettingsUsesConfiguredShell(t *testing.T) {
 	}
 }
 
+func TestParseSettingsUsesConfiguredWorktreeNavigation(t *testing.T) {
+	settings, err := parseSettings("config.json", []byte(`{"openWorktreesInNewTabs":true}`))
+	if err != nil {
+		t.Fatalf("parseSettings() error = %v, want nil", err)
+	}
+
+	if !settings.OpenWorktreesInNewTabs {
+		t.Fatal("OpenWorktreesInNewTabs = false, want true")
+	}
+}
+
 func TestSettingsSaveWritesAgentsAndPreservesUnknownKeys(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.json")
 	settings := Settings{
-		ProjectDirectories: []string{"~/Code"},
-		Shell:              " /bin/zsh ",
-		Agents:             []Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
-		path:               path,
+		ProjectDirectories:     []string{"~/Code"},
+		Shell:                  " /bin/zsh ",
+		Agents:                 []Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
+		OpenWorktreesInNewTabs: true,
+		path:                   path,
 		raw: map[string]json.RawMessage{
 			"agentCommand":     json.RawMessage(`"legacy-agent"`),
 			"agentPaneCommand": json.RawMessage(`"pane-agent"`),
@@ -103,6 +123,10 @@ func TestSettingsSaveWritesAgentsAndPreservesUnknownKeys(t *testing.T) {
 
 	if saved["shell"] != "/bin/zsh" {
 		t.Fatalf("shell = %#v, want %q", saved["shell"], "/bin/zsh")
+	}
+
+	if saved["openWorktreesInNewTabs"] != true {
+		t.Fatalf("openWorktreesInNewTabs = %#v, want true", saved["openWorktreesInNewTabs"])
 	}
 
 	if _, ok := saved["agentCommand"]; ok {

@@ -37,6 +37,7 @@ type Settings struct {
 	Shell                              string   `json:"shell"`
 	Agents                             []Agent  `json:"agents"`
 	CopyIgnoredFilesOnWorktreeCreation bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
+	OpenWorktreesInNewTabs             bool     `json:"openWorktreesInNewTabs"`
 	WorktreeCopyExcludes               []string `json:"worktreeCopyExcludes"`
 	ThemeAccentColor                   string   `json:"themeAccentColor"`
 	path                               string
@@ -48,6 +49,7 @@ type settingsFile struct {
 	Shell                              *string   `json:"shell"`
 	Agents                             *[]Agent  `json:"agents"`
 	CopyIgnoredFilesOnWorktreeCreation *bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
+	OpenWorktreesInNewTabs             *bool     `json:"openWorktreesInNewTabs"`
 	WorktreeCopyExcludes               *[]string `json:"worktreeCopyExcludes"`
 	ThemeAccentColor                   *string   `json:"themeAccentColor"`
 }
@@ -226,6 +228,11 @@ func (s Settings) Save() error {
 		return fmt.Errorf("encoding worktree copy setting: %w", err)
 	}
 
+	openWorktreesInNewTabs, err := json.Marshal(s.OpenWorktreesInNewTabs)
+	if err != nil {
+		return fmt.Errorf("encoding worktree navigation setting: %w", err)
+	}
+
 	worktreeCopyExcludes, err := json.Marshal(s.WorktreeCopyExcludes)
 	if err != nil {
 		return fmt.Errorf("encoding worktree copy excludes: %w", err)
@@ -242,6 +249,7 @@ func (s Settings) Save() error {
 	raw["shell"] = shell
 	raw["agents"] = agents
 	raw["copyIgnoredFilesOnWorktreeCreation"] = copyIgnoredFilesOnWorktreeCreation
+	raw["openWorktreesInNewTabs"] = openWorktreesInNewTabs
 	raw["worktreeCopyExcludes"] = worktreeCopyExcludes
 	raw["themeAccentColor"] = themeAccentColor
 
@@ -290,6 +298,7 @@ func defaultSettings(path string) Settings {
 		Shell:                              "",
 		Agents:                             cloneAgents(defaultAgents),
 		CopyIgnoredFilesOnWorktreeCreation: false,
+		OpenWorktreesInNewTabs:             false,
 		WorktreeCopyExcludes:               []string{},
 		ThemeAccentColor:                   ThemeAccentColorWhite,
 		path:                               path,
@@ -322,6 +331,9 @@ func parseSettings(path string, contents []byte) (Settings, error) {
 	}
 	if file.CopyIgnoredFilesOnWorktreeCreation != nil {
 		settings.CopyIgnoredFilesOnWorktreeCreation = *file.CopyIgnoredFilesOnWorktreeCreation
+	}
+	if file.OpenWorktreesInNewTabs != nil {
+		settings.OpenWorktreesInNewTabs = *file.OpenWorktreesInNewTabs
 	}
 	if file.WorktreeCopyExcludes != nil {
 		settings.WorktreeCopyExcludes = *file.WorktreeCopyExcludes

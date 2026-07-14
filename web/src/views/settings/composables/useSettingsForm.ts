@@ -16,6 +16,7 @@ const settingsHaveChanged = (current: Settings, saved: Settings) => JSON.stringi
   || current.shell !== saved.shell
   || JSON.stringify(current.agents) !== JSON.stringify(saved.agents)
   || current.copyIgnoredFilesOnWorktreeCreation !== saved.copyIgnoredFilesOnWorktreeCreation
+  || current.openWorktreesInNewTabs !== saved.openWorktreesInNewTabs
   || JSON.stringify(current.worktreeCopyExcludes) !== JSON.stringify(saved.worktreeCopyExcludes)
   || current.themeAccentColor !== saved.themeAccentColor;
 
@@ -64,6 +65,7 @@ export const useSettingsForm = () => {
     form.shell = settings.shell;
     form.agents = settings.agents.map((agent) => ({ ...agent }));
     form.copyIgnoredFilesOnWorktreeCreation = settings.copyIgnoredFilesOnWorktreeCreation;
+    form.openWorktreesInNewTabs = settings.openWorktreesInNewTabs;
     form.worktreeCopyExcludes = [...settings.worktreeCopyExcludes];
     form.themeAccentColor = settings.themeAccentColor;
   };
@@ -181,6 +183,15 @@ export const useSettingsForm = () => {
     clearMessages();
   };
 
+  const updateOpenWorktreesInNewTabs = (event: Event) => {
+    if (!(event.target instanceof HTMLInputElement)) {
+      return;
+    }
+
+    form.openWorktreesInNewTabs = event.target.checked;
+    clearMessages();
+  };
+
   const updateThemeAccentColor = (themeAccentColor: ThemeAccentColor) => {
     form.themeAccentColor = themeAccentColor;
     applyThemeAccentColor(themeAccentColor);
@@ -269,6 +280,7 @@ export const useSettingsForm = () => {
     addAgent,
     removeAgent,
     updateCopyIgnoredFilesOnWorktreeCreation,
+    updateOpenWorktreesInNewTabs,
     updateThemeAccentColor,
     updateWorktreeCopyExclude,
     addWorktreeCopyExclude,

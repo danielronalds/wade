@@ -768,6 +768,7 @@
             "required": [
                 "agents",
                 "copyIgnoredFilesOnWorktreeCreation",
+                "openWorktreesInNewTabs",
                 "projectDirectories",
                 "shell",
                 "themeAccentColor",
@@ -781,6 +782,9 @@
                     }
                 },
                 "copyIgnoredFilesOnWorktreeCreation": {
+                    "type": "boolean"
+                },
+                "openWorktreesInNewTabs": {
                     "type": "boolean"
                 },
                 "projectDirectories": {

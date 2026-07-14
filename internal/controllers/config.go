@@ -25,6 +25,7 @@ type configPayload struct {
 	Shell                              string         `json:"shell"`
 	Agents                             []config.Agent `json:"agents"`
 	CopyIgnoredFilesOnWorktreeCreation bool           `json:"copyIgnoredFilesOnWorktreeCreation"`
+	OpenWorktreesInNewTabs             bool           `json:"openWorktreesInNewTabs"`
 	WorktreeCopyExcludes               []string       `json:"worktreeCopyExcludes"`
 	ThemeAccentColor                   string         `json:"themeAccentColor"`
 } // @name handlers.configPayload
@@ -53,6 +54,7 @@ func (h ConfigHandler) GetConfig(w http.ResponseWriter, _ *http.Request) {
 		Shell:                              settings.Shell,
 		Agents:                             settings.Agents,
 		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
+		OpenWorktreesInNewTabs:             settings.OpenWorktreesInNewTabs,
 		WorktreeCopyExcludes:               settings.WorktreeCopyExcludes,
 		ThemeAccentColor:                   settings.ThemeAccentColor,
 	})
@@ -137,6 +139,7 @@ func (h ConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	settings.Shell = shell
 	settings.Agents = agents
 	settings.CopyIgnoredFilesOnWorktreeCreation = request.CopyIgnoredFilesOnWorktreeCreation
+	settings.OpenWorktreesInNewTabs = request.OpenWorktreesInNewTabs
 	settings.WorktreeCopyExcludes = worktreeCopyExcludes
 	settings.ThemeAccentColor = themeAccentColor
 	if err := settings.Save(); err != nil {

@@ -31,6 +31,7 @@ export interface HandlersCloneRemoteProjectResponse {
 export interface HandlersConfigPayload {
   agents: ConfigAgent[];
   copyIgnoredFilesOnWorktreeCreation: boolean;
+  openWorktreesInNewTabs: boolean;
   projectDirectories: string[];
   shell: string;
   themeAccentColor: string;

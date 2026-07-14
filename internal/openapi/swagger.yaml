@@ -47,6 +47,8 @@ definitions:
         type: array
       copyIgnoredFilesOnWorktreeCreation:
         type: boolean
+      openWorktreesInNewTabs:
+        type: boolean
       projectDirectories:
         items:
           type: string
@@ -62,6 +64,7 @@ definitions:
     required:
     - agents
     - copyIgnoredFilesOnWorktreeCreation
+    - openWorktreesInNewTabs
     - projectDirectories
     - shell
     - themeAccentColor

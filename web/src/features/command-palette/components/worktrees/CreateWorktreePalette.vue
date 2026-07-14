@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
 import { createWorktree } from '@/api/generated/wade';
-import { useProjects } from '@/features/projects/composables/useProjects';
+import { useWorktreeNavigation } from '@/features/command-palette/composables/useWorktreeNavigation';
 import type { Worktree } from '@/types/worktree';
 import PaletteShell from '@/features/command-palette/components/PaletteShell.vue';
 import type { PaletteResult } from '@/features/command-palette/types';
@@ -16,8 +15,11 @@ const emit = defineEmits<{
   close: [restoreFocus?: boolean];
 }>();
 
-const router = useRouter();
-const { syncProjects } = useProjects();
+const {
+  closeReservedWorktreeTab,
+  openWorktree: navigateToWorktree,
+  reserveWorktreeTab
+} = useWorktreeNavigation();
 const createdWorktree = ref<Worktree | undefined>();
 const copyWarnings = computed(() => createdWorktree.value?.ignoredFileCopyWarnings ?? []);
 const hasCopyWarnings = computed(() => copyWarnings.value.length > 0);
@@ -48,10 +50,9 @@ const paletteSummary = computed(() => {
   return props.projectName;
 });
 
-const openWorktree = async (worktree: Worktree) => {
-  await syncProjects();
+const openWorktree = async (worktree: Worktree, reservedTab?: Window) => {
+  await navigateToWorktree(worktree, reservedTab);
   emit('close', false);
-  await router.push({ name: 'project', params: { projectName: worktree.projectName } });
 };
 
 const createOrOpenWorktree = async () => {
@@ -63,16 +64,20 @@ const createOrOpenWorktree = async () => {
   clearActionError();
   createdWorktree.value = undefined;
 
+  const reservedTab = reserveWorktreeTab();
+
   try {
     const { worktree } = await createWorktree({ project: props.projectName, branch: branchName.value });
     if ((worktree.ignoredFileCopyWarnings?.length ?? 0) > 0) {
+      closeReservedWorktreeTab(reservedTab);
       createdWorktree.value = worktree;
       query.value = '';
       return;
     }
 
-    await openWorktree(worktree);
+    await openWorktree(worktree, reservedTab);
   } catch (requestError) {
+    closeReservedWorktreeTab(reservedTab);
     setActionError(requestError, 'Worktree request failed');
   } finally {
     isCreating.value = false;
@@ -88,7 +93,7 @@ const paletteResults = computed<PaletteResult[]>(() => {
       isDisabled: false,
       run: () => {
         if (createdWorktree.value) {
-          void openWorktree(createdWorktree.value);
+          void openWorktree(createdWorktree.value, reserveWorktreeTab());
         }
       }
     }];

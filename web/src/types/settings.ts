@@ -11,6 +11,7 @@ export type Settings = {
   shell: string;
   agents: Agent[];
   copyIgnoredFilesOnWorktreeCreation: boolean;
+  openWorktreesInNewTabs: boolean;
   worktreeCopyExcludes: string[];
   themeAccentColor: ThemeAccentColor;
 };
@@ -25,6 +26,7 @@ export const createEmptySettings = (): Settings => ({
   shell: '',
   agents: defaultAgents.map((agent) => ({ ...agent })),
   copyIgnoredFilesOnWorktreeCreation: false,
+  openWorktreesInNewTabs: false,
   worktreeCopyExcludes: [],
   themeAccentColor: defaultThemeAccentColor
 });
@@ -36,6 +38,7 @@ export const cloneSettings = (settings: Settings): Settings => ({
   shell: settings.shell,
   agents: cloneAgents(settings.agents),
   copyIgnoredFilesOnWorktreeCreation: settings.copyIgnoredFilesOnWorktreeCreation,
+  openWorktreesInNewTabs: settings.openWorktreesInNewTabs,
   worktreeCopyExcludes: [...settings.worktreeCopyExcludes],
   themeAccentColor: settings.themeAccentColor
 });
@@ -59,6 +62,7 @@ export const normaliseSettings = (settings: Settings): Settings => ({
   shell: normaliseShell(settings.shell),
   agents: normaliseAgents(settings.agents),
   copyIgnoredFilesOnWorktreeCreation: settings.copyIgnoredFilesOnWorktreeCreation,
+  openWorktreesInNewTabs: settings.openWorktreesInNewTabs,
   worktreeCopyExcludes: normaliseWorktreeCopyExcludes(settings.worktreeCopyExcludes),
   themeAccentColor: normaliseThemeAccentColor(settings.themeAccentColor)
 });

@@ -26,6 +26,7 @@ const {
   addAgent,
   removeAgent,
   updateCopyIgnoredFilesOnWorktreeCreation,
+  updateOpenWorktreesInNewTabs,
   updateThemeAccentColor,
   updateWorktreeCopyExclude,
   addWorktreeCopyExclude,
@@ -127,6 +128,25 @@ onMounted(() => {
           @update-agent-name="updateAgentName"
           @update-agent-command="updateAgentCommand"
         />
+
+        <section id="worktree-navigation-section" aria-labelledby="worktree-navigation-title">
+          <header class="settings-section-header">
+            <section>
+              <h2 id="worktree-navigation-title">Worktree navigation</h2>
+              <p>Choose where WADE opens worktrees created or selected from the command palette.</p>
+            </section>
+          </header>
+
+          <label class="checkbox-setting-row" for="open-worktrees-in-new-tabs">
+            <input
+              id="open-worktrees-in-new-tabs"
+              :checked="form.openWorktreesInNewTabs"
+              type="checkbox"
+              @change="updateOpenWorktreesInNewTabs"
+            >
+            <span>Open worktrees in a new tab</span>
+          </label>
+        </section>
 
         <section id="worktree-copy-section" aria-labelledby="worktree-copy-title">
           <header class="settings-section-header">
@@ -295,6 +315,7 @@ onMounted(() => {
 
 #project-directories-section,
 #shell-section,
+#worktree-navigation-section,
 #worktree-copy-section {
   width: min(860px, 100%);
   display: grid;
