@@ -32,7 +32,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Application {
 	projectService := projectservice.NewService(projectRepository, gitRepository, gitHubRepository)
 	remoteProjectService := remoteprojects.NewService(gitHubRepository, fileRepository)
 	reviewService := review.NewService(gitRepository, gitHubRepository, fileRepository)
-	terminalSessionService := terminalsessions.NewService(configuration.Shell, terminalAgents(configuration.Agents))
+	terminalSessionService := terminalsessions.NewService(configuration.Shell, configuration.Address, terminalAgents(configuration.Agents))
 	sessionService := sessions.NewService(projectService, terminalSessionService)
 	worktreeService := worktrees.NewService(configuration, gitRepository, fileRepository)
 

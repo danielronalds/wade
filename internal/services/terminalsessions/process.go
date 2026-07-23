@@ -15,17 +15,22 @@ type Size struct {
 	Rows uint16
 }
 
+type WadeEnvironment struct {
+	Session string
+	Address string
+}
+
 type Session struct {
 	command  *exec.Cmd
 	terminal *os.File
 }
 
-func Start(shell string, directory string, projectName string, size Size) (*Session, error) {
-	return start(interactiveShell(shell, projectName), directory, size)
+func Start(shell string, directory string, environment WadeEnvironment, size Size) (*Session, error) {
+	return start(interactiveShell(shell, environment), directory, size)
 }
 
-func StartShellCommand(shell string, directory string, projectName string, command string, size Size) (*Session, error) {
-	return start(shellCommand(shell, projectName, command), directory, size)
+func StartShellCommand(shell string, directory string, environment WadeEnvironment, command string, size Size) (*Session, error) {
+	return start(shellCommand(shell, environment, command), directory, size)
 }
 
 func (s *Session) Read(data []byte) (int, error) {
@@ -50,19 +55,20 @@ func (s *Session) Close() {
 	_ = s.command.Wait()
 }
 
-func interactiveShell(shell string, projectName string) *exec.Cmd {
-	return withShellEnvironment(exec.Command(shell), shell, projectName)
+func interactiveShell(shell string, environment WadeEnvironment) *exec.Cmd {
+	return withShellEnvironment(exec.Command(shell), shell, environment)
 }
 
-func shellCommand(shell string, projectName string, command string) *exec.Cmd {
-	return withShellEnvironment(exec.Command(shell, "-lc", command), shell, projectName)
+func shellCommand(shell string, environment WadeEnvironment, command string) *exec.Cmd {
+	return withShellEnvironment(exec.Command(shell, "-lc", command), shell, environment)
 }
 
-func withShellEnvironment(command *exec.Cmd, shell string, projectName string) *exec.Cmd {
+func withShellEnvironment(command *exec.Cmd, shell string, environment WadeEnvironment) *exec.Cmd {
 	command.Env = setEnvironmentValues(
 		os.Environ(),
 		environmentVariable{name: "SHELL", value: shell},
-		environmentVariable{name: "WADE_SESSION", value: projectName},
+		environmentVariable{name: "WADE_SESSION", value: environment.Session},
+		environmentVariable{name: "WADE_ADDR", value: environment.Address},
 	)
 	return command
 }

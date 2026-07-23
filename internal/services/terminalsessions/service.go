@@ -20,15 +20,17 @@ type Agent struct {
 
 type Service struct {
 	shell                 string
+	serverAddress         string
 	agents                []Agent
 	mu                    sync.Mutex
 	sessions              map[string]*ProjectSession
 	selectedAgentSessions map[string]*ProjectSession
 }
 
-func NewService(shell string, agents []Agent) *Service {
+func NewService(shell string, serverAddress string, agents []Agent) *Service {
 	return &Service{
 		shell:                 shell,
+		serverAddress:         serverAddress,
 		agents:                cloneAgents(agents),
 		sessions:              make(map[string]*ProjectSession),
 		selectedAgentSessions: make(map[string]*ProjectSession),
@@ -61,7 +63,11 @@ func (m *Service) GetOrStart(projectName string, terminalName string, agentName 
 		return nil, err
 	}
 
-	session, err := startProjectSession(m, key, m.shell, agentCommand, terminalName, projectName, directory)
+	environment := WadeEnvironment{
+		Session: projectName,
+		Address: m.serverAddress,
+	}
+	session, err := startProjectSession(m, key, m.shell, environment, agentCommand, terminalName, directory)
 	if err != nil {
 		return nil, err
 	}

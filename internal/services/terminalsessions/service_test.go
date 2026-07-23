@@ -8,7 +8,7 @@ import (
 )
 
 func TestWriteToActiveAgentUsesSelectedAgentSession(t *testing.T) {
-	service := NewService("/bin/sh", nil)
+	service := NewService("/bin/sh", "editor.localhost:8765", nil)
 	_, _ = addWritableProjectSession(t, service, "/projects/wade", agentTerminalName, "pi")
 	selectedSession, selectedOutput := addWritableProjectSession(t, service, "/projects/wade", agentTerminalName, "claude")
 	selectedSession.ApplyControlMessage([]byte(`{"type":"activate"}`))
@@ -32,7 +32,7 @@ func TestWriteToActiveAgentUsesSelectedAgentSession(t *testing.T) {
 }
 
 func TestWriteToActiveAgentUsesSoleAgentWithoutSelection(t *testing.T) {
-	service := NewService("/bin/sh", nil)
+	service := NewService("/bin/sh", "editor.localhost:8765", nil)
 	_, outputReader := addWritableProjectSession(t, service, "/projects/wade", agentTerminalName, "pi")
 	_, _ = addWritableProjectSession(t, service, "/projects/wade", "misc", "")
 
@@ -55,7 +55,7 @@ func TestWriteToActiveAgentUsesSoleAgentWithoutSelection(t *testing.T) {
 }
 
 func TestWriteToActiveAgentReportsAmbiguousAgentsWithoutSelection(t *testing.T) {
-	service := NewService("/bin/sh", nil)
+	service := NewService("/bin/sh", "editor.localhost:8765", nil)
 	_, _ = addWritableProjectSession(t, service, "/projects/wade", agentTerminalName, "pi")
 	_, _ = addWritableProjectSession(t, service, "/projects/wade", agentTerminalName, "claude")
 
@@ -69,7 +69,7 @@ func TestWriteToActiveAgentReportsAmbiguousAgentsWithoutSelection(t *testing.T) 
 }
 
 func TestAgentActivationIgnoresNonAgentTerminal(t *testing.T) {
-	service := NewService("/bin/sh", nil)
+	service := NewService("/bin/sh", "editor.localhost:8765", nil)
 	miscSession, _ := addWritableProjectSession(t, service, "/projects/wade", "misc", "")
 	miscSession.ApplyControlMessage([]byte(`{"type":"activate"}`))
 

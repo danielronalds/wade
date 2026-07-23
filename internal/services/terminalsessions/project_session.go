@@ -132,8 +132,8 @@ func (c *Client) Close() {
 	})
 }
 
-func startProjectSession(manager *Service, key string, shell string, agentCommand string, terminalName string, projectName string, directory string) (*ProjectSession, error) {
-	session, err := startTerminalSession(shell, agentCommand, terminalName, projectName, directory)
+func startProjectSession(manager *Service, key string, shell string, environment WadeEnvironment, agentCommand string, terminalName string, directory string) (*ProjectSession, error) {
+	session, err := startTerminalSession(shell, environment, agentCommand, terminalName, directory)
 	if err != nil {
 		return nil, err
 	}
@@ -153,12 +153,12 @@ func startProjectSession(manager *Service, key string, shell string, agentComman
 	return projectSession, nil
 }
 
-func startTerminalSession(shell string, agentCommand string, terminalName string, projectName string, directory string) (*Session, error) {
+func startTerminalSession(shell string, environment WadeEnvironment, agentCommand string, terminalName string, directory string) (*Session, error) {
 	if shouldStartAgentCommand(terminalName, agentCommand) {
-		return StartShellCommand(shell, directory, projectName, agentCommand, Size{Cols: 80, Rows: 24})
+		return StartShellCommand(shell, directory, environment, agentCommand, Size{Cols: 80, Rows: 24})
 	}
 
-	return Start(shell, directory, projectName, Size{Cols: 80, Rows: 24})
+	return Start(shell, directory, environment, Size{Cols: 80, Rows: 24})
 }
 
 func shouldStartAgentCommand(terminalName string, agentCommand string) bool {
