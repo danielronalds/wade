@@ -1,6 +1,9 @@
 {
   "name": "WADE",
   "short_name": "WADE",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "icons": [
     {
       "src": "/static/android-chrome-192x192.png",
@@ -13,7 +16,7 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
+  "theme_color": "#17181c",
+  "background_color": "#17181c",
   "display": "standalone"
 }
