@@ -43,6 +43,27 @@ func TestSwaggerRoutesReturnNotFoundWhenDisabled(t *testing.T) {
 	}
 }
 
+func TestServiceWorkerIsServedAtApplicationRoot(t *testing.T) {
+	httpServer := New(testControllers(), Options{})
+
+	response := serveRequest(httpServer, "/service-worker.js")
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected service worker status %d, got %d", http.StatusOK, response.Code)
+	}
+
+	if response.Body.String() != "service worker" {
+		t.Fatalf("expected service worker response, got %q", response.Body.String())
+	}
+
+	if response.Header().Get("Cache-Control") != "no-cache" {
+		t.Fatalf("expected service worker to bypass the HTTP cache")
+	}
+
+	if contentType := response.Header().Get("Content-Type"); !strings.HasPrefix(contentType, "text/javascript") {
+		t.Fatalf("expected JavaScript content type, got %q", contentType)
+	}
+}
+
 func serveRequest(httpServer *Server, path string) *httptest.ResponseRecorder {
 	response := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, path, nil)
@@ -56,7 +77,8 @@ func testControllers() controllers.Controllers {
 	return controllers.Controllers{
 		Docs: controllers.NewDocs(),
 		Page: controllers.NewPage(fstest.MapFS{
-			"index.html": {Data: []byte("application page")},
+			"index.html":        {Data: []byte("application page")},
+			"service-worker.js": {Data: []byte("service worker")},
 		}),
 	}
 }

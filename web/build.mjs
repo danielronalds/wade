@@ -155,6 +155,13 @@ const main = async () => {
   await rm(distDir, { recursive: true, force: true });
   await mkdir(staticDir, { recursive: true });
   await cp(join(root, 'static'), staticDir, { recursive: true });
+
+  const fallbackPage = await readFile(join(root, 'static', 'server-unavailable.html'));
+  const serviceWorkerSource = await readFile(join(root, 'service-worker.js'), 'utf8');
+  const fallbackPageVersion = createHash('sha256').update(fallbackPage).digest('hex').slice(0, 12);
+  const serviceWorker = serviceWorkerSource.replace('__FALLBACK_PAGE_VERSION__', fallbackPageVersion);
+
+  await writeFile(join(distDir, 'service-worker.js'), serviceWorker);
   await mkdir(join(staticDir, 'monaco'), { recursive: true });
   await cp(join(root, 'node_modules', 'monaco-editor', 'min', 'vs'), join(staticDir, 'monaco', 'vs'), { recursive: true });
 

@@ -35,6 +35,7 @@ func (s *Server) registerRoutes(controllers controllers.Controllers, options Opt
 	registerSwaggerRoutes(s.Mux, controllers.Docs, options.SwaggerEnabled)
 
 	s.Mux.Handle("GET /static/", http.FileServer(http.FS(controllers.Page.StaticFiles())))
+	s.Mux.HandleFunc("GET /service-worker.js", controllers.Page.GetServiceWorker)
 	s.Mux.HandleFunc("GET /", controllers.Page.GetApplicationPage)
 }
 
