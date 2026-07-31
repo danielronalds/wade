@@ -49,6 +49,17 @@ func (h Terminals) Reload(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// @Summary Connect to terminal session
+// @Description Upgrades the connection to a WebSocket for terminal input, output, and control messages.
+// @ID connectTerminalSession
+// @Tags Terminals
+// @Param project query string true "Project name"
+// @Param terminal query string false "Terminal name"
+// @Param agent query string false "Agent name"
+// @Success 101 "Switching Protocols"
+// @Failure 404 {string} string "Project not found"
+// @Failure 500 {string} string "Failed to start terminal"
+// @Router /ws [get]
 func (h Terminals) Connect(w http.ResponseWriter, r *http.Request) {
 	projectName := r.URL.Query().Get("project")
 	projectPath, err := h.projects.Path(projectName)

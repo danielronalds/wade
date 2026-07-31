@@ -179,8 +179,8 @@ npm --prefix web run gen:api
 ```
 
 API docs are available at `/api/docs`, with the OpenAPI JSON served at
-`/api/openapi.json`. WebSocket, static asset, and page routes are intentionally
-excluded from the client API surface.
+`/api/openapi.json`. Static asset and page routes are intentionally excluded
+from the client API surface.
 
 Use this before committing API changes to check the generated files are current:
 

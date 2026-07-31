@@ -243,6 +243,21 @@ export type ListRemoteBranchesParams = {
 project: string;
 };
 
+export type ConnectTerminalSessionParams = {
+/**
+ * Project name
+ */
+project: string;
+/**
+ * Terminal name
+ */
+terminal?: string;
+/**
+ * Agent name
+ */
+agent?: string;
+};
+
 export const getGetSettingsUrl = () => {
 
 
@@ -717,6 +732,38 @@ export const getListRemoteBranchesUrl = (params: ListRemoteBranchesParams,) => {
 export const listRemoteBranches = async (params: ListRemoteBranchesParams, options?: RequestInit): Promise<WorktreeRemoteBranchList> => {
 
   return wadeFetch<WorktreeRemoteBranchList>(getListRemoteBranchesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getConnectTerminalSessionUrl = (params: ConnectTerminalSessionParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/ws?${stringifiedParams}` : `/ws`
+}
+
+/**
+ * Upgrades the connection to a WebSocket for terminal input, output, and control messages.
+ * @summary Connect to terminal session
+ */
+export const connectTerminalSession = async (params: ConnectTerminalSessionParams, options?: RequestInit): Promise<unknown> => {
+
+  return wadeFetch<unknown>(getConnectTerminalSessionUrl(params),
   {
     ...options,
     method: 'GET'

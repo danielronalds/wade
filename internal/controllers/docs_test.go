@@ -41,6 +41,7 @@ func TestOpenAPISpecIncludesOperationIDs(t *testing.T) {
 		"POST /api/worktrees":                    "createWorktree",
 		"DELETE /api/worktrees":                  "removeWorktree",
 		"GET /api/worktrees/remote-branches":     "listRemoteBranches",
+		"GET /ws":                                "connectTerminalSession",
 	}
 
 	for endpoint, expectedOperationID := range expectedOperationIDs {

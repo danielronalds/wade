@@ -1,26 +1,21 @@
 // NOTE: Vibecoded and not suppppppper reviewed
 import { loadSelectedAgentName } from '@/features/terminal-session/composables/useSelectedAgent';
+import { createTerminalWebSocket } from '@/features/terminal-session/createTerminalWebSocket';
 
 const encoder = new TextEncoder();
 const agentTerminalName = 'agent';
 const bracketedPasteStart = '\x1b[200~';
 const bracketedPasteEnd = '\x1b[201~';
 
-const terminalWebSocketURL = (projectName: string, terminalName: string, agentName: string) => {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const params = new URLSearchParams({ project: projectName, terminal: terminalName });
-  if (agentName !== '') {
-    params.set('agent', agentName);
-  }
-
-  return `${protocol}//${window.location.host}/ws?${params}`;
-};
-
 export const pasteIntoAgentTerminal = (projectName: string, prompt: string) => new Promise<void>((resolve, reject) => {
-  const socket = new WebSocket(terminalWebSocketURL(projectName, agentTerminalName, loadSelectedAgentName(projectName)));
-  let hasSentPrompt = false;
+  const agentName = loadSelectedAgentName(projectName);
+  const socket = createTerminalWebSocket({
+    project: projectName,
+    terminal: agentTerminalName,
+    agent: agentName || undefined
+  });
 
-  socket.binaryType = 'arraybuffer';
+  let hasSentPrompt = false;
 
   const cleanup = () => {
     socket.removeEventListener('open', handleOpen);

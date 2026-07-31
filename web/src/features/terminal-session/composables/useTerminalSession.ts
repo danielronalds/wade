@@ -5,6 +5,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { reloadTerminalSession } from '@/api/generated/wade';
 import { useRecentProjects } from '@/features/projects/composables/useRecentProjects';
+import { createTerminalWebSocket } from '@/features/terminal-session/createTerminalWebSocket';
 
 type Disposable = {
   dispose: () => void;
@@ -322,21 +323,13 @@ export const useTerminalSession = ({
     sendEscapeKey();
   };
 
-  const terminalRequestParams = () => {
-    const params = new URLSearchParams({ project: projectName, terminal: terminalName });
-    if (agentName) {
-      params.set('agent', agentName);
-    }
-
-    return params;
-  };
-
   const connectWebSocket = (run: number) => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const params = terminalRequestParams();
-    const connection = new WebSocket(`${protocol}//${window.location.host}/ws?${params}`);
+    const connection = createTerminalWebSocket({
+      project: projectName,
+      terminal: terminalName,
+      agent: agentName || undefined
+    });
     socket = connection;
-    connection.binaryType = 'arraybuffer';
 
     connection.addEventListener('open', () => {
       if (!isSessionRunActive(run)) {

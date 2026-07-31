@@ -846,6 +846,39 @@ paths:
       summary: List remote branches
       tags:
       - Worktrees
+  /ws:
+    get:
+      description: Upgrades the connection to a WebSocket for terminal input, output,
+        and control messages.
+      operationId: connectTerminalSession
+      parameters:
+      - description: Project name
+        in: query
+        name: project
+        required: true
+        type: string
+      - description: Terminal name
+        in: query
+        name: terminal
+        type: string
+      - description: Agent name
+        in: query
+        name: agent
+        type: string
+      responses:
+        "101":
+          description: Switching Protocols
+        "404":
+          description: Project not found
+          schema:
+            type: string
+        "500":
+          description: Failed to start terminal
+          schema:
+            type: string
+      summary: Connect to terminal session
+      tags:
+      - Terminals
 produces:
 - application/json
 schemes:
