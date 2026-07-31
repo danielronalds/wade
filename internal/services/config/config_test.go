@@ -74,6 +74,29 @@ func TestLoadUsesEnvironmentShellWhenShellSettingIsEmpty(t *testing.T) {
 	}
 }
 
+func TestLoadUsesAddressEnvironmentOverride(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+	t.Setenv("SHELL", "/bin/sh")
+	t.Setenv(addressEnv, "custom.localhost:9000")
+
+	path := filepath.Join(homeDir, ".config", "wade", "config.json")
+	settings := repositories.Settings{
+		ProjectDirectories: []string{},
+		Agents:             []repositories.Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
+	}
+	writeSettings(t, path, settings)
+
+	configuration, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+
+	if configuration.Address != "custom.localhost:9000" {
+		t.Fatalf("Address = %q, want %q", configuration.Address, "custom.localhost:9000")
+	}
+}
+
 func TestLoadDisablesSwaggerByDefault(t *testing.T) {
 	configuration := loadConfigurationWithSwaggerEnvironment(t, "", "")
 
