@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Check, Copy, GitBranch, RefreshCw } from '@lucide/vue';
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useProjectDetails } from '@/views/project/composables/useProjectDetails';
 import { useProjectLinkClipboard } from '@/views/project/composables/useProjectLinkClipboard';
+import { useProjectDetailsStore } from '@/stores/useProjectDetailsStore';
 import GitHubIcon from '@/components/icons/GitHubIcon.vue';
 import LinearIcon from '@/components/icons/LinearIcon.vue';
 
@@ -13,54 +13,54 @@ const props = defineProps<{
   isConnected: boolean;
 }>();
 
-const {
-  gitBranch,
-  isLoading: isProjectDetailsLoading,
-  githubUrl,
-  linearTicketUrl,
-  loadProjectDetails,
-  pullRequestUrl
-} = useProjectDetails(props.projectName);
-
+const projectDetailsStore = useProjectDetailsStore();
 const {
   clipboardAnnouncement,
   copiedProjectLink,
   copyProjectLink
 } = useProjectLinkClipboard();
 
+const projectDetails = computed(() => projectDetailsStore.getProjectDetails(props.projectName));
+const isProjectDetailsLoading = computed(() => projectDetailsStore.isProjectDetailsLoading(props.projectName));
+const isWaitingForProjectDetails = computed(() => isProjectDetailsLoading.value && !projectDetails.value);
+const gitBranch = computed(() => projectDetails.value?.gitBranch ?? '');
+const githubUrl = computed(() => projectDetails.value?.githubUrl ?? '');
+const linearTicketUrl = computed(() => projectDetails.value?.linearTicketUrl ?? '');
+const pullRequestUrl = computed(() => projectDetails.value?.pullRequestUrl ?? '');
+
 const projectDisplayName = computed(() => props.projectName.split('-feature')[0] || props.projectName);
-const isLinearTicketButtonDisabled = computed(() => isProjectDetailsLoading.value || linearTicketUrl.value === '');
-const isPullRequestButtonDisabled = computed(() => isProjectDetailsLoading.value || pullRequestUrl.value === '');
-const isGitHubButtonDisabled = computed(() => isProjectDetailsLoading.value || githubUrl.value === '');
-const linearTicketButtonTitle = computed(() => isProjectDetailsLoading.value
+const isLinearTicketButtonDisabled = computed(() => linearTicketUrl.value === '');
+const isPullRequestButtonDisabled = computed(() => pullRequestUrl.value === '');
+const isGitHubButtonDisabled = computed(() => githubUrl.value === '');
+const linearTicketButtonTitle = computed(() => isWaitingForProjectDetails.value
   ? 'Loading Linear ticket'
   : linearTicketUrl.value === '' ? 'No Linear ticket found' : 'Open Linear ticket');
 const linearTicketCopyButtonTitle = computed(() => copiedProjectLink.value === 'linear-ticket'
   ? 'Linear ticket link copied'
-  : isProjectDetailsLoading.value
+  : isWaitingForProjectDetails.value
     ? 'Loading Linear ticket'
     : linearTicketUrl.value === '' ? 'No Linear ticket found' : 'Copy Linear ticket link');
-const pullRequestButtonTitle = computed(() => isProjectDetailsLoading.value
+const pullRequestButtonTitle = computed(() => isWaitingForProjectDetails.value
   ? 'Loading pull request'
   : pullRequestUrl.value === '' ? 'No pull request found' : 'Open pull request');
 const pullRequestCopyButtonTitle = computed(() => copiedProjectLink.value === 'pull-request'
   ? 'Pull request link copied'
-  : isProjectDetailsLoading.value
+  : isWaitingForProjectDetails.value
     ? 'Loading pull request'
     : pullRequestUrl.value === '' ? 'No pull request found' : 'Copy pull request link');
-const gitHubButtonTitle = computed(() => isProjectDetailsLoading.value
+const gitHubButtonTitle = computed(() => isWaitingForProjectDetails.value
   ? 'Loading GitHub page'
   : githubUrl.value === '' ? 'No GitHub remote found' : 'Open GitHub page');
 const gitHubCopyButtonTitle = computed(() => copiedProjectLink.value === 'github'
   ? 'GitHub link copied'
-  : isProjectDetailsLoading.value
+  : isWaitingForProjectDetails.value
     ? 'Loading GitHub page'
     : githubUrl.value === '' ? 'No GitHub remote found' : 'Copy GitHub link');
 const reloadButtonTitle = computed(() => isProjectDetailsLoading.value
   ? 'Loading project details'
   : 'Reload project details');
 const gitBranchLabel = computed(() => {
-  if (isProjectDetailsLoading.value) {
+  if (isWaitingForProjectDetails.value) {
     return 'Loading branch';
   }
 
@@ -100,12 +100,8 @@ const copyGitHubUrl = () => {
 };
 
 const reloadProjectDetails = () => {
-  void loadProjectDetails();
+  void projectDetailsStore.loadProjectDetails(props.projectName);
 };
-
-onMounted(() => {
-  void loadProjectDetails();
-});
 </script>
 
 <template>

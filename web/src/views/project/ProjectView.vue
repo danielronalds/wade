@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import ProjectSidebar from '@/views/project/components/ProjectSidebar.vue';
 import ReviewTab from '@/views/project/tabs/review/ReviewTab.vue';
 import ScratchpadTerminal from '@/views/project/components/ScratchpadTerminal.vue';
@@ -8,6 +8,7 @@ import TerminalTab from '@/views/project/tabs/terminal/TerminalTab.vue';
 import ProjectTopbar from '@/views/project/components/ProjectTopbar.vue';
 import { useProjectEventHandlers } from '@/views/project/composables/useProjectEventHandlers';
 import { useProjectKeyboardShortcuts } from '@/views/project/composables/useProjectKeyboardShortcuts';
+import { useProjectDetailsStore } from '@/stores/useProjectDetailsStore';
 import type { ProjectScreenComponent, ReviewScreenComponent } from '@/types/projectScreens';
 import { ProjectTabs, projectTabs, type ProjectTab } from '@/types/projectTabs';
 import {
@@ -18,6 +19,8 @@ import {
 const props = defineProps<{
   projectName: string;
 }>();
+
+const projectDetailsStore = useProjectDetailsStore();
 
 const activeTab = ref<ProjectTab>(ProjectTabs.Terminal);
 const terminalTab = ref<ProjectScreenComponent | null>(null);
@@ -170,6 +173,10 @@ useProjectKeyboardShortcuts({
   switchToNextTerminal,
   toggleScratchpadTerminal,
   toggleTerminalZoom
+});
+
+onMounted(() => {
+  void projectDetailsStore.loadProjectDetails(props.projectName);
 });
 </script>
 

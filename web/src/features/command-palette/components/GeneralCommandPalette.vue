@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   closeProjectSession,
-  getProjectDetails,
   reloadConfig as requestReloadConfig
 } from '@/api/generated/wade';
 import { useFuzzyItems } from '@/composables/useFuzzyItems';
-import type { ProjectDetails } from '@/views/project/composables/useProjectDetails';
 import { useProjects } from '@/features/projects/composables/useProjects';
 import { useRecentProjects } from '@/features/projects/composables/useRecentProjects';
+import { useProjectDetailsStore } from '@/stores/useProjectDetailsStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { isReviewInProgressState, useReviewSessionState } from '@/views/project/tabs/review/composables/useReviewSessionState';
 import { dispatchCancelReviewEvent } from '@/views/project/tabs/review/events/cancelReview';
@@ -31,17 +30,19 @@ const route = useRoute();
 const router = useRouter();
 const { syncProjects } = useProjects();
 const { removeUnavailableRecentProjects } = useRecentProjects();
+const projectDetailsStore = useProjectDetailsStore();
 const { loadSettings } = useSettingsStore();
+
 const query = ref('');
-const projectDetails = ref<ProjectDetails | undefined>();
-const isProjectDetailsLoading = ref(false);
 const isClosingSession = ref(false);
 const closeSessionError = ref('');
-let detailsLoadRun = 0;
 
 const currentProjectName = computed(() => route.name === 'project'
   ? String(route.params.projectName ?? '')
   : '');
+const projectDetails = computed(() => projectDetailsStore.getProjectDetails(currentProjectName.value));
+const isProjectDetailsLoading = computed(() => projectDetailsStore.isProjectDetailsLoading(currentProjectName.value));
+const isWaitingForProjectDetails = computed(() => isProjectDetailsLoading.value && !projectDetails.value);
 const currentReviewState = useReviewSessionState(currentProjectName);
 const isReviewInProgress = computed(() => isReviewInProgressState(currentReviewState.value));
 
@@ -62,7 +63,7 @@ const unavailableCommandLabel = (fallback: string) => {
     return 'No project open';
   }
 
-  if (isProjectDetailsLoading.value) {
+  if (isWaitingForProjectDetails.value) {
     return 'Loading';
   }
 
@@ -323,7 +324,7 @@ const paletteSummary = computed(() => {
     return 'No project open';
   }
 
-  return isProjectDetailsLoading.value ? `Loading ${currentProjectName.value}` : currentProjectName.value;
+  return isWaitingForProjectDetails.value ? `Loading ${currentProjectName.value}` : currentProjectName.value;
 });
 
 const paletteResults = computed<PaletteResult[]>(() => matchingCommands.value.map((match) => ({
@@ -339,43 +340,6 @@ const notice = computed<PaletteNotice | undefined>(() => closeSessionError.value
     messages: [closeSessionError.value]
   });
 
-const loadCurrentProjectDetails = async () => {
-  detailsLoadRun += 1;
-  const run = detailsLoadRun;
-
-  if (currentProjectName.value === '') {
-    projectDetails.value = undefined;
-    isProjectDetailsLoading.value = false;
-    return;
-  }
-
-  isProjectDetailsLoading.value = true;
-
-  try {
-    const details = await getProjectDetails({ project: currentProjectName.value });
-    if (detailsLoadRun !== run) {
-      return;
-    }
-
-    projectDetails.value = details;
-  } catch {
-    if (detailsLoadRun === run) {
-      projectDetails.value = undefined;
-    }
-  } finally {
-    if (detailsLoadRun === run) {
-      isProjectDetailsLoading.value = false;
-    }
-  }
-};
-
-onMounted(() => {
-  void loadCurrentProjectDetails();
-});
-
-onBeforeUnmount(() => {
-  detailsLoadRun += 1;
-});
 </script>
 
 <template>
