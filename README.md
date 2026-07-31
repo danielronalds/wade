@@ -178,11 +178,9 @@ The frontend generates a fetch-based TypeScript client from that spec at
 npm --prefix web run gen:api
 ```
 
-The generated JSON spec is served by the app at `/api/openapi.json` in dev
-mode. Swagger UI renders the docs at `/api/docs` in dev mode. Set
-`WADE_SWAGGER_ENABLED=true` to serve both from a non-dev server. WebSocket,
-static asset, and page routes are intentionally excluded from the client API
-surface.
+API docs are available at `/api/docs`, with the OpenAPI JSON served at
+`/api/openapi.json`. WebSocket, static asset, and page routes are intentionally
+excluded from the client API surface.
 
 Use this before committing API changes to check the generated files are current:
 

@@ -97,56 +97,6 @@ func TestLoadUsesAddressEnvironmentOverride(t *testing.T) {
 	}
 }
 
-func TestLoadDisablesSwaggerByDefault(t *testing.T) {
-	configuration := loadConfigurationWithSwaggerEnvironment(t, "", "")
-
-	if configuration.SwaggerEnabled {
-		t.Fatal("SwaggerEnabled = true, want false")
-	}
-}
-
-func TestLoadEnablesSwaggerInDevMode(t *testing.T) {
-	configuration := loadConfigurationWithSwaggerEnvironment(t, "1", "")
-
-	if !configuration.SwaggerEnabled {
-		t.Fatal("SwaggerEnabled = false, want true")
-	}
-}
-
-func TestLoadEnablesSwaggerWhenEnvironmentIsTrue(t *testing.T) {
-	configuration := loadConfigurationWithSwaggerEnvironment(t, "", "true")
-
-	if !configuration.SwaggerEnabled {
-		t.Fatal("SwaggerEnabled = false, want true")
-	}
-}
-
-func loadConfigurationWithSwaggerEnvironment(t *testing.T, devMode string, swaggerEnabled string) Config {
-	t.Helper()
-
-	homeDir := t.TempDir()
-	t.Setenv("HOME", homeDir)
-	t.Setenv("SHELL", "/bin/sh")
-	t.Setenv(addressEnv, "")
-	t.Setenv(devModeEnv, devMode)
-	t.Setenv(swaggerEnabledEnv, swaggerEnabled)
-
-	path := filepath.Join(homeDir, ".config", "wade", "config.json")
-	settings := repositories.Settings{
-		ProjectDirectories: []string{},
-		Shell:              "",
-		Agents:             []repositories.Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
-	}
-	writeSettings(t, path, settings)
-
-	configuration, err := Load()
-	if err != nil {
-		t.Fatalf("Load() error = %v, want nil", err)
-	}
-
-	return configuration
-}
-
 func writeExecutable(t *testing.T, directory string, name string) string {
 	t.Helper()
 

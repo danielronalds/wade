@@ -8,7 +8,7 @@ import (
 	"wade/internal/controllers"
 )
 
-func (s *Server) registerRoutes(controllers controllers.Controllers, options Options) {
+func (s *Server) registerRoutes(controllers controllers.Controllers) {
 	s.Mux.HandleFunc("GET /ws", controllers.Terminals.Connect)
 	s.Mux.HandleFunc("POST /api/terminal/reload", controllers.Terminals.Reload)
 	s.Mux.HandleFunc("GET /api/sessions", controllers.Sessions.ListSessions)
@@ -32,22 +32,10 @@ func (s *Server) registerRoutes(controllers controllers.Controllers, options Opt
 	s.Mux.HandleFunc("GET /api/review", controllers.Review.GetReviewWindowData)
 	s.Mux.HandleFunc("POST /api/review/file", controllers.Review.GetReviewFileContents)
 
-	registerSwaggerRoutes(s.Mux, controllers.Docs, options.SwaggerEnabled)
+	s.Mux.HandleFunc("GET /api/openapi.json", controllers.Docs.OpenAPISpec)
+	s.Mux.HandleFunc("GET /api/docs/", controllers.Docs.OpenAPIDocs)
 
 	s.Mux.Handle("GET /static/", http.FileServer(http.FS(controllers.Page.StaticFiles())))
 	s.Mux.HandleFunc("GET /service-worker.js", controllers.Page.GetServiceWorker)
 	s.Mux.HandleFunc("GET /", controllers.Page.GetApplicationPage)
-}
-
-func registerSwaggerRoutes(mux *http.ServeMux, docs controllers.Docs, swaggerEnabled bool) {
-	if !swaggerEnabled {
-		mux.HandleFunc("GET /api/openapi.json", http.NotFound)
-		mux.HandleFunc("GET /api/docs", http.NotFound)
-		mux.HandleFunc("GET /api/docs/", http.NotFound)
-		return
-	}
-
-	mux.HandleFunc("GET /api/openapi.json", docs.OpenAPISpec)
-	mux.HandleFunc("GET /api/docs", docs.OpenAPIDocs)
-	mux.HandleFunc("GET /api/docs/", docs.OpenAPIDocs)
 }

@@ -13,12 +13,11 @@ import (
 )
 
 const (
-	addressEnv        = "WADE_ADDR"
-	devModeEnv        = "WADE_DEV"
-	swaggerEnabledEnv = "WADE_SWAGGER_ENABLED"
-	defaultPort       = "8765"
-	devHost           = "editor-dev.localhost"
-	runHost           = "editor.localhost"
+	addressEnv  = "WADE_ADDR"
+	devModeEnv  = "WADE_DEV"
+	defaultPort = "8765"
+	devHost     = "editor-dev.localhost"
+	runHost     = "editor.localhost"
 )
 
 // Config is the resolved runtime configuration used by the server.
@@ -29,7 +28,6 @@ type Config struct {
 	Agents                             []repositories.Agent
 	CopyIgnoredFilesOnWorktreeCreation bool
 	WorktreeCopyExcludes               []string
-	SwaggerEnabled                     bool
 }
 
 // Load resolves runtime configuration from settings and environment variables.
@@ -73,7 +71,6 @@ func Load() (Config, error) {
 		Agents:                             agents,
 		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
 		WorktreeCopyExcludes:               worktreeCopyExcludes,
-		SwaggerEnabled:                     swaggerEnabled(devMode, os.Getenv(swaggerEnabledEnv)),
 	}, nil
 }
 
@@ -94,14 +91,6 @@ func isEnabled(value string) bool {
 	default:
 		return true
 	}
-}
-
-func swaggerEnabled(devMode string, swaggerEnabled string) bool {
-	if isEnabled(devMode) {
-		return true
-	}
-
-	return strings.EqualFold(strings.TrimSpace(swaggerEnabled), "true")
 }
 
 func resolveRuntimeShell(configuredShell string, environmentShell string) (string, error) {

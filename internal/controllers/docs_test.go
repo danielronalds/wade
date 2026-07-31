@@ -60,22 +60,19 @@ func TestOpenAPISpecIncludesOperationIDs(t *testing.T) {
 	}
 }
 
-func TestOpenAPIDocsHandlerRedirectsDocsRoots(t *testing.T) {
+func TestOpenAPIDocsHandlerRedirectsDocsRoot(t *testing.T) {
 	handler := newOpenAPIDocsHandler()
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/api/docs/", nil)
 
-	for _, path := range []string{"/api/docs", "/api/docs/"} {
-		recorder := httptest.NewRecorder()
-		request := httptest.NewRequest(http.MethodGet, path, nil)
+	handler(recorder, request)
 
-		handler(recorder, request)
+	if recorder.Code != http.StatusFound {
+		t.Fatalf("expected status %d, got %d", http.StatusFound, recorder.Code)
+	}
 
-		if recorder.Code != http.StatusFound {
-			t.Fatalf("expected %s to return %d, got %d", path, http.StatusFound, recorder.Code)
-		}
-
-		if location := recorder.Header().Get("Location"); location != "/api/docs/index.html" {
-			t.Fatalf("expected %s to redirect to docs index, got %q", path, location)
-		}
+	if location := recorder.Header().Get("Location"); location != "/api/docs/index.html" {
+		t.Fatalf("expected redirect to docs index, got %q", location)
 	}
 }
 

@@ -10,8 +10,8 @@ import (
 	"wade/internal/controllers"
 )
 
-func TestSwaggerRoutesAreServedWhenEnabled(t *testing.T) {
-	httpServer := New(testControllers(), Options{SwaggerEnabled: true})
+func TestSwaggerRoutesAreAlwaysServed(t *testing.T) {
+	httpServer := New(testControllers())
 
 	openAPIResponse := serveRequest(httpServer, "/api/openapi.json")
 	if openAPIResponse.Code != http.StatusOK {
@@ -22,29 +22,23 @@ func TestSwaggerRoutesAreServedWhenEnabled(t *testing.T) {
 		t.Fatal("expected OpenAPI spec response")
 	}
 
+	docsRootResponse := serveRequest(httpServer, "/api/docs")
+	if docsRootResponse.Code != http.StatusTemporaryRedirect {
+		t.Fatalf("expected docs root status %d, got %d", http.StatusTemporaryRedirect, docsRootResponse.Code)
+	}
+
+	if location := docsRootResponse.Header().Get("Location"); location != "/api/docs/" {
+		t.Fatalf("expected docs root to redirect to /api/docs/, got %q", location)
+	}
+
 	docsResponse := serveRequest(httpServer, "/api/docs/index.html")
 	if docsResponse.Code != http.StatusOK {
 		t.Fatalf("expected Swagger UI status %d, got %d", http.StatusOK, docsResponse.Code)
 	}
 }
 
-func TestSwaggerRoutesReturnNotFoundWhenDisabled(t *testing.T) {
-	httpServer := New(testControllers(), Options{SwaggerEnabled: false})
-
-	for _, path := range []string{"/api/openapi.json", "/api/docs", "/api/docs/", "/api/docs/index.html"} {
-		response := serveRequest(httpServer, path)
-		if response.Code != http.StatusNotFound {
-			t.Fatalf("expected %s status %d, got %d", path, http.StatusNotFound, response.Code)
-		}
-
-		if strings.Contains(response.Body.String(), "application page") {
-			t.Fatalf("expected %s to avoid serving the application page", path)
-		}
-	}
-}
-
 func TestServiceWorkerIsServedAtApplicationRoot(t *testing.T) {
-	httpServer := New(testControllers(), Options{})
+	httpServer := New(testControllers())
 
 	response := serveRequest(httpServer, "/service-worker.js")
 	if response.Code != http.StatusOK {

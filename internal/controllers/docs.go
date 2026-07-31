@@ -41,7 +41,7 @@ func newOpenAPIDocsHandler() http.HandlerFunc {
 	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/docs" || r.URL.Path == "/api/docs/" {
+		if r.URL.Path == "/api/docs/" {
 			http.Redirect(w, r, "/api/docs/index.html", http.StatusFound)
 			return
 		}
