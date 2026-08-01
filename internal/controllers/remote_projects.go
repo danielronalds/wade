@@ -6,8 +6,8 @@ import (
 	"context"
 	"net/http"
 
-	projectservice "wade/internal/services/projects"
 	"wade/internal/services/remoteprojects"
+	"wade/internal/services/workspaces"
 )
 
 type remoteProjectService interface {
@@ -16,8 +16,8 @@ type remoteProjectService interface {
 }
 
 type RemoteProjects struct {
-	projects projectservice.Service
-	remote   remoteProjectService
+	workspaces workspaces.Service
+	remote     remoteProjectService
 }
 
 type remoteProjectsResponse struct {
@@ -33,8 +33,8 @@ type cloneRemoteProjectResponse struct {
 	Project remoteprojects.ClonedProject `json:"project"`
 } // @name handlers.cloneRemoteProjectResponse
 
-func NewRemoteProjects(projects projectservice.Service, remote remoteProjectService) RemoteProjects {
-	return RemoteProjects{projects: projects, remote: remote}
+func NewRemoteProjects(workspaceService workspaces.Service, remote remoteProjectService) RemoteProjects {
+	return RemoteProjects{workspaces: workspaceService, remote: remote}
 }
 
 // @Summary List remote projects
@@ -46,13 +46,13 @@ func NewRemoteProjects(projects projectservice.Service, remote remoteProjectServ
 // @Failure 500 {object} errorResponse
 // @Router /api/remote-projects [get]
 func (h RemoteProjects) List(w http.ResponseWriter, r *http.Request) {
-	localProjectNames, err := h.projects.List()
+	workspaceSummaries, err := h.workspaces.List()
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "unable to list local projects")
 		return
 	}
 
-	projects, err := h.remote.List(r.Context(), localProjectNames)
+	projects, err := h.remote.List(r.Context(), workspaceIDs(workspaceSummaries))
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
@@ -78,7 +78,7 @@ func (h RemoteProjects) Clone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	localProjectNames, err := h.projects.List()
+	workspaceSummaries, err := h.workspaces.List()
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "unable to list local projects")
 		return
@@ -86,9 +86,9 @@ func (h RemoteProjects) Clone(w http.ResponseWriter, r *http.Request) {
 
 	project, err := h.remote.Clone(r.Context(), remoteprojects.CloneRequest{
 		NameWithOwner:      request.NameWithOwner,
-		ProjectDirectories: h.projects.Directories(),
+		ProjectDirectories: h.workspaces.Directories(),
 		DirectoryIndex:     request.DirectoryIndex,
-		LocalProjectNames:  localProjectNames,
+		LocalProjectNames:  workspaceIDs(workspaceSummaries),
 	})
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
@@ -96,4 +96,13 @@ func (h RemoteProjects) Clone(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, cloneRemoteProjectResponse{Project: project})
+}
+
+func workspaceIDs(workspaceSummaries []workspaces.WorkspaceSummary) []string {
+	ids := make([]string, 0, len(workspaceSummaries))
+	for _, workspace := range workspaceSummaries {
+		ids = append(ids, workspace.ID)
+	}
+
+	return ids
 }

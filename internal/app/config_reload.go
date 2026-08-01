@@ -4,13 +4,13 @@ package app
 
 import (
 	"wade/internal/services/config"
-	projectservice "wade/internal/services/projects"
 	"wade/internal/services/terminalsessions"
+	"wade/internal/services/workspaces"
 )
 
 type configReloader struct {
-	projects  projectservice.Service
-	terminals *terminalsessions.Service
+	workspaces workspaces.Service
+	terminals  *terminalsessions.Service
 }
 
 func (r configReloader) ReloadConfig() error {
@@ -19,7 +19,7 @@ func (r configReloader) ReloadConfig() error {
 		return err
 	}
 
-	r.projects.Reload(configuration.ProjectDirs)
+	r.workspaces.Reload(configuration.ProjectDirs)
 	r.terminals.Configure(configuration.Shell, terminalAgents(configuration.Agents))
 	return nil
 }

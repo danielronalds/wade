@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	projectservice "wade/internal/services/projects"
+	"wade/internal/services/workspaces"
 	"wade/internal/services/worktrees"
 )
 
@@ -18,13 +18,13 @@ type worktreeSessionCloser interface {
 }
 
 type Worktrees struct {
-	projects  projectservice.Service
-	worktrees worktrees.Service
-	terminals worktreeSessionCloser
+	workspaces workspaces.Service
+	worktrees  worktrees.Service
+	terminals  worktreeSessionCloser
 }
 
-func NewWorktrees(projects projectservice.Service, worktrees worktrees.Service, terminals worktreeSessionCloser) Worktrees {
-	return Worktrees{projects: projects, worktrees: worktrees, terminals: terminals}
+func NewWorktrees(workspaceService workspaces.Service, worktreeService worktrees.Service, terminals worktreeSessionCloser) Worktrees {
+	return Worktrees{workspaces: workspaceService, worktrees: worktreeService, terminals: terminals}
 }
 
 type worktreesResponse struct {
@@ -184,7 +184,7 @@ func (h Worktrees) resolveProjectPath(w http.ResponseWriter, projectName string)
 		return "", false
 	}
 
-	projectPath, err := h.projects.Path(projectName)
+	projectPath, err := h.workspaces.Path(projectName)
 	if err != nil {
 		writeJSONError(w, http.StatusNotFound, "project not found")
 		return "", false

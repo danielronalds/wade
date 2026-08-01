@@ -4,9 +4,9 @@ package sessions
 
 import "strings"
 
-type ProjectService interface {
-	Path(name string) (string, error)
-	NamesForDirectories(directories []string) []string
+type WorkspaceService interface {
+	Path(workspaceID string) (string, error)
+	IDsForDirectories(directories []string) []string
 }
 
 type TerminalSessionService interface {
@@ -16,16 +16,16 @@ type TerminalSessionService interface {
 }
 
 type Service struct {
-	projects  ProjectService
-	terminals TerminalSessionService
+	workspaces WorkspaceService
+	terminals  TerminalSessionService
 }
 
-func NewService(projects ProjectService, terminals TerminalSessionService) Service {
-	return Service{projects: projects, terminals: terminals}
+func NewService(workspaces WorkspaceService, terminals TerminalSessionService) Service {
+	return Service{workspaces: workspaces, terminals: terminals}
 }
 
 func (s Service) List() []string {
-	return s.projects.NamesForDirectories(s.terminals.ActiveDirectories())
+	return s.workspaces.IDsForDirectories(s.terminals.ActiveDirectories())
 }
 
 func (s Service) Close(sessionName string) error {
@@ -33,7 +33,7 @@ func (s Service) Close(sessionName string) error {
 		return err
 	}
 
-	projectPath, err := s.projects.Path(strings.TrimSpace(sessionName))
+	projectPath, err := s.workspaces.Path(strings.TrimSpace(sessionName))
 	if err != nil {
 		return ErrSessionNotFound
 	}
@@ -50,7 +50,7 @@ func (s Service) SendToAgent(sessionName string, text string) error {
 		return err
 	}
 
-	projectPath, err := s.projects.Path(strings.TrimSpace(sessionName))
+	projectPath, err := s.workspaces.Path(strings.TrimSpace(sessionName))
 	if err != nil {
 		return ErrSessionNotFound
 	}

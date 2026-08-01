@@ -10,11 +10,11 @@ import (
 	"wade/internal/repositories"
 	"wade/internal/server"
 	"wade/internal/services/config"
-	projectservice "wade/internal/services/projects"
 	"wade/internal/services/remoteprojects"
 	"wade/internal/services/review"
 	"wade/internal/services/sessions"
 	"wade/internal/services/terminalsessions"
+	"wade/internal/services/workspaces"
 	"wade/internal/services/worktrees"
 )
 
@@ -24,31 +24,31 @@ type Application struct {
 }
 
 func New(configuration config.Config, staticFiles fs.FS) *Application {
-	projectRepository := repositories.NewStore(configuration.ProjectDirs)
+	workspaceRepository := repositories.NewWorkspaceStore(configuration.ProjectDirs)
 	gitRepository := repositories.NewGitRepository()
 	gitHubRepository := repositories.NewGitHubRepository(repositories.RunCommand)
 	fileRepository := repositories.NewFileRepository()
 
-	projectService := projectservice.NewService(projectRepository, gitRepository, gitHubRepository)
+	workspaceService := workspaces.NewService(workspaceRepository, gitRepository, gitHubRepository)
 	remoteProjectService := remoteprojects.NewService(gitHubRepository, fileRepository)
 	reviewService := review.NewService(gitRepository, gitHubRepository, fileRepository)
 	terminalSessionService := terminalsessions.NewService(configuration.Shell, configuration.Address, terminalAgents(configuration.Agents))
-	sessionService := sessions.NewService(projectService, terminalSessionService)
+	sessionService := sessions.NewService(workspaceService, terminalSessionService)
 	worktreeService := worktrees.NewService(configuration, gitRepository, fileRepository)
 
 	runtimeConfigReloader := configReloader{
-		projects:  projectService,
-		terminals: terminalSessionService,
+		workspaces: workspaceService,
+		terminals:  terminalSessionService,
 	}
 
 	controllerSet := controllers.Controllers{
 		Config:         controllers.NewConfig(runtimeConfigReloader),
-		Projects:       controllers.NewProjects(projectService),
-		RemoteProjects: controllers.NewRemoteProjects(projectService, remoteProjectService),
+		Projects:       controllers.NewProjects(workspaceService),
+		RemoteProjects: controllers.NewRemoteProjects(workspaceService, remoteProjectService),
 		Sessions:       controllers.NewSessions(sessionService),
-		Terminals:      controllers.NewTerminals(projectService, terminalSessionService, server.AllowSameOrigin),
-		Worktrees:      controllers.NewWorktrees(projectService, worktreeService, terminalSessionService),
-		Review:         controllers.NewReview(projectService, reviewService),
+		Terminals:      controllers.NewTerminals(workspaceService, terminalSessionService, server.AllowSameOrigin),
+		Worktrees:      controllers.NewWorktrees(workspaceService, worktreeService, terminalSessionService),
+		Review:         controllers.NewReview(workspaceService, reviewService),
 		Docs:           controllers.NewDocs(),
 		Page:           controllers.NewPage(staticFiles),
 	}

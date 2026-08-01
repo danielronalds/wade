@@ -5,11 +5,11 @@ package controllers
 import (
 	"net/http"
 
-	projectservice "wade/internal/services/projects"
+	"wade/internal/services/workspaces"
 )
 
 type Projects struct {
-	projects projectservice.Service
+	workspaces workspaces.Service
 }
 
 type projectResponse struct {
@@ -24,8 +24,8 @@ type projectsResponse struct {
 	Projects []string `json:"projects"`
 } // @name handlers.projectsResponse
 
-func NewProjects(projects projectservice.Service) Projects {
-	return Projects{projects: projects}
+func NewProjects(workspaceService workspaces.Service) Projects {
+	return Projects{workspaces: workspaceService}
 }
 
 // @Summary Get project details
@@ -37,19 +37,29 @@ func NewProjects(projects projectservice.Service) Projects {
 // @Failure 404 {object} errorResponse
 // @Router /api/project [get]
 func (h Projects) GetProjectDetails(w http.ResponseWriter, r *http.Request) {
-	projectName := r.URL.Query().Get("project")
-	metadata, err := h.projects.Details(r.Context(), projectName)
+	workspaceID := r.URL.Query().Get("project")
+	workspace, err := h.workspaces.Get(r.Context(), workspaceID)
 	if err != nil {
 		writeJSONError(w, http.StatusNotFound, "project not found")
 		return
 	}
 
+	var branchName string
+	if workspace.Branch != nil {
+		branchName = workspace.Branch.Name
+	}
+
+	var issueURL string
+	if workspace.Links.Issue != nil {
+		issueURL = workspace.Links.Issue.URL
+	}
+
 	writeJSON(w, http.StatusOK, projectResponse{
-		Name:            projectName,
-		GitBranch:       metadata.GitBranch,
-		LinearTicketURL: metadata.LinearTicketURL,
-		PullRequestURL:  metadata.PullRequestURL,
-		GitHubURL:       metadata.GitHubURL,
+		Name:            workspace.Name,
+		GitBranch:       branchName,
+		LinearTicketURL: issueURL,
+		PullRequestURL:  referencedString(workspace.Links.PullRequest),
+		GitHubURL:       referencedString(workspace.Links.Repository),
 	})
 }
 
@@ -61,11 +71,19 @@ func (h Projects) GetProjectDetails(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} errorResponse
 // @Router /api/projects [get]
 func (h Projects) ListProjects(w http.ResponseWriter, r *http.Request) {
-	projectNames, err := h.projects.List()
+	workspaceSummaries, err := h.workspaces.List()
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "unable to list projects")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, projectsResponse{Projects: projectNames})
+	writeJSON(w, http.StatusOK, projectsResponse{Projects: workspaceIDs(workspaceSummaries)})
+}
+
+func referencedString(reference *string) string {
+	if reference == nil {
+		return ""
+	}
+
+	return *reference
 }

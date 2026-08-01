@@ -10,16 +10,16 @@ import (
 	"wade/internal/services/sessions"
 )
 
-type sessionProjectsStub struct {
+type sessionWorkspacesStub struct {
 	path string
 	err  error
 }
 
-func (s sessionProjectsStub) Path(string) (string, error) {
+func (s sessionWorkspacesStub) Path(string) (string, error) {
 	return s.path, s.err
 }
 
-func (sessionProjectsStub) NamesForDirectories([]string) []string {
+func (sessionWorkspacesStub) IDsForDirectories([]string) []string {
 	return nil
 }
 
@@ -86,7 +86,7 @@ func TestSendToAgentResponses(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			service := sessions.NewService(
-				sessionProjectsStub{path: "/projects/wade", err: test.projectErr},
+				sessionWorkspacesStub{path: "/projects/wade", err: test.projectErr},
 				sessionTerminalsStub{
 					activeAgentSessions: test.activeAgentSessions,
 					writeErr:            test.writeErr,

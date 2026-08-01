@@ -6,22 +6,22 @@ import (
 	"log"
 	"net/http"
 
-	projectservice "wade/internal/services/projects"
 	"wade/internal/services/terminalsessions"
+	"wade/internal/services/workspaces"
 
 	"github.com/gorilla/websocket"
 )
 
 type Terminals struct {
-	projects  projectservice.Service
-	terminals *terminalsessions.Service
-	upgrader  websocket.Upgrader
+	workspaces workspaces.Service
+	terminals  *terminalsessions.Service
+	upgrader   websocket.Upgrader
 }
 
-func NewTerminals(projects projectservice.Service, terminals *terminalsessions.Service, checkOrigin func(r *http.Request) bool) Terminals {
+func NewTerminals(workspaceService workspaces.Service, terminals *terminalsessions.Service, checkOrigin func(r *http.Request) bool) Terminals {
 	return Terminals{
-		projects:  projects,
-		terminals: terminals,
+		workspaces: workspaceService,
+		terminals:  terminals,
 		upgrader: websocket.Upgrader{
 			CheckOrigin: checkOrigin,
 		},
@@ -39,7 +39,7 @@ func NewTerminals(projects projectservice.Service, terminals *terminalsessions.S
 // @Failure 404 {object} errorResponse
 // @Router /api/terminal/reload [post]
 func (h Terminals) Reload(w http.ResponseWriter, r *http.Request) {
-	projectPath, err := h.projects.Path(r.URL.Query().Get("project"))
+	projectPath, err := h.workspaces.Path(r.URL.Query().Get("project"))
 	if err != nil {
 		WriteJSONError(w, http.StatusNotFound, "project not found")
 		return
@@ -62,7 +62,7 @@ func (h Terminals) Reload(w http.ResponseWriter, r *http.Request) {
 // @Router /ws [get]
 func (h Terminals) Connect(w http.ResponseWriter, r *http.Request) {
 	projectName := r.URL.Query().Get("project")
-	projectPath, err := h.projects.Path(projectName)
+	projectPath, err := h.workspaces.Path(projectName)
 	if err != nil {
 		http.Error(w, "project not found", http.StatusNotFound)
 		return

@@ -8,14 +8,14 @@ import (
 	"net/http"
 	"sync"
 
-	projectservice "wade/internal/services/projects"
 	"wade/internal/services/review"
+	"wade/internal/services/workspaces"
 )
 
 type Review struct {
-	projects projectservice.Service
-	review   review.Service
-	cache    *reviewWindowCache
+	workspaces workspaces.Service
+	review     review.Service
+	cache      *reviewWindowCache
 }
 
 type reviewWindowCache struct {
@@ -28,10 +28,10 @@ type reviewFileRequest struct {
 	Scope  review.Scope `json:"scope"`
 } // @name handlers.reviewFileRequest
 
-func NewReview(projects projectservice.Service, reviewService review.Service) Review {
+func NewReview(workspaceService workspaces.Service, reviewService review.Service) Review {
 	return Review{
-		projects: projects,
-		review:   reviewService,
+		workspaces: workspaceService,
+		review:     reviewService,
 		cache: &reviewWindowCache{
 			items: make(map[string]review.WindowData),
 		},
@@ -48,7 +48,7 @@ func NewReview(projects projectservice.Service, reviewService review.Service) Re
 // @Failure 404 {object} errorResponse
 // @Router /api/review [get]
 func (h Review) GetReviewWindowData(w http.ResponseWriter, r *http.Request) {
-	projectPath, ok := resolveProjectPath(w, r, h.projects)
+	projectPath, ok := resolveProjectPath(w, r, h.workspaces)
 	if !ok {
 		return
 	}
@@ -75,7 +75,7 @@ func (h Review) GetReviewWindowData(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} errorResponse
 // @Router /api/review/file [post]
 func (h Review) GetReviewFileContents(w http.ResponseWriter, r *http.Request) {
-	projectPath, ok := resolveProjectPath(w, r, h.projects)
+	projectPath, ok := resolveProjectPath(w, r, h.workspaces)
 	if !ok {
 		return
 	}
@@ -133,8 +133,8 @@ func (c *reviewWindowCache) set(projectPath string, data review.WindowData) {
 	c.items[projectPath] = data
 }
 
-func resolveProjectPath(w http.ResponseWriter, r *http.Request, projects projectservice.Service) (string, bool) {
-	projectPath, err := projects.Path(r.URL.Query().Get("project"))
+func resolveProjectPath(w http.ResponseWriter, r *http.Request, workspaceService workspaces.Service) (string, bool) {
+	projectPath, err := workspaceService.Path(r.URL.Query().Get("project"))
 	if err != nil {
 		writeJSONError(w, http.StatusNotFound, "project not found")
 		return "", false

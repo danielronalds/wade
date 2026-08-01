@@ -6,16 +6,16 @@ import (
 	"testing"
 )
 
-type projectServiceStub struct {
+type workspaceServiceStub struct {
 	path    string
 	pathErr error
 }
 
-func (s projectServiceStub) Path(string) (string, error) {
+func (s workspaceServiceStub) Path(string) (string, error) {
 	return s.path, s.pathErr
 }
 
-func (projectServiceStub) NamesForDirectories([]string) []string {
+func (workspaceServiceStub) IDsForDirectories([]string) []string {
 	return nil
 }
 
@@ -42,7 +42,7 @@ func (s *terminalSessionServiceStub) WriteToActiveAgent(directory string, data [
 
 func TestSendToAgentWritesBracketedPasteWithoutTrimmingText(t *testing.T) {
 	terminals := &terminalSessionServiceStub{activeAgentSessions: 1}
-	service := NewService(projectServiceStub{path: "/projects/wade"}, terminals)
+	service := NewService(workspaceServiceStub{path: "/projects/wade"}, terminals)
 
 	err := service.SendToAgent("wade", "  @main.go:10\n ")
 	if err != nil {
@@ -77,7 +77,7 @@ func TestSendToAgentReturnsAgentSessionErrors(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			terminals := &terminalSessionServiceStub{activeAgentSessions: test.activeAgentSessions}
-			service := NewService(projectServiceStub{path: "/projects/wade"}, terminals)
+			service := NewService(workspaceServiceStub{path: "/projects/wade"}, terminals)
 
 			err := service.SendToAgent("wade", "reference")
 			if !errors.Is(err, test.wantErr) {
@@ -89,7 +89,7 @@ func TestSendToAgentReturnsAgentSessionErrors(t *testing.T) {
 
 func TestSendToAgentReturnsSessionNotFoundForUnknownProject(t *testing.T) {
 	terminals := &terminalSessionServiceStub{activeAgentSessions: 1}
-	service := NewService(projectServiceStub{pathErr: errors.New("project not found")}, terminals)
+	service := NewService(workspaceServiceStub{pathErr: errors.New("project not found")}, terminals)
 
 	err := service.SendToAgent("unknown", "reference")
 	if !errors.Is(err, ErrSessionNotFound) {
@@ -100,7 +100,7 @@ func TestSendToAgentReturnsSessionNotFoundForUnknownProject(t *testing.T) {
 func TestSendToAgentReturnsTerminalWriteError(t *testing.T) {
 	writeErr := errors.New("write failed")
 	terminals := &terminalSessionServiceStub{activeAgentSessions: 1, writeErr: writeErr}
-	service := NewService(projectServiceStub{path: "/projects/wade"}, terminals)
+	service := NewService(workspaceServiceStub{path: "/projects/wade"}, terminals)
 
 	err := service.SendToAgent("wade", "reference")
 	if !errors.Is(err, writeErr) {
