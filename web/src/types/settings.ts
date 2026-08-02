@@ -7,7 +7,7 @@ export type Agent = {
 };
 
 export type Settings = {
-  projectDirectories: string[];
+  workspaceDirectories: string[];
   shell: string;
   agents: Agent[];
   copyIgnoredFilesOnWorktreeCreation: boolean;
@@ -22,7 +22,7 @@ export const defaultAgents: Agent[] = [
 ];
 
 export const createEmptySettings = (): Settings => ({
-  projectDirectories: [],
+  workspaceDirectories: [],
   shell: '',
   agents: defaultAgents.map((agent) => ({ ...agent })),
   copyIgnoredFilesOnWorktreeCreation: false,
@@ -34,7 +34,7 @@ export const createEmptySettings = (): Settings => ({
 export const cloneAgents = (agents: readonly Agent[]): Agent[] => agents.map((agent) => ({ ...agent }));
 
 export const cloneSettings = (settings: Settings): Settings => ({
-  projectDirectories: [...settings.projectDirectories],
+  workspaceDirectories: [...settings.workspaceDirectories],
   shell: settings.shell,
   agents: cloneAgents(settings.agents),
   copyIgnoredFilesOnWorktreeCreation: settings.copyIgnoredFilesOnWorktreeCreation,
@@ -43,7 +43,7 @@ export const cloneSettings = (settings: Settings): Settings => ({
   themeAccentColor: settings.themeAccentColor
 });
 
-export const normaliseProjectDirectories = (directories: readonly string[]) => directories.map((directory) => directory.trim());
+export const normaliseWorkspaceDirectories = (directories: readonly string[]) => directories.map((directory) => directory.trim());
 
 export const normaliseShell = (shell: string) => shell.trim();
 
@@ -58,7 +58,7 @@ export const normaliseWorktreeCopyExcludes = (excludes: readonly string[]) => ex
   .filter((exclude) => exclude !== '');
 
 export const normaliseSettings = (settings: Settings): Settings => ({
-  projectDirectories: normaliseProjectDirectories(settings.projectDirectories),
+  workspaceDirectories: normaliseWorkspaceDirectories(settings.workspaceDirectories),
   shell: normaliseShell(settings.shell),
   agents: normaliseAgents(settings.agents),
   copyIgnoredFilesOnWorktreeCreation: settings.copyIgnoredFilesOnWorktreeCreation,
@@ -69,7 +69,7 @@ export const normaliseSettings = (settings: Settings): Settings => ({
 
 export const isValidShell = (shell: string) => shell.trim().split(/\s+/).filter(Boolean).length <= 1;
 
-export const isValidProjectDirectory = (directory: string) => {
+export const isValidWorkspaceDirectory = (directory: string) => {
   const trimmedDirectory = directory.trim();
 
   return trimmedDirectory === '~'

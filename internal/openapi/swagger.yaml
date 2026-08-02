@@ -49,14 +49,14 @@ definitions:
         type: boolean
       openWorktreesInNewTabs:
         type: boolean
-      projectDirectories:
-        items:
-          type: string
-        type: array
       shell:
         type: string
       themeAccentColor:
         type: string
+      workspaceDirectories:
+        items:
+          type: string
+        type: array
       worktreeCopyExcludes:
         items:
           type: string
@@ -65,9 +65,9 @@ definitions:
     - agents
     - copyIgnoredFilesOnWorktreeCreation
     - openWorktreesInNewTabs
-    - projectDirectories
     - shell
     - themeAccentColor
+    - workspaceDirectories
     - worktreeCopyExcludes
     type: object
   handlers.createWorktreeRequest:
@@ -298,14 +298,18 @@ definitions:
   review.Scope:
     enum:
     - pull-request
-    - git-diff
+    - working-tree
     - last-commit
+    - current
+    - git-diff
     - all-files
     type: string
     x-enum-varnames:
     - ScopePullRequest
-    - ScopeGitDiff
+    - ScopeWorkingTree
     - ScopeLastCommit
+    - ScopeCurrent
+    - ScopeGitDiff
     - ScopeAllFiles
   review.WindowData:
     properties:
@@ -425,8 +429,10 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.configPayload'
         "400":
           description: Bad Request
           schema:
@@ -444,8 +450,10 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.configPayload'
         "400":
           description: Bad Request
           schema:

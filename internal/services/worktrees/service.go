@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"wade/internal/services/config"
 	"wade/internal/services/gitrepositories"
@@ -38,17 +39,22 @@ type workspaceRepository interface {
 	Resolve(workspaceID string) (string, bool, error)
 }
 
-type terminalSessionCloser interface {
-	CloseSessionsForDirectory(directory string) int
+type terminalService interface {
+	CloseTerminalsForDirectory(directory string) int
 }
 
 type Service struct {
+	git        gitRepository
+	files      fileRepository
+	workspaces workspaceRepository
+	terminals  terminalService
+	state      *serviceState
+}
+
+type serviceState struct {
+	mu                                 sync.RWMutex
 	copyIgnoredFilesOnWorktreeCreation bool
 	worktreeCopyExcludes               []string
-	git                                gitRepository
-	files                              fileRepository
-	workspaces                         workspaceRepository
-	terminals                          terminalSessionCloser
 }
 
 func NewService(
@@ -56,16 +62,26 @@ func NewService(
 	git gitRepository,
 	files fileRepository,
 	workspaces workspaceRepository,
-	terminals terminalSessionCloser,
+	terminals terminalService,
 ) Service {
 	return Service{
-		copyIgnoredFilesOnWorktreeCreation: configuration.CopyIgnoredFilesOnWorktreeCreation,
-		worktreeCopyExcludes:               append([]string(nil), configuration.WorktreeCopyExcludes...),
-		git:                                git,
-		files:                              files,
-		workspaces:                         workspaces,
-		terminals:                          terminals,
+		git:        git,
+		files:      files,
+		workspaces: workspaces,
+		terminals:  terminals,
+		state: &serviceState{
+			copyIgnoredFilesOnWorktreeCreation: configuration.CopyIgnoredFilesOnWorktreeCreation,
+			worktreeCopyExcludes:               append([]string(nil), configuration.WorktreeCopyExcludes...),
+		},
 	}
+}
+
+func (s Service) Configure(configuration config.Config) {
+	s.state.mu.Lock()
+	defer s.state.mu.Unlock()
+
+	s.state.copyIgnoredFilesOnWorktreeCreation = configuration.CopyIgnoredFilesOnWorktreeCreation
+	s.state.worktreeCopyExcludes = append([]string(nil), configuration.WorktreeCopyExcludes...)
 }
 
 func (s Service) List(ctx context.Context, repository gitrepositories.Context) ([]Worktree, error) {
@@ -322,7 +338,7 @@ func (s Service) Remove(ctx context.Context, repository gitrepositories.Context,
 	}
 
 	if s.terminals != nil {
-		s.terminals.CloseSessionsForDirectory(target.workspaceDirectory)
+		s.terminals.CloseTerminalsForDirectory(target.workspaceDirectory)
 	}
 
 	repositoryPath := repository.MainWorktreePath()
@@ -343,11 +359,16 @@ func (s Service) Remove(ctx context.Context, repository gitrepositories.Context,
 }
 
 func (s Service) copyIgnoredFiles(ctx context.Context, mainPath string, targetPath string) []string {
-	if !s.copyIgnoredFilesOnWorktreeCreation {
+	s.state.mu.RLock()
+	shouldCopy := s.state.copyIgnoredFilesOnWorktreeCreation
+	excludes := append([]string(nil), s.state.worktreeCopyExcludes...)
+	s.state.mu.RUnlock()
+
+	if !shouldCopy {
 		return nil
 	}
 
-	return copyIgnoredFiles(ctx, mainPath, targetPath, s.worktreeCopyExcludes, s.git, s.files)
+	return copyIgnoredFiles(ctx, mainPath, targetPath, excludes, s.git, s.files)
 }
 
 func stringReference(value string) *string {

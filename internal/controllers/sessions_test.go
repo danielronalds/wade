@@ -6,8 +6,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"wade/internal/services/sessions"
 )
 
 type sessionWorkspacesStub struct {
@@ -19,39 +17,35 @@ func (s sessionWorkspacesStub) Path(string) (string, error) {
 	return s.path, s.err
 }
 
-func (sessionWorkspacesStub) IDsForDirectories([]string) []string {
-	return nil
-}
-
 type sessionTerminalsStub struct {
-	activeAgentSessions int
-	writeErr            error
+	activeAgentTerminals int
+	writeErr             error
 }
 
-func (sessionTerminalsStub) ActiveDirectories() []string {
+func (sessionTerminalsStub) ActiveWorkspaceIDs() []string {
 	return nil
 }
 
-func (sessionTerminalsStub) CloseSessionsForDirectory(string) int {
+func (sessionTerminalsStub) DeleteAll(string) int {
 	return 0
 }
 
-func (s sessionTerminalsStub) WriteToActiveAgent(string, []byte) (int, error) {
-	return s.activeAgentSessions, s.writeErr
+func (s sessionTerminalsStub) InputToSelectedAgent(string, string) (int, error) {
+	return s.activeAgentTerminals, s.writeErr
 }
 
 func TestSendToAgentResponses(t *testing.T) {
 	tests := map[string]struct {
-		body                string
-		activeAgentSessions int
-		projectErr          error
-		writeErr            error
-		wantStatus          int
+		body                 string
+		activeAgentTerminals int
+		workspaceErr         error
+		writeErr             error
+		wantStatus           int
 	}{
 		"successful write": {
-			body:                `{"text":"@main.go:10"}`,
-			activeAgentSessions: 1,
-			wantStatus:          http.StatusNoContent,
+			body:                 `{"text":"@main.go:10"}`,
+			activeAgentTerminals: 1,
+			wantStatus:           http.StatusNoContent,
 		},
 		"invalid JSON": {
 			body:       `{`,
@@ -66,33 +60,32 @@ func TestSendToAgentResponses(t *testing.T) {
 			wantStatus: http.StatusNotFound,
 		},
 		"ambiguous agents": {
-			body:                `{"text":"reference"}`,
-			activeAgentSessions: 2,
-			wantStatus:          http.StatusConflict,
+			body:                 `{"text":"reference"}`,
+			activeAgentTerminals: 2,
+			wantStatus:           http.StatusConflict,
 		},
-		"unknown project": {
-			body:       `{"text":"reference"}`,
-			projectErr: errors.New("project not found"),
-			wantStatus: http.StatusNotFound,
+		"unknown workspace": {
+			body:         `{"text":"reference"}`,
+			workspaceErr: errors.New("workspace not found"),
+			wantStatus:   http.StatusNotFound,
 		},
 		"terminal write failure": {
-			body:                `{"text":"reference"}`,
-			activeAgentSessions: 1,
-			writeErr:            errors.New("write failed"),
-			wantStatus:          http.StatusInternalServerError,
+			body:                 `{"text":"reference"}`,
+			activeAgentTerminals: 1,
+			writeErr:             errors.New("write failed"),
+			wantStatus:           http.StatusInternalServerError,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			service := sessions.NewService(
-				sessionWorkspacesStub{path: "/projects/wade", err: test.projectErr},
+			handler := NewSessions(
+				sessionWorkspacesStub{path: "/workspaces/wade", err: test.workspaceErr},
 				sessionTerminalsStub{
-					activeAgentSessions: test.activeAgentSessions,
-					writeErr:            test.writeErr,
+					activeAgentTerminals: test.activeAgentTerminals,
+					writeErr:             test.writeErr,
 				},
 			)
-			handler := NewSessions(service)
 
 			request := httptest.NewRequest(http.MethodPost, "/api/sessions/wade/agent", strings.NewReader(test.body))
 			request.SetPathValue("projectName", "wade")

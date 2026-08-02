@@ -12,14 +12,14 @@ const {
   isSaving,
   error,
   statusMessage,
-  hasInvalidProjectDirectories,
+  hasInvalidWorkspaceDirectories,
   hasInvalidShell,
   hasInvalidAgents,
   canSave,
-  isValidProjectDirectory,
-  updateProjectDirectory,
-  addProjectDirectory,
-  removeProjectDirectory,
+  isValidWorkspaceDirectory,
+  updateWorkspaceDirectory,
+  addWorkspaceDirectory,
+  removeWorkspaceDirectory,
   updateShell,
   updateAgentName,
   updateAgentCommand,
@@ -74,36 +74,36 @@ onMounted(() => {
       <form id="settings-form" @submit.prevent="submit">
         <ThemeAccentPicker v-model:theme-accent-color="selectedThemeAccentColor" />
 
-        <section id="project-directories-section" aria-labelledby="project-directories-title">
+        <section id="workspace-directories-section" aria-labelledby="workspace-directories-title">
           <header class="settings-section-header">
             <section>
-              <h2 id="project-directories-title">Project directories</h2>
+              <h2 id="workspace-directories-title">Workspace directories</h2>
               <p>Use <code>~</code> or absolute paths. Missing directories are skipped.</p>
             </section>
-            <button type="button" class="secondary-action" @click="addProjectDirectory">Add directory</button>
+            <button type="button" class="secondary-action" @click="addWorkspaceDirectory">Add directory</button>
           </header>
 
           <p v-if="isLoading" class="settings-message">Loading settings</p>
 
-          <ul v-else id="project-directories-list" aria-label="Project directories">
-            <li v-for="(directory, index) in form.projectDirectories" :key="index" class="project-directory-row">
-              <label :for="`project-directory-${index}`">Directory {{ index + 1 }}</label>
+          <ul v-else id="workspace-directories-list" aria-label="Workspace directories">
+            <li v-for="(directory, index) in form.workspaceDirectories" :key="index" class="workspace-directory-row">
+              <label :for="`workspace-directory-${index}`">Directory {{ index + 1 }}</label>
               <input
-                :id="`project-directory-${index}`"
+                :id="`workspace-directory-${index}`"
                 :value="directory"
                 type="text"
                 spellcheck="false"
                 autocomplete="off"
                 placeholder="~/Personal"
-                :aria-invalid="!isValidProjectDirectory(directory)"
-                @input="updateProjectDirectory(index, $event)"
+                :aria-invalid="!isValidWorkspaceDirectory(directory)"
+                @input="updateWorkspaceDirectory(index, $event)"
               >
-              <button type="button" class="remove-action" @click="removeProjectDirectory(index)">Remove</button>
+              <button type="button" class="remove-action" @click="removeWorkspaceDirectory(index)">Remove</button>
             </li>
           </ul>
 
-          <p v-if="!isLoading && form.projectDirectories.length === 0" class="settings-message">
-            No project directories configured.
+          <p v-if="!isLoading && form.workspaceDirectories.length === 0" class="settings-message">
+            No workspace directories configured.
           </p>
         </section>
 
@@ -187,8 +187,8 @@ onMounted(() => {
         </section>
 
         <footer id="settings-actions">
-          <p v-if="!isLoading && hasInvalidProjectDirectories" class="settings-error">
-            Project directories must use ~ or an absolute path.
+          <p v-if="!isLoading && hasInvalidWorkspaceDirectories" class="settings-error">
+            Workspace directories must use ~ or an absolute path.
           </p>
           <p v-else-if="!isLoading && hasInvalidShell" class="settings-error">
             Shell must be a program path or command without arguments.
@@ -315,7 +315,7 @@ onMounted(() => {
   gap: 52px;
 }
 
-#project-directories-section,
+#workspace-directories-section,
 #shell-section,
 #worktrees-section {
   width: min(860px, 100%);
@@ -401,7 +401,7 @@ onMounted(() => {
   opacity: 0.45;
 }
 
-#project-directories-list,
+#workspace-directories-list,
 #worktree-copy-excludes-list {
   display: grid;
   gap: 10px;
@@ -410,7 +410,7 @@ onMounted(() => {
   list-style: none;
 }
 
-.project-directory-row,
+.workspace-directory-row,
 .shell-row,
 .worktree-copy-exclude-row {
   display: grid;
@@ -418,7 +418,7 @@ onMounted(() => {
   gap: 10px;
 }
 
-.project-directory-row,
+.workspace-directory-row,
 .worktree-copy-exclude-row {
   grid-template-columns: 120px minmax(0, 1fr) auto;
 }
@@ -427,14 +427,14 @@ onMounted(() => {
   grid-template-columns: 120px minmax(0, 1fr);
 }
 
-.project-directory-row label,
+.workspace-directory-row label,
 .shell-row span,
 .worktree-copy-exclude-row label {
   color: var(--muted);
   font-size: 13px;
 }
 
-.project-directory-row input,
+.workspace-directory-row input,
 .shell-row input,
 .worktree-copy-exclude-row input {
   min-width: 0;
@@ -446,14 +446,14 @@ onMounted(() => {
   padding: 9px 10px;
 }
 
-.project-directory-row input:focus,
+.workspace-directory-row input:focus,
 .shell-row input:focus,
 .worktree-copy-exclude-row input:focus {
   border-color: var(--text);
   outline: none;
 }
 
-.project-directory-row input[aria-invalid="true"],
+.workspace-directory-row input[aria-invalid="true"],
 .shell-row input[aria-invalid="true"],
 .worktree-copy-exclude-row input[aria-invalid="true"] {
   border-color: var(--disconnected);
@@ -494,7 +494,7 @@ onMounted(() => {
     flex-direction: column;
   }
 
-  .project-directory-row,
+  .workspace-directory-row,
   .shell-row,
   .worktree-copy-exclude-row {
     grid-template-columns: 1fr;

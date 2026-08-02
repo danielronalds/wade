@@ -1,4 +1,4 @@
-package terminalsessions
+package terminals
 
 // TODO: Review properly
 
@@ -30,6 +30,19 @@ func TestShellCommandSetsWadeSessionEnvironment(t *testing.T) {
 
 	if !hasEnvironment(command.Env, "WADE_SESSION=wade") {
 		t.Fatalf("Env does not contain WADE_SESSION=wade: %#v", command.Env)
+	}
+}
+
+func TestShellCommandSetsWorkspaceAndTerminalEnvironment(t *testing.T) {
+	command := shellCommand("/bin/zsh", testWadeEnvironment(), "pi -c")
+
+	for _, value := range []string{
+		"WADE_WORKSPACE_ID=wade",
+		"WADE_TERMINAL_ID=agent:pi",
+	} {
+		if !hasEnvironment(command.Env, value) {
+			t.Fatalf("Env does not contain %s: %#v", value, command.Env)
+		}
 	}
 }
 
@@ -100,8 +113,9 @@ func TestShellEnvironmentReplacesInheritedWadeAddress(t *testing.T) {
 
 func testWadeEnvironment() WadeEnvironment {
 	return WadeEnvironment{
-		Session: "wade",
-		Address: "editor.localhost:8765",
+		WorkspaceID: "wade",
+		TerminalID:  "agent:pi",
+		Address:     "editor.localhost:8765",
 	}
 }
 

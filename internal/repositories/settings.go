@@ -33,7 +33,7 @@ type Agent struct {
 
 // Settings is the editable user configuration stored on disk.
 type Settings struct {
-	ProjectDirectories                 []string `json:"projectDirectories"`
+	WorkspaceDirectories               []string `json:"workspaceDirectories"`
 	Shell                              string   `json:"shell"`
 	Agents                             []Agent  `json:"agents"`
 	CopyIgnoredFilesOnWorktreeCreation bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
@@ -45,7 +45,8 @@ type Settings struct {
 }
 
 type settingsFile struct {
-	ProjectDirectories                 *[]string `json:"projectDirectories"`
+	WorkspaceDirectories               *[]string `json:"workspaceDirectories"`
+	LegacyProjectDirectories           *[]string `json:"projectDirectories"`
 	Shell                              *string   `json:"shell"`
 	Agents                             *[]Agent  `json:"agents"`
 	CopyIgnoredFilesOnWorktreeCreation *bool     `json:"copyIgnoredFilesOnWorktreeCreation"`
@@ -208,9 +209,9 @@ func (s Settings) Save() error {
 	}
 
 	raw := cloneRawSettings(s.raw)
-	projectDirectories, err := json.Marshal(s.ProjectDirectories)
+	workspaceDirectories, err := json.Marshal(s.WorkspaceDirectories)
 	if err != nil {
-		return fmt.Errorf("encoding project directories: %w", err)
+		return fmt.Errorf("encoding workspace directories: %w", err)
 	}
 
 	shell, err := json.Marshal(strings.TrimSpace(s.Shell))
@@ -245,7 +246,8 @@ func (s Settings) Save() error {
 
 	delete(raw, "agentCommand")
 	delete(raw, "agentPaneCommand")
-	raw["projectDirectories"] = projectDirectories
+	delete(raw, "projectDirectories")
+	raw["workspaceDirectories"] = workspaceDirectories
 	raw["shell"] = shell
 	raw["agents"] = agents
 	raw["copyIgnoredFilesOnWorktreeCreation"] = copyIgnoredFilesOnWorktreeCreation
@@ -294,7 +296,7 @@ func executablePath(path string) (string, error) {
 // defaultSettings creates the built-in settings for a first run.
 func defaultSettings(path string) Settings {
 	return Settings{
-		ProjectDirectories:                 []string{"~/Personal", "~/Work"},
+		WorkspaceDirectories:               []string{"~/Personal", "~/Work"},
 		Shell:                              "",
 		Agents:                             cloneAgents(defaultAgents),
 		CopyIgnoredFilesOnWorktreeCreation: false,
@@ -320,8 +322,10 @@ func parseSettings(path string, contents []byte) (Settings, error) {
 
 	settings := defaultSettings(path)
 	settings.raw = raw
-	if file.ProjectDirectories != nil {
-		settings.ProjectDirectories = *file.ProjectDirectories
+	if file.WorkspaceDirectories != nil {
+		settings.WorkspaceDirectories = *file.WorkspaceDirectories
+	} else if file.LegacyProjectDirectories != nil {
+		settings.WorkspaceDirectories = *file.LegacyProjectDirectories
 	}
 	if file.Shell != nil {
 		settings.Shell = strings.TrimSpace(*file.Shell)

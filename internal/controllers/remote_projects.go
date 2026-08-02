@@ -106,7 +106,7 @@ func (h RemoteProjects) Clone(w http.ResponseWriter, r *http.Request) {
 
 	workspaceDirectories := h.remoteRepositories.WorkspaceDirectories()
 	if request.DirectoryIndex < 0 || request.DirectoryIndex >= len(workspaceDirectories) {
-		writeJSONError(w, http.StatusBadRequest, "invalid project directory")
+		writeJSONError(w, http.StatusBadRequest, "invalid workspace directory")
 		return
 	}
 	workspaceDirectory := workspaceDirectories[request.DirectoryIndex]

@@ -4,6 +4,7 @@ package workspaces
 
 import (
 	"context"
+	"sync"
 
 	"wade/internal/services/gitrepositories"
 )
@@ -26,14 +27,36 @@ type GitHubRepository interface {
 	PullRequestURL(ctx context.Context, repository string, branch string) (string, error)
 }
 
+type TerminalActivity interface {
+	ActiveTerminalCount(workspaceID string) int
+}
+
 type Service struct {
 	workspaces        Repository
 	localRepositories LocalRepositoryService
 	github            GitHubRepository
+	activity          *activityState
+}
+
+type activityState struct {
+	mu       sync.RWMutex
+	provider TerminalActivity
 }
 
 func NewService(workspaces Repository, localRepositories LocalRepositoryService, github GitHubRepository) Service {
-	return Service{workspaces: workspaces, localRepositories: localRepositories, github: github}
+	return Service{
+		workspaces:        workspaces,
+		localRepositories: localRepositories,
+		github:            github,
+		activity:          &activityState{},
+	}
+}
+
+func (s Service) SetTerminalActivity(provider TerminalActivity) {
+	s.activity.mu.Lock()
+	defer s.activity.mu.Unlock()
+
+	s.activity.provider = provider
 }
 
 func (s Service) List(ctx context.Context) ([]WorkspaceSummary, error) {
@@ -119,6 +142,12 @@ func (s Service) buildWorkspace(
 	includePullRequest bool,
 ) Workspace {
 	workspace := Workspace{ID: workspaceID, Name: workspaceID}
+	s.activity.mu.RLock()
+	activityProvider := s.activity.provider
+	s.activity.mu.RUnlock()
+	if activityProvider != nil {
+		workspace.Activity.ActiveTerminalCount = activityProvider.ActiveTerminalCount(workspaceID)
+	}
 	if !isGit {
 		return workspace
 	}

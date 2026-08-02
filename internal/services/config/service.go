@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"wade/internal/repositories"
-	"wade/internal/services/terminalsessions"
+	"wade/internal/services/terminals"
 )
 
 const (
@@ -23,8 +23,8 @@ const (
 // Config is the resolved runtime configuration used by the server.
 type Config struct {
 	Address                            string
-	ProjectDirs                        []string
-	ProjectDirectorySettings           []string
+	WorkspaceDirs                      []string
+	WorkspaceDirectorySettings         []string
 	Shell                              string
 	Agents                             []repositories.Agent
 	CopyIgnoredFilesOnWorktreeCreation bool
@@ -33,17 +33,21 @@ type Config struct {
 
 // Load resolves runtime configuration from settings and environment variables.
 func Load() (Config, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return Config{}, fmt.Errorf("getting home directory: %w", err)
-	}
-
 	settings, err := repositories.LoadSettings()
 	if err != nil {
 		return Config{}, err
 	}
 
-	projectDirs, err := resolveProjectDirectories(homeDir, settings.ProjectDirectories)
+	return resolveRuntimeConfig(settings)
+}
+
+func resolveRuntimeConfig(settings Settings) (Config, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return Config{}, fmt.Errorf("getting home directory: %w", err)
+	}
+
+	workspaceDirs, err := resolveWorkspaceDirectories(homeDir, settings.WorkspaceDirectories)
 	if err != nil {
 		return Config{}, err
 	}
@@ -67,8 +71,8 @@ func Load() (Config, error) {
 
 	return Config{
 		Address:                            envOrDefault(addressEnv, defaultAddress(devMode)),
-		ProjectDirs:                        projectDirs,
-		ProjectDirectorySettings:           append([]string(nil), settings.ProjectDirectories...),
+		WorkspaceDirs:                      workspaceDirs,
+		WorkspaceDirectorySettings:         append([]string(nil), settings.WorkspaceDirectories...),
 		Shell:                              shell,
 		Agents:                             agents,
 		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
@@ -98,7 +102,7 @@ func isEnabled(value string) bool {
 func resolveRuntimeShell(configuredShell string, environmentShell string) (string, error) {
 	configuredShell = strings.TrimSpace(configuredShell)
 	if configuredShell == "" {
-		return terminalsessions.ResolveShell(environmentShell), nil
+		return terminals.ResolveShell(environmentShell), nil
 	}
 
 	return repositories.ResolveConfiguredShell(configuredShell)

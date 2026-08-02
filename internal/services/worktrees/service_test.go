@@ -16,11 +16,11 @@ import (
 	"wade/internal/services/gitrepositories"
 )
 
-type terminalSessionCloserStub struct {
+type terminalServiceStub struct {
 	closedDirectory string
 }
 
-func (s *terminalSessionCloserStub) CloseSessionsForDirectory(directory string) int {
+func (s *terminalServiceStub) CloseTerminalsForDirectory(directory string) int {
 	s.closedDirectory = directory
 	return 1
 }
@@ -97,7 +97,7 @@ func TestRepositoryScopedRemoteBranchCanCreateWorktree(t *testing.T) {
 func TestRemoveClosesTerminalsAndDeletesLocalBranch(t *testing.T) {
 	ctx := context.Background()
 	projectPath := initGitRepository(t)
-	terminals := &terminalSessionCloserStub{}
+	terminals := &terminalServiceStub{}
 	service, repository := newTestService(t, ctx, projectPath, terminals)
 	branchName := "remove-me"
 
@@ -167,7 +167,7 @@ func newTestService(
 	t *testing.T,
 	ctx context.Context,
 	projectPath string,
-	terminals terminalSessionCloser,
+	terminals terminalService,
 ) (Service, gitrepositories.Context) {
 	t.Helper()
 
