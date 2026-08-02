@@ -11,11 +11,13 @@ type WorkspaceRepository interface {
 	IDs() ([]string, error)
 	Resolve(workspaceID string) (string, bool, error)
 	CanonicalPath(workspaceID string) (string, bool, error)
+	IDForDirectory(directory string) (string, bool, error)
+	IDsForDirectories(directories []string) ([]string, error)
 }
 
 type GitRepository interface {
 	IsGitWorktree(ctx context.Context, workspacePath string) (bool, error)
-	MainWorktreePath(ctx context.Context, workspacePath string) (string, error)
+	WorktreePaths(ctx context.Context, workspacePath string) ([]string, error)
 	CommonDirectory(ctx context.Context, workspacePath string) (string, error)
 	HeadReference(ctx context.Context, workspacePath string) (string, bool, error)
 	HeadCommit(ctx context.Context, workspacePath string) (string, bool, error)
@@ -33,6 +35,7 @@ type workspaceRecord struct {
 	canonicalPath   string
 	isGit           bool
 	mainPath        string
+	worktreePaths   []string
 	commonDirectory string
 	remoteURL       string
 	remoteIdentity  string
@@ -127,31 +130,65 @@ func (s Service) Resolve(ctx context.Context, repositoryID string) (Context, err
 }
 
 func (s Service) ResolveWorkspace(ctx context.Context, workspaceID string) (WorkspaceContext, bool, error) {
-	records, err := s.scan(ctx)
+	workspacePath, found, err := s.workspaces.Resolve(workspaceID)
 	if err != nil {
 		return WorkspaceContext{}, false, err
 	}
-
-	for index, record := range records {
-		if record.id != workspaceID {
-			continue
-		}
-		if !record.isGit {
-			return WorkspaceContext{}, false, nil
-		}
-
-		repositoryContext := buildContext(records, index)
-		return WorkspaceContext{
-			RepositoryContext: repositoryContext,
-			WorkspaceID:       record.id,
-			WorkspacePath:     record.path,
-			Branch:            record.branch,
-			IsMain:            samePath(record.canonicalPath, record.mainPath),
-			IsRemovable:       !samePath(record.canonicalPath, record.mainPath),
-		}, true, nil
+	if !found {
+		return WorkspaceContext{}, false, WorkspaceNotFoundError{WorkspaceID: workspaceID}
 	}
 
-	return WorkspaceContext{}, false, WorkspaceNotFoundError{WorkspaceID: workspaceID}
+	canonicalPath, found, err := s.workspaces.CanonicalPath(workspaceID)
+	if err != nil {
+		return WorkspaceContext{}, false, err
+	}
+	if !found {
+		return WorkspaceContext{}, false, WorkspaceNotFoundError{WorkspaceID: workspaceID}
+	}
+
+	record, err := s.inspectWorkspace(ctx, workspaceID, workspacePath, canonicalPath)
+	if err != nil {
+		return WorkspaceContext{}, false, err
+	}
+	if !record.isGit {
+		return WorkspaceContext{}, false, nil
+	}
+
+	workspaceIDs, err := s.workspaces.IDsForDirectories(record.worktreePaths)
+	if err != nil {
+		return WorkspaceContext{}, false, err
+	}
+	mainWorkspaceID := filepath.Base(record.mainPath)
+	resolvedMainWorkspaceID, found, err := s.workspaces.IDForDirectory(record.mainPath)
+	if err != nil {
+		return WorkspaceContext{}, false, err
+	}
+	if found {
+		mainWorkspaceID = resolvedMainWorkspaceID
+	}
+
+	repositoryContext := Context{
+		Repository: Repository{
+			ID:                 filepath.Base(record.mainPath),
+			RemoteRepositoryID: githubRepositoryID(record.remoteURL),
+			MainWorkspaceID:    mainWorkspaceID,
+			WorkspaceIDs:       workspaceIDs,
+		},
+		mainWorktreePath: record.mainPath,
+		commonDirectory:  record.commonDirectory,
+		remoteURL:        record.remoteURL,
+		remoteIdentity:   record.remoteIdentity,
+	}
+	isMain := samePath(record.canonicalPath, record.mainPath)
+
+	return WorkspaceContext{
+		RepositoryContext: repositoryContext,
+		WorkspaceID:       record.id,
+		WorkspacePath:     record.path,
+		Branch:            record.branch,
+		IsMain:            isMain,
+		IsRemovable:       !isMain,
+	}, true, nil
 }
 
 func (s Service) scan(ctx context.Context) ([]workspaceRecord, error) {
@@ -178,63 +215,74 @@ func (s Service) scan(ctx context.Context) ([]workspaceRecord, error) {
 			continue
 		}
 
-		isGit, err := s.git.IsGitWorktree(ctx, workspacePath)
+		record, err := s.inspectWorkspace(ctx, workspaceID, workspacePath, canonicalPath)
 		if err != nil {
 			return nil, err
 		}
-		if !isGit {
-			records = append(records, workspaceRecord{
-				id:            workspaceID,
-				path:          workspacePath,
-				canonicalPath: canonicalPath,
-			})
-			continue
-		}
-
-		mainPath, err := s.git.MainWorktreePath(ctx, workspacePath)
-		if err != nil {
-			return nil, err
-		}
-		commonDirectory, err := s.git.CommonDirectory(ctx, workspacePath)
-		if err != nil {
-			return nil, err
-		}
-		headReference, hasHeadReference, err := s.git.HeadReference(ctx, workspacePath)
-		if err != nil {
-			return nil, err
-		}
-		headCommit, _, err := s.git.HeadCommit(ctx, workspacePath)
-		if err != nil {
-			return nil, err
-		}
-		remoteURL, hasRemote, err := s.git.OriginRemoteURL(ctx, workspacePath)
-		if err != nil {
-			return nil, err
-		}
-		if !hasRemote {
-			remoteURL = ""
-		}
-
-		branchName := strings.TrimPrefix(headReference, "refs/heads/")
-		records = append(records, workspaceRecord{
-			id:              workspaceID,
-			path:            workspacePath,
-			canonicalPath:   canonicalPath,
-			isGit:           true,
-			mainPath:        mainPath,
-			commonDirectory: commonDirectory,
-			remoteURL:       remoteURL,
-			remoteIdentity:  CanonicalRemoteIdentity(remoteURL),
-			branch: Branch{
-				Ref:        headReference,
-				Name:       branchName,
-				IsDetached: !hasHeadReference,
-				Commit:     headCommit,
-			},
-		})
+		records = append(records, record)
 	}
 
 	return records, nil
+}
+
+func (s Service) inspectWorkspace(
+	ctx context.Context,
+	workspaceID string,
+	workspacePath string,
+	canonicalPath string,
+) (workspaceRecord, error) {
+	record := workspaceRecord{
+		id:            workspaceID,
+		path:          workspacePath,
+		canonicalPath: canonicalPath,
+	}
+
+	isGit, err := s.git.IsGitWorktree(ctx, workspacePath)
+	if err != nil {
+		return workspaceRecord{}, err
+	}
+	if !isGit {
+		return record, nil
+	}
+
+	worktreePaths, err := s.git.WorktreePaths(ctx, workspacePath)
+	if err != nil {
+		return workspaceRecord{}, err
+	}
+	commonDirectory, err := s.git.CommonDirectory(ctx, workspacePath)
+	if err != nil {
+		return workspaceRecord{}, err
+	}
+	headReference, hasHeadReference, err := s.git.HeadReference(ctx, workspacePath)
+	if err != nil {
+		return workspaceRecord{}, err
+	}
+	headCommit, _, err := s.git.HeadCommit(ctx, workspacePath)
+	if err != nil {
+		return workspaceRecord{}, err
+	}
+	remoteURL, hasRemote, err := s.git.OriginRemoteURL(ctx, workspacePath)
+	if err != nil {
+		return workspaceRecord{}, err
+	}
+	if !hasRemote {
+		remoteURL = ""
+	}
+
+	record.isGit = true
+	record.mainPath = worktreePaths[0]
+	record.worktreePaths = worktreePaths
+	record.commonDirectory = commonDirectory
+	record.remoteURL = remoteURL
+	record.remoteIdentity = CanonicalRemoteIdentity(remoteURL)
+	record.branch = Branch{
+		Ref:        headReference,
+		Name:       strings.TrimPrefix(headReference, "refs/heads/"),
+		IsDetached: !hasHeadReference,
+		Commit:     headCommit,
+	}
+
+	return record, nil
 }
 
 func buildContext(records []workspaceRecord, targetIndex int) Context {

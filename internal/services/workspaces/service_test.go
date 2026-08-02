@@ -39,24 +39,26 @@ func (workspaceRepositoryStub) Directories() []string {
 func (workspaceRepositoryStub) Reload([]string) {}
 
 type localRepositoryServiceStub struct {
-	contexts         []gitrepositories.WorkspaceContext
-	workspaceContext gitrepositories.WorkspaceContext
-	isGit            bool
-	err              error
+	contexts             []gitrepositories.WorkspaceContext
+	workspaceContext     gitrepositories.WorkspaceContext
+	isGit                bool
+	listCalls            *int
+	resolvedWorkspaceIDs *[]string
+	err                  error
 }
 
 func (s localRepositoryServiceStub) ListWorkspaceContexts(context.Context) ([]gitrepositories.WorkspaceContext, error) {
+	if s.listCalls != nil {
+		*s.listCalls++
+	}
 	return s.contexts, s.err
 }
 
-func (s localRepositoryServiceStub) ResolveWorkspace(context.Context, string) (gitrepositories.WorkspaceContext, bool, error) {
+func (s localRepositoryServiceStub) ResolveWorkspace(_ context.Context, workspaceID string) (gitrepositories.WorkspaceContext, bool, error) {
+	if s.resolvedWorkspaceIDs != nil {
+		*s.resolvedWorkspaceIDs = append(*s.resolvedWorkspaceIDs, workspaceID)
+	}
 	return s.workspaceContext, s.isGit, s.err
-}
-
-type terminalActivityStub map[string]int
-
-func (s terminalActivityStub) ActiveTerminalCount(workspaceID string) int {
-	return s[workspaceID]
 }
 
 type workspaceGitHubRepositoryStub struct {
@@ -73,19 +75,45 @@ func TestServiceListReturnsWorkspaceSummaries(t *testing.T) {
 		localRepositoryServiceStub{},
 		nil,
 	)
-	service.SetTerminalActivity(terminalActivityStub{"alpha": 2})
-
 	got, err := service.List(context.Background())
 	if err != nil {
 		t.Fatalf("List() error = %v, want nil", err)
 	}
 
 	want := []WorkspaceSummary{
-		{ID: "alpha", Name: "alpha", Activity: WorkspaceActivity{ActiveTerminalCount: 2}},
+		{ID: "alpha", Name: "alpha"},
 		{ID: "bravo", Name: "bravo"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("List() = %#v, want %#v", got, want)
+	}
+}
+
+func TestServiceListByIDsResolvesOnlyRequestedDiscoveredWorkspaces(t *testing.T) {
+	listCalls := 0
+	resolvedWorkspaceIDs := make([]string, 0)
+	service := NewService(
+		workspaceRepositoryStub{workspaceIDs: []string{"alpha", "bravo"}},
+		localRepositoryServiceStub{
+			listCalls:            &listCalls,
+			resolvedWorkspaceIDs: &resolvedWorkspaceIDs,
+		},
+		nil,
+	)
+	got, err := service.ListByIDs(context.Background(), []string{"missing", "alpha", "alpha"})
+	if err != nil {
+		t.Fatalf("ListByIDs() error = %v, want nil", err)
+	}
+
+	want := []WorkspaceSummary{{ID: "alpha", Name: "alpha"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ListByIDs() = %#v, want %#v", got, want)
+	}
+	if listCalls != 0 {
+		t.Fatalf("ListWorkspaceContexts() calls = %d, want 0", listCalls)
+	}
+	if !reflect.DeepEqual(resolvedWorkspaceIDs, []string{"alpha"}) {
+		t.Fatalf("resolved workspace IDs = %#v, want only alpha", resolvedWorkspaceIDs)
 	}
 }
 

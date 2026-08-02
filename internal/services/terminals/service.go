@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -234,6 +235,21 @@ func (s *Service) ActiveTerminalCount(workspaceID string) int {
 		}
 	}
 	return count
+}
+
+func (s *Service) ActiveWorkspaceIDs() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	activeWorkspaceIDs := make([]string, 0, len(s.terminals))
+	for _, terminal := range s.terminals {
+		if !terminal.IsClosed() {
+			activeWorkspaceIDs = append(activeWorkspaceIDs, terminal.WorkspaceID)
+		}
+	}
+	sort.Strings(activeWorkspaceIDs)
+
+	return slices.Compact(activeWorkspaceIDs)
 }
 
 func (s *Service) CloseTerminalsForDirectory(directory string) int {

@@ -33,22 +33,33 @@ func (r GitRepository) IsGitWorktree(ctx context.Context, workspacePath string) 
 	return output == "true", nil
 }
 
-func (r GitRepository) MainWorktreePath(ctx context.Context, workspacePath string) (string, error) {
+func (r GitRepository) WorktreePaths(ctx context.Context, workspacePath string) ([]string, error) {
 	output, err := r.WorktreeListPorcelain(ctx, workspacePath)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
+	worktreePaths := make([]string, 0)
 	for _, line := range strings.Split(output, "\n") {
-		mainWorktreePath, found := strings.CutPrefix(line, "worktree ")
+		worktreePath, found := strings.CutPrefix(line, "worktree ")
 		if !found {
 			continue
 		}
 
-		return canonicalDirectoryPath(mainWorktreePath)
+		if len(worktreePaths) == 0 {
+			canonicalPath, err := canonicalDirectoryPath(worktreePath)
+			if err != nil {
+				return nil, err
+			}
+			worktreePath = canonicalPath
+		}
+		worktreePaths = append(worktreePaths, worktreePath)
+	}
+	if len(worktreePaths) == 0 {
+		return nil, errors.New("could not determine main worktree path")
 	}
 
-	return "", errors.New("could not determine main worktree path")
+	return worktreePaths, nil
 }
 
 func (r GitRepository) CommonDirectory(ctx context.Context, workspacePath string) (string, error) {
