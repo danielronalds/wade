@@ -5,6 +5,8 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+
+	"wade/internal/services/gitrepositories"
 )
 
 type workspaceRepositoryStub struct {
@@ -36,17 +38,19 @@ func (workspaceRepositoryStub) Directories() []string {
 
 func (workspaceRepositoryStub) Reload([]string) {}
 
-type workspaceGitRepositoryStub struct {
-	branch    string
-	originURL string
+type localRepositoryServiceStub struct {
+	contexts         []gitrepositories.WorkspaceContext
+	workspaceContext gitrepositories.WorkspaceContext
+	isGit            bool
+	err              error
 }
 
-func (s workspaceGitRepositoryStub) CurrentBranch(context.Context, string) (string, error) {
-	return s.branch, nil
+func (s localRepositoryServiceStub) ListWorkspaceContexts(context.Context) ([]gitrepositories.WorkspaceContext, error) {
+	return s.contexts, s.err
 }
 
-func (s workspaceGitRepositoryStub) OriginURL(context.Context, string) (string, error) {
-	return s.originURL, nil
+func (s localRepositoryServiceStub) ResolveWorkspace(context.Context, string) (gitrepositories.WorkspaceContext, bool, error) {
+	return s.workspaceContext, s.isGit, s.err
 }
 
 type workspaceGitHubRepositoryStub struct {
@@ -60,11 +64,11 @@ func (s workspaceGitHubRepositoryStub) PullRequestURL(context.Context, string, s
 func TestServiceListReturnsWorkspaceSummaries(t *testing.T) {
 	service := NewService(
 		workspaceRepositoryStub{workspaceIDs: []string{"alpha", "bravo"}},
-		nil,
+		localRepositoryServiceStub{},
 		nil,
 	)
 
-	got, err := service.List()
+	got, err := service.List(context.Background())
 	if err != nil {
 		t.Fatalf("List() error = %v, want nil", err)
 	}
@@ -78,13 +82,27 @@ func TestServiceListReturnsWorkspaceSummaries(t *testing.T) {
 	}
 }
 
-func TestServiceGetReturnsWorkspaceMetadata(t *testing.T) {
+func TestServiceGetReturnsWorkspaceRepositoryMetadata(t *testing.T) {
+	remoteRepositoryID := "example/wade"
+	localContext := gitrepositories.WorkspaceContext{
+		RepositoryContext: gitrepositories.Context{Repository: gitrepositories.Repository{
+			ID:                 "wade",
+			RemoteRepositoryID: &remoteRepositoryID,
+			MainWorkspaceID:    "wade",
+			WorkspaceIDs:       []string{"wade"},
+		}},
+		WorkspaceID: "wade",
+		Branch: gitrepositories.Branch{
+			Ref:    "refs/heads/feature/wade-123-workspaces",
+			Name:   "feature/wade-123-workspaces",
+			Commit: "abc123",
+		},
+		IsMain:      true,
+		IsRemovable: false,
+	}
 	service := NewService(
 		workspaceRepositoryStub{path: "/workspaces/wade", found: true},
-		workspaceGitRepositoryStub{
-			branch:    "feature/wade-123-workspaces",
-			originURL: "git@github.com:example/wade.git",
-		},
+		localRepositoryServiceStub{workspaceContext: localContext, isGit: true},
 		workspaceGitHubRepositoryStub{pullRequestURL: "https://github.com/example/wade/pull/123"},
 	)
 
@@ -96,11 +114,17 @@ func TestServiceGetReturnsWorkspaceMetadata(t *testing.T) {
 	if got.ID != "wade" || got.Name != "wade" {
 		t.Fatalf("Get() identity = %q/%q, want wade/wade", got.ID, got.Name)
 	}
+	if got.RepositoryID == nil || *got.RepositoryID != "wade" {
+		t.Fatalf("Get() RepositoryID = %#v, want wade", got.RepositoryID)
+	}
 	if got.RemoteRepositoryID == nil || *got.RemoteRepositoryID != "example/wade" {
 		t.Fatalf("Get() RemoteRepositoryID = %#v, want example/wade", got.RemoteRepositoryID)
 	}
-	if got.Branch == nil || got.Branch.Ref != "refs/heads/feature/wade-123-workspaces" {
-		t.Fatalf("Get() Branch = %#v, want feature branch", got.Branch)
+	if got.Worktree == nil || !got.Worktree.IsMain || got.Worktree.IsRemovable {
+		t.Fatalf("Get() Worktree = %#v, want non-removable main worktree", got.Worktree)
+	}
+	if got.Branch == nil || got.Branch.Ref != "refs/heads/feature/wade-123-workspaces" || got.Branch.Commit != "abc123" {
+		t.Fatalf("Get() Branch = %#v, want feature branch at abc123", got.Branch)
 	}
 	if got.Links.Repository == nil || *got.Links.Repository != "https://github.com/example/wade" {
 		t.Fatalf("Get() repository link = %#v, want GitHub URL", got.Links.Repository)
@@ -113,8 +137,24 @@ func TestServiceGetReturnsWorkspaceMetadata(t *testing.T) {
 	}
 }
 
+func TestServiceGetReturnsNullGitRelationshipsForNonGitWorkspace(t *testing.T) {
+	service := NewService(
+		workspaceRepositoryStub{path: "/workspaces/notes", found: true},
+		localRepositoryServiceStub{},
+		nil,
+	)
+
+	got, err := service.Get(context.Background(), "notes")
+	if err != nil {
+		t.Fatalf("Get() error = %v, want nil", err)
+	}
+	if got.RepositoryID != nil || got.RemoteRepositoryID != nil || got.Worktree != nil || got.Branch != nil {
+		t.Fatalf("Get() Git relationships = %#v, want nil", got)
+	}
+}
+
 func TestServicePathReturnsTypedNotFoundError(t *testing.T) {
-	service := NewService(workspaceRepositoryStub{}, nil, nil)
+	service := NewService(workspaceRepositoryStub{}, localRepositoryServiceStub{}, nil)
 
 	_, err := service.Path("missing")
 
@@ -125,7 +165,7 @@ func TestServicePathReturnsTypedNotFoundError(t *testing.T) {
 }
 
 func TestServicePathReturnsTypedInvalidIDError(t *testing.T) {
-	service := NewService(workspaceRepositoryStub{}, nil, nil)
+	service := NewService(workspaceRepositoryStub{}, localRepositoryServiceStub{}, nil)
 
 	_, err := service.Path("../wade")
 

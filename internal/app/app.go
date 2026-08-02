@@ -10,7 +10,8 @@ import (
 	"wade/internal/repositories"
 	"wade/internal/server"
 	"wade/internal/services/config"
-	"wade/internal/services/remoteprojects"
+	"wade/internal/services/gitrepositories"
+	"wade/internal/services/remoterepositories"
 	"wade/internal/services/review"
 	"wade/internal/services/sessions"
 	"wade/internal/services/terminalsessions"
@@ -29,25 +30,34 @@ func New(configuration config.Config, staticFiles fs.FS) *Application {
 	gitHubRepository := repositories.NewGitHubRepository(repositories.RunCommand)
 	fileRepository := repositories.NewFileRepository()
 
-	workspaceService := workspaces.NewService(workspaceRepository, gitRepository, gitHubRepository)
-	remoteProjectService := remoteprojects.NewService(gitHubRepository, fileRepository)
+	localRepositoryService := gitrepositories.NewService(workspaceRepository, gitRepository)
+	workspaceService := workspaces.NewService(workspaceRepository, localRepositoryService, gitHubRepository)
 	reviewService := review.NewService(gitRepository, gitHubRepository, fileRepository)
 	terminalSessionService := terminalsessions.NewService(configuration.Shell, configuration.Address, terminalAgents(configuration.Agents))
 	sessionService := sessions.NewService(workspaceService, terminalSessionService)
-	worktreeService := worktrees.NewService(configuration, gitRepository, fileRepository)
+	worktreeService := worktrees.NewService(configuration, gitRepository, fileRepository, workspaceRepository, terminalSessionService)
+	remoteRepositoryService := remoterepositories.NewService(
+		gitHubRepository,
+		fileRepository,
+		localRepositoryService,
+		workspaceRepository,
+		workspaceService,
+		remoteWorkspaceDirectories(configuration),
+	)
 
 	runtimeConfigReloader := configReloader{
-		workspaces: workspaceService,
-		terminals:  terminalSessionService,
+		workspaces:         workspaceService,
+		remoteRepositories: remoteRepositoryService,
+		terminals:          terminalSessionService,
 	}
 
 	controllerSet := controllers.Controllers{
 		Config:         controllers.NewConfig(runtimeConfigReloader),
 		Projects:       controllers.NewProjects(workspaceService),
-		RemoteProjects: controllers.NewRemoteProjects(workspaceService, remoteProjectService),
+		RemoteProjects: controllers.NewRemoteProjects(remoteRepositoryService),
 		Sessions:       controllers.NewSessions(sessionService),
 		Terminals:      controllers.NewTerminals(workspaceService, terminalSessionService, server.AllowSameOrigin),
-		Worktrees:      controllers.NewWorktrees(workspaceService, worktreeService, terminalSessionService),
+		Worktrees:      controllers.NewWorktrees(localRepositoryService, worktreeService),
 		Review:         controllers.NewReview(workspaceService, reviewService),
 		Docs:           controllers.NewDocs(),
 		Page:           controllers.NewPage(staticFiles),

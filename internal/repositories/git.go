@@ -4,6 +4,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -25,6 +26,58 @@ func (r GitRepository) CurrentBranch(ctx context.Context, projectPath string) (s
 
 func (r GitRepository) OriginURL(ctx context.Context, projectPath string) (string, error) {
 	return r.runString(ctx, time.Second, projectPath, "remote", "get-url", "origin")
+}
+
+func (r GitRepository) IsGitWorktree(ctx context.Context, workspacePath string) (bool, error) {
+	output, err := r.runString(ctx, time.Second, workspacePath, "rev-parse", "--is-inside-work-tree")
+	if err != nil {
+		if ctx.Err() != nil {
+			return false, ctx.Err()
+		}
+
+		return false, nil
+	}
+
+	return output == "true", nil
+}
+
+func (r GitRepository) MainWorktreePath(ctx context.Context, workspacePath string) (string, error) {
+	output, err := r.WorktreeListPorcelain(ctx, workspacePath)
+	if err != nil {
+		return "", err
+	}
+
+	for _, line := range strings.Split(output, "\n") {
+		mainWorktreePath, found := strings.CutPrefix(line, "worktree ")
+		if !found {
+			continue
+		}
+
+		return canonicalDirectoryPath(mainWorktreePath)
+	}
+
+	return "", errors.New("could not determine main worktree path")
+}
+
+func (r GitRepository) CommonDirectory(ctx context.Context, workspacePath string) (string, error) {
+	commonDirectory, err := r.runString(ctx, time.Second, workspacePath, "rev-parse", "--path-format=absolute", "--git-common-dir")
+	if err != nil {
+		return "", err
+	}
+
+	return canonicalDirectoryPath(commonDirectory)
+}
+
+func (r GitRepository) HeadReference(ctx context.Context, workspacePath string) (string, bool, error) {
+	return r.runOptionalString(ctx, time.Second, workspacePath, "symbolic-ref", "--quiet", "HEAD")
+}
+
+func (r GitRepository) HeadCommit(ctx context.Context, workspacePath string) (string, bool, error) {
+	return r.runOptionalString(ctx, time.Second, workspacePath, "rev-parse", "--verify", "--quiet", "HEAD")
+}
+
+func (r GitRepository) OriginRemoteURL(ctx context.Context, workspacePath string) (string, bool, error) {
+	return r.runOptionalString(ctx, time.Second, workspacePath, "config", "--get", "remote.origin.url")
 }
 
 func (r GitRepository) WorktreeListPorcelain(ctx context.Context, projectPath string) (string, error) {
@@ -152,6 +205,32 @@ func (r GitRepository) runString(ctx context.Context, timeout time.Duration, pro
 	}
 
 	return text, nil
+}
+
+func (r GitRepository) runOptionalString(ctx context.Context, timeout time.Duration, projectPath string, args ...string) (string, bool, error) {
+	commandContext, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	command := exec.CommandContext(commandContext, "git", append([]string{"-C", projectPath}, args...)...)
+	command.Dir = projectPath
+	output, err := command.CombinedOutput()
+	if err == nil {
+		return strings.TrimSpace(string(output)), true, nil
+	}
+	if commandContext.Err() != nil {
+		return "", false, commandContext.Err()
+	}
+
+	var exitError *exec.ExitError
+	if errors.As(err, &exitError) && exitError.ExitCode() == 1 {
+		return "", false, nil
+	}
+
+	message := strings.TrimSpace(string(output))
+	if message == "" {
+		message = err.Error()
+	}
+	return "", false, fmt.Errorf("git %s failed: %s", strings.Join(args, " "), message)
 }
 
 func (r GitRepository) runBytes(ctx context.Context, timeout time.Duration, directory string, name string, args ...string) ([]byte, error) {

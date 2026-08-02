@@ -22,18 +22,18 @@ func NewGitHubRepository(runner CommandRunner) GitHubRepository {
 	return GitHubRepository{runner: runner}
 }
 
-func (r GitHubRepository) ListProjects(ctx context.Context) (string, error) {
+func (r GitHubRepository) ListRepositories(ctx context.Context) (string, error) {
 	output, err := r.run(ctx, "repo", "list", "--json", "name,nameWithOwner,url,sshUrl", "--limit", "5000")
 	if err != nil {
-		return "", fmt.Errorf("listing GitHub projects: %w", err)
+		return "", fmt.Errorf("listing GitHub repositories: %w", err)
 	}
 
 	return output, nil
 }
 
-func (r GitHubRepository) CloneProject(ctx context.Context, nameWithOwner string, targetPath string) error {
+func (r GitHubRepository) CloneRepository(ctx context.Context, nameWithOwner string, targetPath string) error {
 	if _, err := r.run(ctx, "repo", "clone", nameWithOwner, targetPath); err != nil {
-		return fmt.Errorf("cloning GitHub project: %w", err)
+		return fmt.Errorf("cloning GitHub repository: %w", err)
 	}
 
 	return nil

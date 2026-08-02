@@ -9,26 +9,32 @@ import (
 	"net/http"
 	"strings"
 
-	"wade/internal/services/workspaces"
+	"wade/internal/services/gitrepositories"
 	"wade/internal/services/worktrees"
 )
 
-type worktreeSessionCloser interface {
-	CloseSessionsForDirectory(directory string) int
-}
-
 type Worktrees struct {
-	workspaces workspaces.Service
-	worktrees  worktrees.Service
-	terminals  worktreeSessionCloser
+	repositories gitrepositories.Service
+	worktrees    worktrees.Service
 }
 
-func NewWorktrees(workspaceService workspaces.Service, worktreeService worktrees.Service, terminals worktreeSessionCloser) Worktrees {
-	return Worktrees{workspaces: workspaceService, worktrees: worktreeService, terminals: terminals}
+func NewWorktrees(repositoryService gitrepositories.Service, worktreeService worktrees.Service) Worktrees {
+	return Worktrees{repositories: repositoryService, worktrees: worktreeService}
 }
+
+type legacyWorktree struct {
+	Name                    string   `json:"name"`
+	ProjectName             string   `json:"projectName"`
+	Path                    string   `json:"path"`
+	Branch                  string   `json:"branch"`
+	IsBase                  bool     `json:"isBase"`
+	IsCurrent               bool     `json:"isCurrent"`
+	IsRemovable             bool     `json:"isRemovable"`
+	IgnoredFileCopyWarnings []string `json:"ignoredFileCopyWarnings,omitempty"`
+} // @name worktree.Worktree
 
 type worktreesResponse struct {
-	Worktrees []worktrees.Worktree `json:"worktrees"`
+	Worktrees []legacyWorktree `json:"worktrees"`
 } // @name handlers.worktreesResponse
 
 // @Summary List worktrees
@@ -41,18 +47,18 @@ type worktreesResponse struct {
 // @Failure 404 {object} errorResponse
 // @Router /api/worktrees [get]
 func (h Worktrees) ListWorktrees(w http.ResponseWriter, r *http.Request) {
-	projectPath, ok := h.resolveProjectPath(w, r.URL.Query().Get("project"))
+	repository, workspaceID, ok := h.resolveRepository(w, r, r.URL.Query().Get("project"))
 	if !ok {
 		return
 	}
 
-	worktrees, err := h.worktrees.List(r.Context(), projectPath)
+	availableWorktrees, err := h.worktrees.List(r.Context(), repository)
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, worktreesResponse{Worktrees: worktrees})
+	writeJSON(w, http.StatusOK, worktreesResponse{Worktrees: legacyWorktrees(availableWorktrees, workspaceID)})
 }
 
 type createWorktreeRequest struct {
@@ -61,7 +67,7 @@ type createWorktreeRequest struct {
 } // @name handlers.createWorktreeRequest
 
 type worktreeResponse struct {
-	Worktree worktrees.Worktree `json:"worktree"`
+	Worktree legacyWorktree `json:"worktree"`
 } // @name handlers.worktreeResponse
 
 // @Summary Create worktree
@@ -81,23 +87,22 @@ func (h Worktrees) CreateWorktree(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projectPath, ok := h.resolveProjectPath(w, request.Project)
+	repository, _, ok := h.resolveRepository(w, r, request.Project)
 	if !ok {
 		return
 	}
-
 	if strings.TrimSpace(request.Branch) == "" {
 		writeJSONError(w, http.StatusBadRequest, "branch is required")
 		return
 	}
 
-	created, err := h.worktrees.Create(r.Context(), projectPath, request.Branch)
+	created, err := h.worktrees.Create(r.Context(), repository, request.Branch)
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, worktreeResponse{Worktree: created})
+	writeJSON(w, http.StatusOK, worktreeResponse{Worktree: legacyWorktreeResponse(created, created.WorkspaceID)})
 }
 
 type removeWorktreeRequest struct {
@@ -124,73 +129,126 @@ func (h Worktrees) RemoveWorktree(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projectName := firstNonEmpty(request.Project, r.URL.Query().Get("project"))
-	worktreeName := firstNonEmpty(request.Worktree, r.URL.Query().Get("worktree"))
-	projectPath, ok := h.resolveProjectPath(w, projectName)
+	workspaceID := firstNonEmpty(request.Project, r.URL.Query().Get("project"))
+	worktreeID := firstNonEmpty(request.Worktree, r.URL.Query().Get("worktree"))
+	repository, _, ok := h.resolveRepository(w, r, workspaceID)
 	if !ok {
 		return
 	}
 
-	target, err := h.worktrees.Find(r.Context(), projectPath, worktreeName)
+	removed, err := h.worktrees.Remove(r.Context(), repository, worktreeID)
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if !target.IsRemovable {
-		writeJSONError(w, http.StatusBadRequest, "cannot remove base worktree")
-		return
-	}
-
-	if h.terminals != nil {
-		h.terminals.CloseSessionsForDirectory(target.Path)
-	}
-
-	if err := h.worktrees.Remove(r.Context(), projectPath, target); err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	writeJSON(w, http.StatusOK, worktreeResponse{Worktree: target})
+	writeJSON(w, http.StatusOK, worktreeResponse{Worktree: legacyWorktreeResponse(removed, workspaceID)})
 }
+
+type legacyRemoteBranchList struct {
+	Remote   string               `json:"remote"`
+	Branches []legacyRemoteBranch `json:"branches"`
+} // @name worktree.RemoteBranchList
+
+type legacyRemoteBranch struct {
+	Name                string `json:"name"`
+	Branch              string `json:"branch"`
+	HasLocalBranch      bool   `json:"hasLocalBranch"`
+	IsCheckedOut        bool   `json:"isCheckedOut"`
+	WorktreeName        string `json:"worktreeName"`
+	WorktreeProjectName string `json:"worktreeProjectName"`
+} // @name worktree.RemoteBranch
 
 // @Summary List remote branches
 // @ID listRemoteBranches
 // @Tags Worktrees
 // @Produce json
 // @Param project query string true "Project name"
-// @Success 200 {object} worktrees.RemoteBranchList
+// @Success 200 {object} legacyRemoteBranchList
 // @Failure 400 {object} errorResponse
 // @Failure 404 {object} errorResponse
 // @Router /api/worktrees/remote-branches [get]
 func (h Worktrees) ListRemoteBranches(w http.ResponseWriter, r *http.Request) {
-	projectPath, ok := h.resolveProjectPath(w, r.URL.Query().Get("project"))
+	repository, _, ok := h.resolveRepository(w, r, r.URL.Query().Get("project"))
 	if !ok {
 		return
 	}
 
-	branches, err := h.worktrees.RemoteBranches(r.Context(), projectPath)
+	branches, err := h.worktrees.Branches(r.Context(), repository, worktrees.BranchKindRemote)
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, branches)
+	response := legacyRemoteBranchList{Branches: make([]legacyRemoteBranch, 0, len(branches))}
+	for _, branch := range branches {
+		remote := referencedString(branch.Remote)
+		if response.Remote == "" {
+			response.Remote = remote
+		}
+
+		worktreeID := referencedString(branch.CheckedOutWorkspaceID)
+		worktreeName := strings.TrimPrefix(worktreeID, repository.Repository.ID+"-")
+		response.Branches = append(response.Branches, legacyRemoteBranch{
+			Name:                remote + "/" + branch.Name,
+			Branch:              branch.Name,
+			HasLocalBranch:      branch.HasLocalBranch,
+			IsCheckedOut:        branch.CheckedOutWorkspaceID != nil,
+			WorktreeName:        worktreeName,
+			WorktreeProjectName: worktreeID,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, response)
 }
 
-func (h Worktrees) resolveProjectPath(w http.ResponseWriter, projectName string) (string, bool) {
-	if strings.TrimSpace(projectName) == "" {
+func (h Worktrees) resolveRepository(
+	w http.ResponseWriter,
+	r *http.Request,
+	workspaceID string,
+) (gitrepositories.Context, string, bool) {
+	if strings.TrimSpace(workspaceID) == "" {
 		writeJSONError(w, http.StatusBadRequest, "project is required")
-		return "", false
+		return gitrepositories.Context{}, "", false
 	}
 
-	projectPath, err := h.workspaces.Path(projectName)
+	workspaceContext, isGit, err := h.repositories.ResolveWorkspace(r.Context(), workspaceID)
 	if err != nil {
 		writeJSONError(w, http.StatusNotFound, "project not found")
-		return "", false
+		return gitrepositories.Context{}, "", false
+	}
+	if !isGit {
+		writeJSONError(w, http.StatusBadRequest, "project is not a Git repository")
+		return gitrepositories.Context{}, "", false
 	}
 
-	return projectPath, true
+	return workspaceContext.RepositoryContext, workspaceID, true
+}
+
+func legacyWorktrees(availableWorktrees []worktrees.Worktree, currentWorkspaceID string) []legacyWorktree {
+	responses := make([]legacyWorktree, 0, len(availableWorktrees))
+	for _, worktree := range availableWorktrees {
+		responses = append(responses, legacyWorktreeResponse(worktree, currentWorkspaceID))
+	}
+	return responses
+}
+
+func legacyWorktreeResponse(worktree worktrees.Worktree, currentWorkspaceID string) legacyWorktree {
+	branchName := ""
+	if worktree.Branch != nil {
+		branchName = worktree.Branch.Name
+	}
+
+	return legacyWorktree{
+		Name:                    worktree.Name,
+		ProjectName:             worktree.WorkspaceID,
+		Path:                    worktree.Path(),
+		Branch:                  branchName,
+		IsBase:                  worktree.IsMain,
+		IsCurrent:               worktree.WorkspaceID == currentWorkspaceID,
+		IsRemovable:             worktree.IsRemovable,
+		IgnoredFileCopyWarnings: worktree.IgnoredFileCopyWarnings,
+	}
 }
 
 func decodeJSONBody(r *http.Request, target any) error {

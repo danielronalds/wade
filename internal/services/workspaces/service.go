@@ -2,7 +2,11 @@ package workspaces
 
 // TODO: Review properly
 
-import "context"
+import (
+	"context"
+
+	"wade/internal/services/gitrepositories"
+)
 
 type Repository interface {
 	IDs() ([]string, error)
@@ -13,9 +17,9 @@ type Repository interface {
 	Reload(directories []string)
 }
 
-type GitRepository interface {
-	CurrentBranch(ctx context.Context, workspacePath string) (string, error)
-	OriginURL(ctx context.Context, workspacePath string) (string, error)
+type LocalRepositoryService interface {
+	ListWorkspaceContexts(ctx context.Context) ([]gitrepositories.WorkspaceContext, error)
+	ResolveWorkspace(ctx context.Context, workspaceID string) (gitrepositories.WorkspaceContext, bool, error)
 }
 
 type GitHubRepository interface {
@@ -23,46 +27,51 @@ type GitHubRepository interface {
 }
 
 type Service struct {
-	workspaces Repository
-	git        GitRepository
-	github     GitHubRepository
+	workspaces        Repository
+	localRepositories LocalRepositoryService
+	github            GitHubRepository
 }
 
-func NewService(workspaces Repository, git GitRepository, github GitHubRepository) Service {
-	return Service{workspaces: workspaces, git: git, github: github}
+func NewService(workspaces Repository, localRepositories LocalRepositoryService, github GitHubRepository) Service {
+	return Service{workspaces: workspaces, localRepositories: localRepositories, github: github}
 }
 
-func (s Service) List() ([]WorkspaceSummary, error) {
+func (s Service) List(ctx context.Context) ([]WorkspaceSummary, error) {
 	workspaceIDs, err := s.workspaces.IDs()
 	if err != nil {
 		return nil, err
 	}
 
-	workspaces := make([]WorkspaceSummary, 0, len(workspaceIDs))
-	for _, workspaceID := range workspaceIDs {
-		workspaces = append(workspaces, WorkspaceSummary{
-			ID:   workspaceID,
-			Name: workspaceID,
-		})
+	localContexts, err := s.localRepositories.ListWorkspaceContexts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	contextsByWorkspaceID := make(map[string]gitrepositories.WorkspaceContext, len(localContexts))
+	for _, localContext := range localContexts {
+		contextsByWorkspaceID[localContext.WorkspaceID] = localContext
 	}
 
-	return workspaces, nil
+	workspaceSummaries := make([]WorkspaceSummary, 0, len(workspaceIDs))
+	for _, workspaceID := range workspaceIDs {
+		localContext, isGit := contextsByWorkspaceID[workspaceID]
+		workspace := s.buildWorkspace(ctx, workspaceID, localContext, isGit, false)
+		workspaceSummaries = append(workspaceSummaries, WorkspaceSummary(workspace))
+	}
+
+	return workspaceSummaries, nil
 }
 
 func (s Service) Get(ctx context.Context, workspaceID string) (Workspace, error) {
-	workspacePath, err := s.Path(workspaceID)
+	if _, err := s.Path(workspaceID); err != nil {
+		return Workspace{}, err
+	}
+
+	localContext, isGit, err := s.localRepositories.ResolveWorkspace(ctx, workspaceID)
 	if err != nil {
 		return Workspace{}, err
 	}
 
-	metadata := loadMetadata(ctx, workspacePath, s.git, s.github)
-	return Workspace{
-		ID:                 workspaceID,
-		Name:               workspaceID,
-		RemoteRepositoryID: metadata.remoteRepositoryID,
-		Branch:             metadata.branch,
-		Links:              metadata.links,
-	}, nil
+	return s.buildWorkspace(ctx, workspaceID, localContext, isGit, true), nil
 }
 
 func (s Service) Path(workspaceID string) (string, error) {
@@ -100,4 +109,39 @@ func (s Service) Directories() []string {
 
 func (s Service) Reload(directories []string) {
 	s.workspaces.Reload(directories)
+}
+
+func (s Service) buildWorkspace(
+	ctx context.Context,
+	workspaceID string,
+	localContext gitrepositories.WorkspaceContext,
+	isGit bool,
+	includePullRequest bool,
+) Workspace {
+	workspace := Workspace{ID: workspaceID, Name: workspaceID}
+	if !isGit {
+		return workspace
+	}
+
+	repository := localContext.RepositoryContext.Repository
+	workspace.RepositoryID = stringReference(repository.ID)
+	workspace.RemoteRepositoryID = repository.RemoteRepositoryID
+	workspace.Worktree = &WorktreeReference{
+		ID:          workspaceID,
+		IsMain:      localContext.IsMain,
+		IsRemovable: localContext.IsRemovable,
+	}
+	workspace.Branch = &Branch{
+		Ref:        localContext.Branch.Ref,
+		Name:       localContext.Branch.Name,
+		IsDetached: localContext.Branch.IsDetached,
+		Commit:     localContext.Branch.Commit,
+	}
+	github := s.github
+	if !includePullRequest {
+		github = nil
+	}
+	workspace.Links = workspaceLinks(ctx, repository.RemoteRepositoryID, localContext.Branch.Name, github)
+
+	return workspace
 }
