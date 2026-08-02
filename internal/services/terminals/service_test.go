@@ -158,6 +158,21 @@ func TestInputTargetsExactTerminalWithBracketedPaste(t *testing.T) {
 	}
 }
 
+func TestActiveWorkspaceIDsReturnsSortedUniqueWorkspaceIDs(t *testing.T) {
+	service := NewService(workspaceRepositoryStub{}, "/bin/sh", "editor.localhost:8765", nil)
+	_, _ = addWritableTerminal(t, service, "bravo", "misc", TerminalRoleMisc, nil)
+	_, _ = addWritableTerminal(t, service, "alpha", "misc", TerminalRoleMisc, nil)
+	_, _ = addWritableTerminal(t, service, "alpha", "server", TerminalRoleServer, nil)
+	closedTerminal, _ := addWritableTerminal(t, service, "closed", "misc", TerminalRoleMisc, nil)
+	closedTerminal.closed.Store(true)
+
+	got := service.ActiveWorkspaceIDs()
+	want := []string{"alpha", "bravo"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ActiveWorkspaceIDs() = %#v, want %#v", got, want)
+	}
+}
+
 func TestCloseTerminalsForDirectoryUsesWorkspaceIdentity(t *testing.T) {
 	service := NewService(
 		workspaceRepositoryStub{workspaceID: "wade", found: true},

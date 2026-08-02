@@ -14,6 +14,7 @@ import (
 	"wade/internal/services/remoterepositories"
 	"wade/internal/services/review"
 	"wade/internal/services/terminals"
+	"wade/internal/services/workspacequeries"
 	"wade/internal/services/workspaces"
 	"wade/internal/services/worktrees"
 )
@@ -33,7 +34,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Application {
 	workspaceService := workspaces.NewService(workspaceRepository, localRepositoryService, gitHubRepository)
 	reviewService := review.NewService(workspaceService, gitRepository, gitHubRepository, fileRepository)
 	terminalService := terminals.NewService(workspaceService, configuration.Shell, configuration.Address, terminalAgents(configuration.Agents))
-	workspaceService.SetTerminalActivity(terminalService)
+	workspaceQueryService := workspacequeries.NewService(workspaceService, terminalService)
 	worktreeService := worktrees.NewService(configuration, gitRepository, fileRepository, workspaceRepository, terminalService)
 	remoteRepositoryService := remoterepositories.NewService(
 		gitHubRepository,
@@ -53,7 +54,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Application {
 	settingsService := config.NewService(repositories.NewSettingsRepository(), runtimeApplier)
 
 	controllerSet := controllers.Controllers{
-		Workspaces:         controllers.NewWorkspaces(workspaceService, remoteRepositoryService),
+		Workspaces:         controllers.NewWorkspaces(workspaceQueryService, remoteRepositoryService),
 		Repositories:       controllers.NewRepositories(localRepositoryService),
 		RemoteRepositories: controllers.NewRemoteRepositories(remoteRepositoryService),
 		Worktrees:          controllers.NewWorktrees(localRepositoryService, worktreeService),

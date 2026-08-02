@@ -11,6 +11,7 @@ import (
 
 type workspaceService interface {
 	List(ctx context.Context) ([]workspaces.WorkspaceSummary, error)
+	ListActive(ctx context.Context) ([]workspaces.WorkspaceSummary, error)
 	Get(ctx context.Context, workspaceID string) (workspaces.Workspace, error)
 }
 
@@ -54,7 +55,13 @@ func (h Workspaces) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspaceSummaries, err := h.workspaces.List(r.Context())
+	var workspaceSummaries []workspaces.WorkspaceSummary
+	var err error
+	if activity == "active" {
+		workspaceSummaries, err = h.workspaces.ListActive(r.Context())
+	} else {
+		workspaceSummaries, err = h.workspaces.List(r.Context())
+	}
 	if err != nil {
 		writeServiceError(w, err, "Unable to list workspaces.")
 		return

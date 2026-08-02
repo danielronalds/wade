@@ -13,11 +13,16 @@ import (
 )
 
 type workspaceServiceStub struct {
-	items []workspaces.WorkspaceSummary
+	items       []workspaces.WorkspaceSummary
+	activeItems []workspaces.WorkspaceSummary
 }
 
 func (s workspaceServiceStub) List(context.Context) ([]workspaces.WorkspaceSummary, error) {
 	return s.items, nil
+}
+
+func (s workspaceServiceStub) ListActive(context.Context) ([]workspaces.WorkspaceSummary, error) {
+	return s.activeItems, nil
 }
 
 func (workspaceServiceStub) Get(context.Context, string) (workspaces.Workspace, error) {
@@ -37,7 +42,7 @@ func (s workspaceMaterialiserStub) Clone(_ context.Context, request remotereposi
 func TestListWorkspacesFiltersUsingV1QueryParameters(t *testing.T) {
 	repositoryID := "wade"
 	remoteRepositoryID := "example/wade"
-	handler := NewWorkspaces(workspaceServiceStub{items: []workspaces.WorkspaceSummary{
+	handler := NewWorkspaces(workspaceServiceStub{activeItems: []workspaces.WorkspaceSummary{
 		{
 			ID:                 "wade",
 			RepositoryID:       &repositoryID,

@@ -4,7 +4,7 @@ package workspaces
 
 import (
 	"context"
-	"sync"
+	"sort"
 
 	"wade/internal/services/gitrepositories"
 )
@@ -27,20 +27,10 @@ type GitHubRepository interface {
 	PullRequestURL(ctx context.Context, repository string, branch string) (string, error)
 }
 
-type TerminalActivity interface {
-	ActiveTerminalCount(workspaceID string) int
-}
-
 type Service struct {
 	workspaces        Repository
 	localRepositories LocalRepositoryService
 	github            GitHubRepository
-	activity          *activityState
-}
-
-type activityState struct {
-	mu       sync.RWMutex
-	provider TerminalActivity
 }
 
 func NewService(workspaces Repository, localRepositories LocalRepositoryService, github GitHubRepository) Service {
@@ -48,15 +38,7 @@ func NewService(workspaces Repository, localRepositories LocalRepositoryService,
 		workspaces:        workspaces,
 		localRepositories: localRepositories,
 		github:            github,
-		activity:          &activityState{},
 	}
-}
-
-func (s Service) SetTerminalActivity(provider TerminalActivity) {
-	s.activity.mu.Lock()
-	defer s.activity.mu.Unlock()
-
-	s.activity.provider = provider
 }
 
 func (s Service) List(ctx context.Context) ([]WorkspaceSummary, error) {
@@ -77,6 +59,44 @@ func (s Service) List(ctx context.Context) ([]WorkspaceSummary, error) {
 	workspaceSummaries := make([]WorkspaceSummary, 0, len(workspaceIDs))
 	for _, workspaceID := range workspaceIDs {
 		localContext, isGit := contextsByWorkspaceID[workspaceID]
+		workspace := s.buildWorkspace(ctx, workspaceID, localContext, isGit, false)
+		workspaceSummaries = append(workspaceSummaries, WorkspaceSummary(workspace))
+	}
+
+	return workspaceSummaries, nil
+}
+
+func (s Service) ListByIDs(ctx context.Context, workspaceIDs []string) ([]WorkspaceSummary, error) {
+	requestedWorkspaceIDs := append([]string(nil), workspaceIDs...)
+	if len(requestedWorkspaceIDs) == 0 {
+		return []WorkspaceSummary{}, nil
+	}
+	sort.Strings(requestedWorkspaceIDs)
+
+	discoveredWorkspaceIDs, err := s.workspaces.IDs()
+	if err != nil {
+		return nil, err
+	}
+	discoveredWorkspaces := make(map[string]struct{}, len(discoveredWorkspaceIDs))
+	for _, workspaceID := range discoveredWorkspaceIDs {
+		discoveredWorkspaces[workspaceID] = struct{}{}
+	}
+
+	workspaceSummaries := make([]WorkspaceSummary, 0, len(requestedWorkspaceIDs))
+	seenWorkspaceIDs := make(map[string]struct{}, len(requestedWorkspaceIDs))
+	for _, workspaceID := range requestedWorkspaceIDs {
+		if _, seen := seenWorkspaceIDs[workspaceID]; seen {
+			continue
+		}
+		seenWorkspaceIDs[workspaceID] = struct{}{}
+		if _, found := discoveredWorkspaces[workspaceID]; !found {
+			continue
+		}
+
+		localContext, isGit, err := s.localRepositories.ResolveWorkspace(ctx, workspaceID)
+		if err != nil {
+			return nil, err
+		}
 		workspace := s.buildWorkspace(ctx, workspaceID, localContext, isGit, false)
 		workspaceSummaries = append(workspaceSummaries, WorkspaceSummary(workspace))
 	}
@@ -142,12 +162,6 @@ func (s Service) buildWorkspace(
 	includePullRequest bool,
 ) Workspace {
 	workspace := Workspace{ID: workspaceID, Name: workspaceID}
-	s.activity.mu.RLock()
-	activityProvider := s.activity.provider
-	s.activity.mu.RUnlock()
-	if activityProvider != nil {
-		workspace.Activity.ActiveTerminalCount = activityProvider.ActiveTerminalCount(workspaceID)
-	}
 	if !isGit {
 		return workspace
 	}
