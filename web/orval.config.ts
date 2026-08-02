@@ -3,7 +3,11 @@ import { defineConfig } from 'orval';
 export default defineConfig({
   wade: {
     input: {
-      target: '../internal/openapi/swagger.json'
+      target: '../internal/openapi/swagger.json',
+      unsafeDisableValidation: true,
+      override: {
+        transformer: './orval-transformer.mjs'
+      }
     },
     output: {
       target: 'src/api/generated/wade.ts',

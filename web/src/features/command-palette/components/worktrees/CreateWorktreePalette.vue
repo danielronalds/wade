@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { createWorktree } from '@/api/generated/wade';
-import { useWorktreeNavigation } from '@/features/command-palette/composables/useWorktreeNavigation';
-import type { Worktree } from '@/types/worktree';
+import { createRepositoryWorktree, type Worktree } from '@/api/generated/wade';
 import PaletteShell from '@/features/command-palette/components/PaletteShell.vue';
-import type { PaletteResult } from '@/features/command-palette/types';
 import { usePaletteRequestState } from '@/features/command-palette/composables/usePaletteRequestState';
+import { useWorktreeNavigation } from '@/features/command-palette/composables/useWorktreeNavigation';
+import type { PaletteResult } from '@/features/command-palette/types';
 
 const props = defineProps<{
-  projectName: string;
+  repositoryId: string;
 }>();
 
 const emit = defineEmits<{
@@ -40,14 +39,10 @@ const branchName = computed(() => query.value.trim());
 
 const paletteSummary = computed(() => {
   if (isCreating.value) {
-    return `Creating worktree for ${props.projectName}`;
+    return `Creating worktree for ${props.repositoryId}`;
   }
 
-  if (createdWorktree.value) {
-    return createdWorktree.value.projectName;
-  }
-
-  return props.projectName;
+  return createdWorktree.value?.workspaceId ?? props.repositoryId;
 });
 
 const openWorktree = async (worktree: Worktree, reservedTab?: Window) => {
@@ -67,7 +62,7 @@ const createOrOpenWorktree = async () => {
   const reservedTab = reserveWorktreeTab();
 
   try {
-    const { worktree } = await createWorktree({ project: props.projectName, branch: branchName.value });
+    const worktree = await createRepositoryWorktree(props.repositoryId, { branchRef: branchName.value });
     if ((worktree.ignoredFileCopyWarnings?.length ?? 0) > 0) {
       closeReservedWorktreeTab(reservedTab);
       createdWorktree.value = worktree;
@@ -88,7 +83,7 @@ const paletteResults = computed<PaletteResult[]>(() => {
   if (createdWorktree.value && hasCopyWarnings.value) {
     return [{
       id: 'open-created-worktree',
-      label: `Open ${createdWorktree.value.projectName}`,
+      label: `Open ${createdWorktree.value.workspaceId}`,
       actionLabel: 'Open worktree',
       isDisabled: false,
       run: () => {
@@ -113,7 +108,6 @@ const paletteResults = computed<PaletteResult[]>(() => {
     }
   }];
 });
-
 </script>
 
 <template>

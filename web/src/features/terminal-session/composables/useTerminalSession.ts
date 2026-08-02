@@ -3,8 +3,9 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
-import { reloadTerminalSession } from '@/api/generated/wade';
-import { useRecentProjects } from '@/features/projects/composables/useRecentProjects';
+import { deleteWorkspaceTerminal, putWorkspaceTerminal } from '@/api/generated/wade';
+import { useRecentWorkspaces } from '@/features/workspaces/composables/useRecentWorkspaces';
+import { WadeHTTPError } from '@/api/httpClient';
 import { createTerminalWebSocket } from '@/features/terminal-session/createTerminalWebSocket';
 
 type Disposable = {
@@ -12,13 +13,12 @@ type Disposable = {
 };
 
 type TerminalSessionOptions = {
-  projectName: string;
-  terminalName: string;
-  agentName?: string;
+  workspaceId: string;
+  terminalId: string;
   terminalElement: Ref<HTMLElement | null>;
   isActive: Readonly<Ref<boolean>>;
   isSelectedAgent: Readonly<Ref<boolean>>;
-  onSessionEnd?: () => void;
+  onTerminalEnd?: () => void;
 };
 
 type TerminalControlMessage = {
@@ -119,19 +119,19 @@ const createTerminal = () => new Terminal({
 });
 
 export const useTerminalSession = ({
-  projectName,
-  terminalName,
-  agentName,
+  workspaceId,
+  terminalId,
   terminalElement,
   isActive,
   isSelectedAgent,
-  onSessionEnd
+  onTerminalEnd
 }: TerminalSessionOptions) => {
-  const { recordRecentProject } = useRecentProjects();
+  const { recordRecentWorkspace } = useRecentWorkspaces();
   const isConnected = ref(false);
   const connectionStatusText = ref('Disconnected');
 
   let socket: WebSocket | undefined;
+  let socketUrl = '';
   let terminal: Terminal | undefined;
   let fitAddon: FitAddon | undefined;
   let webglAddon: WebglAddon | undefined;
@@ -324,11 +324,7 @@ export const useTerminalSession = ({
   };
 
   const connectWebSocket = (run: number) => {
-    const connection = createTerminalWebSocket({
-      project: projectName,
-      terminal: terminalName,
-      agent: agentName || undefined
-    });
+    const connection = createTerminalWebSocket(socketUrl);
     socket = connection;
 
     connection.addEventListener('open', () => {
@@ -336,7 +332,7 @@ export const useTerminalSession = ({
         return;
       }
 
-      recordRecentProject(projectName);
+      recordRecentWorkspace(workspaceId);
       setConnectionStatus(true, 'Connected');
       fitAndResize();
       sendAgentActivation();
@@ -363,7 +359,7 @@ export const useTerminalSession = ({
 
       setConnectionStatus(false, 'Disconnected');
       terminal?.write('\r\nConnection closed.\r\n');
-      onSessionEnd?.();
+      onTerminalEnd?.();
     });
 
     connection.addEventListener('error', () => {
@@ -411,7 +407,19 @@ export const useTerminalSession = ({
     sessionRun += 1;
     const run = sessionRun;
     setConnectionStatus(false, 'Connecting');
-    document.title = `WADE - ${projectName}`;
+    document.title = `WADE - ${workspaceId}`;
+
+    try {
+      const terminalResource = await putWorkspaceTerminal(workspaceId, terminalId);
+      socketUrl = terminalResource.socketUrl;
+    } catch (error) {
+      if (isSessionRunActive(run)) {
+        const message = error instanceof Error ? `: ${error.message}` : '';
+        setConnectionStatus(false, 'Error');
+        terminal?.write(`\r\nTerminal start failed${message}.\r\n`);
+      }
+      return;
+    }
 
     await waitForEmbeddedFont();
 
@@ -438,7 +446,13 @@ export const useTerminalSession = ({
   };
 
   const closeRemoteTerminal = async () => {
-    await reloadTerminalSession({ project: projectName, terminal: terminalName, agent: agentName });
+    try {
+      await deleteWorkspaceTerminal(workspaceId, terminalId);
+    } catch (error) {
+      if (!(error instanceof WadeHTTPError) || error.status !== 404) {
+        throw error;
+      }
+    }
   };
 
   const reload = async () => {
@@ -467,10 +481,7 @@ export const useTerminalSession = ({
         terminal?.write(`\r\nReload failed${message}.\r\n`);
       }
     } finally {
-      if (reloadingRun === run) {
-        reloadingRun = undefined;
-      }
-
+      reloadingRun = undefined;
       isReloading = false;
     }
   };

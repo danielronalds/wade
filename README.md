@@ -1,26 +1,26 @@
 # WADE
 
 WADE is a Web-based Agentic Development Environment. It is a local-first
-browser workspace for agentic coding sessions, backed by real project shells
+browser workspace for agentic coding sessions, backed by real workspace shells
 through Go, PTYs, WebSockets and xterm.js.
 
 WADE started as a simple browser terminal, but its purpose is now broader: make
-it easy to open a project, reconnect to long-lived terminal sessions, and keep
-useful project context close to the work.
+it easy to open a workspace, reconnect to long-lived terminals, and keep
+useful workspace context close to the work.
 
 WADE is intended to be keyboard driven. Mouse interactions are useful, but the
-primary workflow should feel fast from the keyboard, especially project search,
+primary workflow should feel fast from the keyboard, especially workspace search,
 tab switching, pane switching and terminal focus.
 
 ## What it provides
 
-- A keyboard-first home screen with recent projects, a project command palette
+- A keyboard-first home screen with recent workspaces, a workspace command palette
   and a general command palette.
-- Project discovery from local development directories.
-- Persistent project terminal sessions for the lifetime of the server.
-- Agent and Misc terminal panes for project work.
+- Workspace discovery from local development directories.
+- Persistent workspace terminals for the lifetime of the server.
+- Agent and Misc terminal panes for workspace work.
 - A Server terminal tab for running the application under development.
-- A project topbar with current branch, Linear ticket and pull request links.
+- A workspace topbar with current branch, Linear ticket and pull request links.
 - Embedded Nerd Font support for terminal icons.
 - A local-only HTTP server with same-origin WebSocket checks.
 
@@ -47,20 +47,20 @@ To use a different address:
 WADE_ADDR=127.0.0.1:8090 mise run dev
 ```
 
-## Projects
+## Workspaces
 
-The root path shows the five most recently opened projects from browser
-`localStorage`. Press `Ctrl + P` to open the project picker and search all
-projects WADE can see. Press `Ctrl + S` to open active sessions for the current
+The root path shows the five most recently opened workspaces from browser
+`localStorage`. Press `Ctrl + P` to open the workspace picker and search all
+workspaces WADE can see. Press `Ctrl + S` to open active workspaces for the current
 WADE server lifetime.
 
-Project pages use the project name as the path:
+Workspace pages use the workspace ID as the path:
 
 ```text
-http://editor-dev.localhost:8090/wade
+http://editor-dev.localhost:8090/workspaces/wade
 ```
 
-The project name is resolved against project directories from
+The workspace ID is resolved against workspace directories from
 `~/.config/wade/config.json`. WADE creates this file on first server start or
 when you run `wade config` if it does not exist:
 
@@ -70,7 +70,7 @@ when you run `wade config` if it does not exist:
     { "name": "Pi", "command": "pi -c", "default": true },
     { "name": "Claude", "command": "claude", "default": false }
   ],
-  "projectDirectories": [
+  "workspaceDirectories": [
     "~/Personal",
     "~/Work"
   ],
@@ -79,14 +79,14 @@ when you run `wade config` if it does not exist:
 }
 ```
 
-Project directories can use `~` or absolute paths. Missing directories are
+Workspace directories can use `~` or absolute paths. Missing directories are
 allowed and are skipped during discovery. Edit settings at `/settings`, or edit
-the JSON file directly and run `Reload Config` from the general command palette
+the JSON file directly and run `Reload Settings` from the general command palette
 to apply safe settings changes without restarting WADE.
 
-Project terminal sessions are kept alive for the lifetime of the server.
-Reopening a project reconnects to the existing session rather than starting a
-new one. The Agent pane starts the selected configured agent command through
+Workspace terminals are kept alive for the lifetime of the server. Reopening a
+workspace reconnects to the existing terminals rather than starting new ones.
+The Agent pane starts the selected configured agent command through
 your shell. Misc and Server terminals start your normal shell.
 
 ## Keyboard shortcuts
@@ -95,13 +95,13 @@ Keyboard shortcuts are a core part of WADE's interaction model. New workflows
 should prefer shortcuts and predictable focus behaviour over mouse-only flows.
 
 - `Ctrl + K`: open the general command palette.
-- `Ctrl + P`: open the project picker.
-- `Ctrl + S`: open the active sessions picker.
-- `Ctrl + Alt + T`: toggle the project scratchpad terminal (`Ctrl + Option + T` on macOS).
+- `Ctrl + P`: open the workspace picker.
+- `Ctrl + S`: open the active workspace picker.
+- `Ctrl + Alt + T`: toggle the workspace scratchpad terminal (`Ctrl + Option + T` on macOS).
 - `Ctrl + B`, then `1`: switch to the Terminal tab.
 - `Ctrl + B`, then `2`: switch to the Server tab.
 - `Ctrl + B`, then `3`: switch to the Review tab.
-- `Ctrl + B`, then `4`: open the project scratchpad terminal.
+- `Ctrl + B`, then `4`: open the workspace scratchpad terminal.
 - `Ctrl + B`, then `o`: switch to the next terminal pane in the active tab.
 
 ## Terminal behaviour

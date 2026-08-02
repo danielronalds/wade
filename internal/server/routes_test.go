@@ -37,6 +37,61 @@ func TestSwaggerRoutesAreAlwaysServed(t *testing.T) {
 	}
 }
 
+func TestAPIV1RoutesAreRegistered(t *testing.T) {
+	httpServer := New(testControllers())
+	paths := []string{
+		"/api/v1/workspaces",
+		"/api/v1/workspaces/wade",
+		"/api/v1/remote-repositories",
+		"/api/v1/repositories/wade",
+		"/api/v1/repositories/wade/worktrees",
+		"/api/v1/repositories/wade/worktrees/wade-feature",
+		"/api/v1/repositories/wade/branches",
+		"/api/v1/workspaces/wade/terminals",
+		"/api/v1/workspaces/wade/terminals/agent:pi",
+		"/api/v1/workspaces/wade/terminals/agent:pi/input",
+		"/api/v1/workspaces/wade/terminals/agent:pi/socket",
+		"/api/v1/workspaces/wade/review-snapshots",
+		"/api/v1/review-snapshots/review_snapshot_01",
+		"/api/v1/review-snapshots/review_snapshot_01/files/file_01/contents",
+		"/api/v1/settings",
+		"/api/v1/settings/reload",
+	}
+
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			response := serveMethodRequest(httpServer, http.MethodPatch, path)
+			if response.Code != http.StatusMethodNotAllowed {
+				t.Fatalf("PATCH %s status = %d, want %d", path, response.Code, http.StatusMethodNotAllowed)
+			}
+		})
+	}
+}
+
+func TestLegacyAPIRoutesAreNotRegistered(t *testing.T) {
+	httpServer := New(testControllers())
+	paths := []string{
+		"/api/projects",
+		"/api/project?project=wade",
+		"/api/remote-projects",
+		"/api/sessions",
+		"/api/terminal/reload",
+		"/api/worktrees",
+		"/api/review?project=wade",
+		"/api/config",
+		"/ws?project=wade",
+	}
+
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			response := serveRequest(httpServer, path)
+			if response.Code != http.StatusNotFound {
+				t.Fatalf("GET %s status = %d, want %d", path, response.Code, http.StatusNotFound)
+			}
+		})
+	}
+}
+
 func TestServiceWorkerIsServedAtApplicationRoot(t *testing.T) {
 	httpServer := New(testControllers())
 
@@ -59,8 +114,12 @@ func TestServiceWorkerIsServedAtApplicationRoot(t *testing.T) {
 }
 
 func serveRequest(httpServer *Server, path string) *httptest.ResponseRecorder {
+	return serveMethodRequest(httpServer, http.MethodGet, path)
+}
+
+func serveMethodRequest(httpServer *Server, method string, path string) *httptest.ResponseRecorder {
 	response := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, path, nil)
+	request := httptest.NewRequest(method, path, nil)
 
 	httpServer.Mux.ServeHTTP(response, request)
 

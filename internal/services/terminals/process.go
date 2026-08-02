@@ -21,32 +21,32 @@ type WadeEnvironment struct {
 	Address     string
 }
 
-type Session struct {
+type Process struct {
 	command  *exec.Cmd
 	terminal *os.File
 }
 
-func Start(shell string, directory string, environment WadeEnvironment, size Size) (*Session, error) {
+func Start(shell string, directory string, environment WadeEnvironment, size Size) (*Process, error) {
 	return start(interactiveShell(shell, environment), directory, size)
 }
 
-func StartShellCommand(shell string, directory string, environment WadeEnvironment, command string, size Size) (*Session, error) {
+func StartShellCommand(shell string, directory string, environment WadeEnvironment, command string, size Size) (*Process, error) {
 	return start(shellCommand(shell, environment, command), directory, size)
 }
 
-func (s *Session) Read(data []byte) (int, error) {
+func (s *Process) Read(data []byte) (int, error) {
 	return s.terminal.Read(data)
 }
 
-func (s *Session) Write(data []byte) (int, error) {
+func (s *Process) Write(data []byte) (int, error) {
 	return s.terminal.Write(data)
 }
 
-func (s *Session) Resize(size Size) error {
+func (s *Process) Resize(size Size) error {
 	return pty.Setsize(s.terminal, &pty.Winsize{Cols: size.Cols, Rows: size.Rows})
 }
 
-func (s *Session) Close() {
+func (s *Process) Close() {
 	_ = s.terminal.Close()
 
 	if s.command.Process != nil {
@@ -65,10 +65,17 @@ func shellCommand(shell string, environment WadeEnvironment, command string) *ex
 }
 
 func withShellEnvironment(command *exec.Cmd, shell string, environment WadeEnvironment) *exec.Cmd {
+	inheritedEnvironment := os.Environ()
+	environmentWithoutLegacySession := make([]string, 0, len(inheritedEnvironment))
+	for _, entry := range inheritedEnvironment {
+		if !strings.HasPrefix(entry, "WADE_SESSION=") {
+			environmentWithoutLegacySession = append(environmentWithoutLegacySession, entry)
+		}
+	}
+
 	command.Env = setEnvironmentValues(
-		os.Environ(),
+		environmentWithoutLegacySession,
 		environmentVariable{name: "SHELL", value: shell},
-		environmentVariable{name: "WADE_SESSION", value: environment.WorkspaceID},
 		environmentVariable{name: "WADE_WORKSPACE_ID", value: environment.WorkspaceID},
 		environmentVariable{name: "WADE_TERMINAL_ID", value: environment.TerminalID},
 		environmentVariable{name: "WADE_ADDR", value: environment.Address},
@@ -76,7 +83,7 @@ func withShellEnvironment(command *exec.Cmd, shell string, environment WadeEnvir
 	return command
 }
 
-func start(command *exec.Cmd, directory string, size Size) (*Session, error) {
+func start(command *exec.Cmd, directory string, size Size) (*Process, error) {
 	command.Dir = directory
 	if command.Env == nil {
 		command.Env = os.Environ()
@@ -92,7 +99,7 @@ func start(command *exec.Cmd, directory string, size Size) (*Session, error) {
 		return nil, err
 	}
 
-	return &Session{
+	return &Process{
 		command:  command,
 		terminal: terminalFile,
 	}, nil

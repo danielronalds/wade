@@ -222,36 +222,6 @@ func (s *Service) Input(workspaceID string, terminalID string, text string, mode
 	return err
 }
 
-func (s *Service) LegacyTerminalID(terminalName string, agentName string) (string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	terminalName = strings.ToLower(strings.TrimSpace(terminalName))
-	if terminalName != "agent" {
-		descriptor, err := resolveTerminalDescriptor(terminalName, s.agents)
-		if err != nil {
-			return "", err
-		}
-		return descriptor.id, nil
-	}
-
-	agentName = strings.TrimSpace(agentName)
-	if agentName == "" {
-		for _, agent := range s.agents {
-			if agent.Default {
-				agentName = agent.Name
-				break
-			}
-		}
-	}
-
-	descriptor, err := resolveTerminalDescriptor("agent:"+agentName, s.agents)
-	if err != nil {
-		return "", err
-	}
-	return descriptor.id, nil
-}
-
 func (s *Service) ActiveTerminalCount(workspaceID string) int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -264,53 +234,6 @@ func (s *Service) ActiveTerminalCount(workspaceID string) int {
 		}
 	}
 	return count
-}
-
-func (s *Service) ActiveWorkspaceIDs() []string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	workspaceIDs := make(map[string]struct{})
-	for _, terminal := range s.terminals {
-		if !terminal.IsClosed() {
-			workspaceIDs[terminal.WorkspaceID] = struct{}{}
-		}
-	}
-
-	activeWorkspaceIDs := make([]string, 0, len(workspaceIDs))
-	for workspaceID := range workspaceIDs {
-		activeWorkspaceIDs = append(activeWorkspaceIDs, workspaceID)
-	}
-	sort.Strings(activeWorkspaceIDs)
-
-	return activeWorkspaceIDs
-}
-
-func (s *Service) InputToSelectedAgent(workspaceID string, text string) (int, error) {
-	s.mu.Lock()
-	selectedTerminal := s.selectedAgentTerminal[workspaceID]
-	if !s.isActiveAgentTerminal(selectedTerminal, workspaceID) {
-		delete(s.selectedAgentTerminal, workspaceID)
-		selectedTerminal = nil
-	}
-
-	activeTerminals := make([]*Terminal, 0, 1)
-	if selectedTerminal != nil {
-		activeTerminals = append(activeTerminals, selectedTerminal)
-	} else {
-		for _, terminal := range s.terminals {
-			if s.isActiveAgentTerminal(terminal, workspaceID) {
-				activeTerminals = append(activeTerminals, terminal)
-			}
-		}
-	}
-	s.mu.Unlock()
-
-	if len(activeTerminals) != 1 {
-		return len(activeTerminals), nil
-	}
-
-	return 1, s.Input(workspaceID, activeTerminals[0].ID, text, InputModeBracketedPaste)
 }
 
 func (s *Service) CloseTerminalsForDirectory(directory string) int {

@@ -25,12 +25,12 @@ func ValidateWorkspaceDirectories(directories []string) error {
 func resolveWorkspaceDirectories(homeDir string, directories []string) ([]string, error) {
 	workspaceDirs := make([]string, 0, len(directories))
 	for _, directory := range directories {
-		projectDir, err := resolveWorkspaceDirectory(homeDir, directory)
+		workspaceDir, err := resolveWorkspaceDirectory(homeDir, directory)
 		if err != nil {
 			return nil, err
 		}
 
-		workspaceDirs = append(workspaceDirs, projectDir)
+		workspaceDirs = append(workspaceDirs, workspaceDir)
 	}
 
 	return workspaceDirs, nil

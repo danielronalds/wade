@@ -163,6 +163,9 @@ func (s *Service) Clone(ctx context.Context, request CloneRequest) (workspaces.W
 		return workspaces.Workspace{}, errors.New("file repository is required")
 	}
 	if err := ensureTargetDoesNotExist(s.files, targetPath); err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return workspaces.Workspace{}, WorkspaceAlreadyExistsError{WorkspaceID: workspaceID}
+		}
 		return workspaces.Workspace{}, err
 	}
 	if err := s.files.EnsureDirectory(workspaceDirectory.Path); err != nil {
@@ -252,15 +255,7 @@ func buildRemoteRepository(
 }
 
 func ensureTargetDoesNotExist(files FileRepository, path string) error {
-	if err := files.EnsurePathDoesNotExist(path); err != nil {
-		if errors.Is(err, os.ErrExist) {
-			return fmt.Errorf("workspace already exists at %s", path)
-		}
-
-		return err
-	}
-
-	return nil
+	return files.EnsurePathDoesNotExist(path)
 }
 
 func cloneWorkspaceDirectories(workspaceDirectories []WorkspaceDirectory) []WorkspaceDirectory {

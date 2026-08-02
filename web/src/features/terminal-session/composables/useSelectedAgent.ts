@@ -1,8 +1,23 @@
 // NOTE: Vibecoded and not suppppppper reviewed
-const selectedAgentStorageKey = (projectName: string) => `wade:selected-agent:v2:${projectName}`;
+const selectedAgentStorageKey = (workspaceId: string) => `wade:selected-agent:v3:${workspaceId}`;
+const legacySelectedAgentStorageKey = (workspaceId: string) => `wade:selected-agent:v2:${workspaceId}`;
 
-export const loadSelectedAgentName = (projectName: string) => window.localStorage.getItem(selectedAgentStorageKey(projectName)) ?? '';
+export const loadSelectedAgentName = (workspaceId: string) => {
+  const selectedAgentName = window.localStorage.getItem(selectedAgentStorageKey(workspaceId));
+  if (selectedAgentName !== null) {
+    return selectedAgentName;
+  }
 
-export const storeSelectedAgentName = (projectName: string, agentName: string) => {
-  window.localStorage.setItem(selectedAgentStorageKey(projectName), agentName);
+  const legacySelectedAgentName = window.localStorage.getItem(legacySelectedAgentStorageKey(workspaceId)) ?? '';
+  if (legacySelectedAgentName !== '') {
+    window.localStorage.setItem(selectedAgentStorageKey(workspaceId), legacySelectedAgentName);
+    window.localStorage.removeItem(legacySelectedAgentStorageKey(workspaceId));
+  }
+
+  return legacySelectedAgentName;
+};
+
+export const storeSelectedAgentName = (workspaceId: string, agentName: string) => {
+  window.localStorage.setItem(selectedAgentStorageKey(workspaceId), agentName);
+  window.localStorage.removeItem(legacySelectedAgentStorageKey(workspaceId));
 };

@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-func preferredRemote(ctx context.Context, projectPath string, git gitRepository) (string, bool, error) {
-	output, err := git.Remotes(ctx, projectPath)
+func preferredRemote(ctx context.Context, repositoryPath string, git gitRepository) (string, bool, error) {
+	output, err := git.Remotes(ctx, repositoryPath)
 	if err != nil {
 		return "", false, fmt.Errorf("listing remotes: %w", err)
 	}
@@ -33,15 +33,15 @@ func preferredRemote(ctx context.Context, projectPath string, git gitRepository)
 	return "", false, errors.New("multiple git remotes found and none is origin")
 }
 
-func fetchRemote(ctx context.Context, projectPath string, remote string, git gitRepository) error {
-	if err := git.FetchRemote(ctx, projectPath, remote); err != nil {
+func fetchRemote(ctx context.Context, repositoryPath string, remote string, git gitRepository) error {
+	if err := git.FetchRemote(ctx, repositoryPath, remote); err != nil {
 		return fmt.Errorf("fetching remote %q: %w", remote, err)
 	}
 	return nil
 }
 
-func listRemoteBranches(ctx context.Context, projectPath string, remote string, git gitRepository) ([]string, error) {
-	output, err := git.RemoteBranches(ctx, projectPath)
+func listRemoteBranches(ctx context.Context, repositoryPath string, remote string, git gitRepository) ([]string, error) {
+	output, err := git.RemoteBranches(ctx, repositoryPath)
 	if err != nil {
 		return nil, fmt.Errorf("listing remote branches: %w", err)
 	}
@@ -59,8 +59,8 @@ func listRemoteBranches(ctx context.Context, projectPath string, remote string, 
 	return branches, nil
 }
 
-func listLocalBranchNames(ctx context.Context, projectPath string, git gitRepository) ([]string, error) {
-	output, err := git.LocalBranches(ctx, projectPath)
+func listLocalBranchNames(ctx context.Context, repositoryPath string, git gitRepository) ([]string, error) {
+	output, err := git.LocalBranches(ctx, repositoryPath)
 	if err != nil {
 		return nil, fmt.Errorf("listing local branches: %w", err)
 	}
@@ -70,8 +70,8 @@ func listLocalBranchNames(ctx context.Context, projectPath string, git gitReposi
 	return branches, nil
 }
 
-func listLocalBranches(ctx context.Context, projectPath string, git gitRepository) (map[string]bool, error) {
-	branchNames, err := listLocalBranchNames(ctx, projectPath, git)
+func listLocalBranches(ctx context.Context, repositoryPath string, git gitRepository) (map[string]bool, error) {
+	branchNames, err := listLocalBranchNames(ctx, repositoryPath, git)
 	if err != nil {
 		return nil, err
 	}
@@ -83,12 +83,12 @@ func listLocalBranches(ctx context.Context, projectPath string, git gitRepositor
 	return branches, nil
 }
 
-func validateBranchName(ctx context.Context, projectPath string, branch string, git gitRepository) error {
+func validateBranchName(ctx context.Context, repositoryPath string, branch string, git gitRepository) error {
 	if branch == "" {
 		return errors.New("branch is required")
 	}
 
-	if err := git.ValidateBranchName(ctx, projectPath, branch); err != nil {
+	if err := git.ValidateBranchName(ctx, repositoryPath, branch); err != nil {
 		return fmt.Errorf("invalid branch %q", branch)
 	}
 

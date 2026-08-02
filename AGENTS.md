@@ -36,13 +36,13 @@ tab switching, pane switching and terminal focus.
 
 Key product ideas:
 
-- The home screen shows recent projects and lets the user search all projects
+- The home screen shows recent workspaces and lets the user search all workspaces
   from the keyboard.
-- The general command palette should expose project actions without requiring
+- The general command palette should expose workspace actions without requiring
   mouse interaction.
-- Project pages keep agent, miscellaneous and server shells close together.
-- Terminal sessions persist for the lifetime of the server.
-- Project metadata should reduce context switching, such as branch, Linear
+- Workspace pages keep agent, miscellaneous and server shells close together.
+- Terminals persist for the lifetime of the server.
+- Workspace metadata should reduce context switching, such as branch, Linear
   ticket and pull request links.
 - The app should stay local-first and avoid exposing shells to other origins.
 
@@ -51,7 +51,7 @@ Key product ideas:
 Use `xterm.js`, not `ghostty-web`, for now. `ghostty-web` was tried, but did
 not work quite right for this app.
 
-The project screen has a topbar, a sidebar, and terminal tabs. The Terminal tab
+The workspace screen has a topbar, a sidebar, and terminal tabs. The Terminal tab
 contains Agent and Misc panes. The Server tab contains one terminal.
 
 Resize handling uses the xterm fit addon. The client sends JSON control
@@ -75,12 +75,12 @@ Keyboard shortcuts are part of the product design, not just convenience helpers.
 When adding UI, prefer a clear keyboard path and predictable focus behaviour.
 
 - `Ctrl + K`: open the general command palette.
-- `Ctrl + P`: open the project picker.
-- `Ctrl + S`: open the project picker.
+- `Ctrl + P`: open the workspace picker.
+- `Ctrl + S`: open the active workspace picker.
 - `Ctrl + B`, then `1`: switch to the Terminal tab.
 - `Ctrl + B`, then `2`: switch to the Server tab.
 - `Ctrl + B`, then `3`: switch to the Review tab.
-- `Ctrl + B`, then `4`: open the project scratchpad terminal.
+- `Ctrl + B`, then `4`: open the workspace scratchpad terminal.
 - `Ctrl + B`, then `o`: switch to the next terminal pane in the active tab.
 
 ## Nerd Fonts

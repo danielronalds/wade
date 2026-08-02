@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, type DeepReadonly } from 'vue';
 import { useRouter } from 'vue-router';
-import { listWorktrees, removeWorktree as requestRemoveWorktree } from '@/api/generated/wade';
+import {
+  deleteRepositoryWorktree,
+  listRepositoryWorktrees,
+  type Worktree
+} from '@/api/generated/wade';
 import { useFuzzyItems } from '@/composables/useFuzzyItems';
-import { useProjects } from '@/features/projects/composables/useProjects';
-import type { Worktree } from '@/types/worktree';
 import PaletteShell from '@/features/command-palette/components/PaletteShell.vue';
-import type { PaletteResult } from '@/features/command-palette/types';
 import { usePaletteRequestState } from '@/features/command-palette/composables/usePaletteRequestState';
+import type { PaletteResult } from '@/features/command-palette/types';
+import { useWorkspaces } from '@/features/workspaces/composables/useWorkspaces';
 
 const props = defineProps<{
-  projectName: string;
+  repositoryId: string;
+  workspaceId: string;
 }>();
 
 const emit = defineEmits<{
@@ -18,9 +22,9 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
-const { syncProjects } = useProjects();
+const { syncWorkspaces } = useWorkspaces();
 const worktrees = ref<Worktree[]>([]);
-const targetWorktree = ref<Worktree | undefined>();
+const targetWorktree = ref<DeepReadonly<Worktree> | undefined>();
 const {
   clearErrors,
   clearActionError,
@@ -37,11 +41,11 @@ const {
 });
 
 const removableWorktrees = computed(() => worktrees.value.filter((worktree) => worktree.isRemovable));
-const baseWorktree = computed(() => worktrees.value.find((worktree) => worktree.isBase));
+const mainWorktree = computed(() => worktrees.value.find((worktree) => worktree.isMain));
 
 const paletteSummary = computed(() => {
   if (isLoading.value) {
-    return `Loading worktrees for ${props.projectName}`;
+    return `Loading worktrees for ${props.repositoryId}`;
   }
 
   if (isRemoving.value) {
@@ -49,7 +53,7 @@ const paletteSummary = computed(() => {
   }
 
   if (targetWorktree.value) {
-    return targetWorktree.value.projectName;
+    return targetWorktree.value.workspaceId;
   }
 
   const worktreeLabel = removableWorktrees.value.length === 1 ? 'worktree' : 'worktrees';
@@ -77,8 +81,8 @@ const loadWorktrees = async () => {
   clearErrors();
 
   try {
-    const { worktrees: availableWorktrees } = await listWorktrees({ project: props.projectName });
-    worktrees.value = availableWorktrees;
+    const { items } = await listRepositoryWorktrees(props.repositoryId);
+    worktrees.value = items;
   } catch (requestError) {
     setLoadError(requestError, 'Worktrees request failed');
   } finally {
@@ -89,8 +93,8 @@ const loadWorktrees = async () => {
 const navigateAfterRemovingCurrentWorktree = async () => {
   emit('close', false);
 
-  if (baseWorktree.value) {
-    await router.push({ name: 'project', params: { projectName: baseWorktree.value.projectName } });
+  if (mainWorktree.value) {
+    await router.push({ name: 'workspace', params: { workspaceId: mainWorktree.value.workspaceId } });
     return;
   }
 
@@ -107,10 +111,10 @@ const removeSelectedWorktree = async () => {
   clearActionError();
 
   try {
-    await requestRemoveWorktree({ project: props.projectName, worktree: target.projectName });
-    await syncProjects();
+    await deleteRepositoryWorktree(props.repositoryId, target.id);
+    await syncWorkspaces();
 
-    if (target.isCurrent) {
+    if (target.workspaceId === props.workspaceId) {
       await navigateAfterRemovingCurrentWorktree();
       return;
     }
@@ -123,7 +127,7 @@ const removeSelectedWorktree = async () => {
   }
 };
 
-const selectWorktree = (worktree: Worktree) => {
+const selectWorktree = (worktree: DeepReadonly<Worktree>) => {
   targetWorktree.value = worktree;
   query.value = '';
   clearActionError();
@@ -137,17 +141,18 @@ const cancelRemoval = () => {
 const { matchingItems: matchingWorktrees } = useFuzzyItems(
   removableWorktrees,
   query,
-  (worktree) => `${worktree.projectName} ${worktree.name} ${worktree.branch}`
+  (worktree) => `${worktree.workspaceId} ${worktree.name} ${worktree.branch?.name ?? ''}`
 );
 
 const paletteResults = computed<PaletteResult[]>(() => {
   if (targetWorktree.value) {
+    const branchName = targetWorktree.value.branch?.name ?? '';
     return [
       {
         id: 'confirm-remove-worktree',
-        label: targetWorktree.value.branch === ''
-          ? `Remove ${targetWorktree.value.projectName}`
-          : `Remove ${targetWorktree.value.projectName} and local branch ${targetWorktree.value.branch}`,
+        label: branchName === ''
+          ? `Remove ${targetWorktree.value.workspaceId}`
+          : `Remove ${targetWorktree.value.workspaceId} and local branch ${branchName}`,
         actionLabel: isRemoving.value ? 'Removing' : 'Confirm remove',
         isDisabled: isRemoving.value,
         run: () => {
@@ -165,9 +170,9 @@ const paletteResults = computed<PaletteResult[]>(() => {
   }
 
   return matchingWorktrees.value.map((match) => ({
-    id: `worktree:${match.item.projectName}`,
-    label: match.item.projectName,
-    actionLabel: match.item.branch === '' ? 'Remove worktree' : match.item.branch,
+    id: `worktree:${match.item.id}`,
+    label: match.item.workspaceId,
+    actionLabel: match.item.branch?.name ?? 'Remove worktree',
     isDisabled: isLoading.value,
     run: () => selectWorktree(match.item)
   }));

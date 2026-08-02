@@ -70,7 +70,7 @@ func TestWindowDataAndLoadFileContents(t *testing.T) {
 		t.Fatalf("last commit file = %#v, want added last commit file", lastCommitFile)
 	}
 
-	trackedContents, err := service.LoadFileContents(context.Background(), data.RepoRoot, trackedFile, ScopeGitDiff)
+	trackedContents, err := service.LoadFileContents(context.Background(), data.RepoRoot, trackedFile, ScopeWorkingTree)
 	if err != nil {
 		t.Fatalf("LoadFileContents(tracked) error = %v, want nil", err)
 	}
@@ -79,7 +79,7 @@ func TestWindowDataAndLoadFileContents(t *testing.T) {
 		t.Fatalf("tracked contents = %#v, want old/new", trackedContents)
 	}
 
-	untrackedContents, err := service.LoadFileContents(context.Background(), data.RepoRoot, untrackedFile, ScopeGitDiff)
+	untrackedContents, err := service.LoadFileContents(context.Background(), data.RepoRoot, untrackedFile, ScopeWorkingTree)
 	if err != nil {
 		t.Fatalf("LoadFileContents(untracked) error = %v, want nil", err)
 	}

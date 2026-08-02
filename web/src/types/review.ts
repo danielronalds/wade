@@ -1,48 +1,19 @@
 // NOTE: Vibecoded and not suppppppper reviewed
-export type ReviewScope = 'pull-request' | 'git-diff' | 'last-commit' | 'all-files';
+import type {
+  GetReviewSnapshotFileContentsScope,
+  ReviewChangeStatus,
+  ReviewFile,
+  ReviewFileComparison,
+  ReviewFileContents,
+  ReviewSnapshot,
+  ReviewSnapshotPullRequest
+} from '@/api/generated/wade';
 
-export type ChangeStatus = 'modified' | 'added' | 'deleted' | 'renamed';
-
-export interface ReviewFileComparison {
-  status: ChangeStatus;
-  oldPath: string | null;
-  newPath: string | null;
-  displayPath: string;
-  hasOriginal: boolean;
-  hasModified: boolean;
-}
-
-export interface ReviewPullRequest {
-  number: number;
-  url: string;
-  baseRefName: string;
-  headRefName: string;
-}
-
-export interface ReviewFile {
-  id: string;
-  path: string;
-  worktreeStatus: ChangeStatus | null;
-  hasWorkingTreeFile: boolean;
-  inGitDiff: boolean;
-  inLastCommit: boolean;
-  inPullRequest: boolean;
-  gitDiff: ReviewFileComparison | null;
-  lastCommit: ReviewFileComparison | null;
-  pullRequest: ReviewFileComparison | null;
-}
-
-export interface ReviewData {
-  repoRoot: string;
-  branchName: string;
-  pullRequest: ReviewPullRequest | null;
-  files: ReviewFile[];
-}
-
-export interface ReviewFileContents {
-  originalContent: string;
-  modifiedContent: string;
-}
+export type ReviewScope = GetReviewSnapshotFileContentsScope;
+export type ChangeStatus = ReviewChangeStatus;
+export type ReviewData = ReviewSnapshot;
+export type ReviewPullRequest = ReviewSnapshotPullRequest;
+export type { ReviewFile, ReviewFileComparison, ReviewFileContents };
 
 export type CommentSide = 'original' | 'modified' | 'file';
 

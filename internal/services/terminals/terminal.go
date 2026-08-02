@@ -29,13 +29,13 @@ type Terminal struct {
 	ID          string         `json:"id"`
 	WorkspaceID string         `json:"workspaceId"`
 	Role        TerminalRole   `json:"role"`
-	Agent       *string        `json:"agent"`
+	Agent       *string        `json:"agent" extensions:"x-nullable"`
 	Status      TerminalStatus `json:"status"`
 	SocketURL   string         `json:"socketUrl"`
 
 	key       string
 	manager   *Service
-	process   *Session
+	process   *Process
 	directory string
 	buffer    outputBuffer
 	clients   map[*Client]struct{}
@@ -43,7 +43,7 @@ type Terminal struct {
 	writeMu   sync.Mutex
 	closeOnce sync.Once
 	closed    atomic.Bool
-}
+} // @name Terminal
 
 type Client struct {
 	terminal *Terminal
@@ -181,7 +181,7 @@ func startTerminalProcess(
 	agentCommand string,
 	role TerminalRole,
 	directory string,
-) (*Session, error) {
+) (*Process, error) {
 	if role == TerminalRoleAgent && agentCommand != "" {
 		return StartShellCommand(shell, directory, environment, agentCommand, Size{Cols: 80, Rows: 24})
 	}

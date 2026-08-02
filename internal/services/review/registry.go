@@ -21,8 +21,7 @@ func NewService(
 		github:     github,
 		files:      files,
 		state: &snapshotState{
-			items:             make(map[string]snapshotRecord),
-			latestByWorkspace: make(map[string]string),
+			items: make(map[string]snapshotRecord),
 		},
 	}
 }
@@ -77,7 +76,6 @@ func (s *Service) CreateSnapshot(ctx context.Context, workspaceID string) (Revie
 		workspacePath: workspacePath,
 		window:        window,
 	}
-	s.state.latestByWorkspace[workspaceID] = snapshotID
 	s.state.mu.Unlock()
 
 	return cloneReviewSnapshot(snapshot), nil
@@ -101,7 +99,7 @@ func (s *Service) LoadSnapshotFileContents(
 	scope Scope,
 ) (FileContents, error) {
 	if !IsValidScope(scope) {
-		return FileContents{}, fmt.Errorf("invalid review scope %q", scope)
+		return FileContents{}, InvalidScopeError{Scope: scope}
 	}
 
 	s.state.mu.RLock()
@@ -124,42 +122,12 @@ func (s *Service) DeleteSnapshot(snapshotID string) error {
 	s.state.mu.Lock()
 	defer s.state.mu.Unlock()
 
-	record, found := s.state.items[snapshotID]
-	if !found {
+	if _, found := s.state.items[snapshotID]; !found {
 		return SnapshotNotFoundError{SnapshotID: snapshotID}
 	}
 
 	delete(s.state.items, snapshotID)
-	if s.state.latestByWorkspace[record.snapshot.WorkspaceID] == snapshotID {
-		delete(s.state.latestByWorkspace, record.snapshot.WorkspaceID)
-	}
 	return nil
-}
-
-func (s *Service) LatestSnapshotID(workspaceID string) (string, bool) {
-	s.state.mu.RLock()
-	defer s.state.mu.RUnlock()
-
-	snapshotID, found := s.state.latestByWorkspace[workspaceID]
-	return snapshotID, found
-}
-
-func (s *Service) SnapshotWindowData(snapshotID string) (WindowData, error) {
-	s.state.mu.RLock()
-	defer s.state.mu.RUnlock()
-
-	record, found := s.state.items[snapshotID]
-	if !found {
-		return WindowData{}, SnapshotNotFoundError{SnapshotID: snapshotID}
-	}
-
-	window := record.window
-	window.Files = cloneReviewFiles(record.window.Files)
-	if record.window.PullRequest != nil {
-		pullRequest := *record.window.PullRequest
-		window.PullRequest = &pullRequest
-	}
-	return window, nil
 }
 
 func cloneReviewSnapshot(snapshot ReviewSnapshot) ReviewSnapshot {

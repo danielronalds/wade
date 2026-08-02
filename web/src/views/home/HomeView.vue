@@ -1,24 +1,24 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useProjects } from '@/features/projects/composables/useProjects';
-import { useRecentProjects } from '@/features/projects/composables/useRecentProjects';
+import { useRecentWorkspaces } from '@/features/workspaces/composables/useRecentWorkspaces';
+import { useWorkspaces } from '@/features/workspaces/composables/useWorkspaces';
 
-const { syncProjects } = useProjects();
-const { recentProjects, removeUnavailableRecentProjects } = useRecentProjects();
+const { syncWorkspaces } = useWorkspaces();
+const { recentWorkspaceIds, removeUnavailableRecentWorkspaces } = useRecentWorkspaces();
 
-const syncRecentProjects = async () => {
-  const availableProjects = await syncProjects();
-  if (!availableProjects) {
+const syncRecentWorkspaces = async () => {
+  const availableWorkspaces = await syncWorkspaces();
+  if (!availableWorkspaces) {
     return;
   }
 
-  removeUnavailableRecentProjects(availableProjects);
+  removeUnavailableRecentWorkspaces(availableWorkspaces);
 };
 
 onMounted(() => {
   document.title = 'WADE';
-  void syncRecentProjects();
+  void syncRecentWorkspaces();
 });
 </script>
 
@@ -26,17 +26,17 @@ onMounted(() => {
   <section id="home-view" aria-labelledby="home-title">
     <h1 id="home-title">WADE</h1>
     <p id="home-subtitle">Web-based Agentic Development Environment</p>
-    <nav v-if="recentProjects.length > 0" id="recent-projects-nav" aria-labelledby="recent-projects-title">
-      <h2 id="recent-projects-title">Recent Projects</h2>
-      <ul id="recent-projects">
-        <li v-for="project in recentProjects" :key="project">
-          <RouterLink :to="{ name: 'project', params: { projectName: project } }">
-            {{ project }}
+    <nav v-if="recentWorkspaceIds.length > 0" id="recent-workspaces-nav" aria-labelledby="recent-workspaces-title">
+      <h2 id="recent-workspaces-title">Recent Workspaces</h2>
+      <ul id="recent-workspaces">
+        <li v-for="workspaceId in recentWorkspaceIds" :key="workspaceId">
+          <RouterLink :to="{ name: 'workspace', params: { workspaceId } }">
+            {{ workspaceId }}
           </RouterLink>
         </li>
       </ul>
     </nav>
-    <p v-else id="empty-projects">Press Ctrl + P to get started</p>
+    <p v-else id="empty-workspaces">Press Ctrl + P to get started</p>
   </section>
 </template>
 
@@ -65,20 +65,20 @@ onMounted(() => {
   text-align: center;
 }
 
-#recent-projects-nav {
+#recent-workspaces-nav {
   display: grid;
   gap: 10px;
   justify-self: start;
   margin-top: 6px;
 }
 
-#recent-projects-title,
-#recent-projects,
-#empty-projects {
+#recent-workspaces-title,
+#recent-workspaces,
+#empty-workspaces {
   margin: 0;
 }
 
-#recent-projects-title {
+#recent-workspaces-title {
   color: var(--text);
   font-size: 14px;
   font-weight: 400;
@@ -86,15 +86,15 @@ onMounted(() => {
   text-align: left;
 }
 
-#recent-projects {
+#recent-workspaces {
   text-align: left;
 }
 
-#recent-projects a {
+#recent-workspaces a {
   color: var(--text);
 }
 
-#empty-projects {
+#empty-workspaces {
   text-align: center;
 }
 </style>

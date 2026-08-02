@@ -28,7 +28,7 @@ func (h Page) GetServiceWorker(w http.ResponseWriter, r *http.Request) {
 
 func (h Page) GetApplicationPage(w http.ResponseWriter, r *http.Request) {
 	requestedPath := strings.TrimPrefix(path.Clean("/"+r.URL.Path), "/")
-	if requestedPath == "" || isProjectPagePath(requestedPath) {
+	if requestedPath == "" || isApplicationPagePath(requestedPath) {
 		http.ServeFileFS(w, r, h.staticFiles, "index.html")
 		return
 	}
@@ -36,6 +36,11 @@ func (h Page) GetApplicationPage(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
-func isProjectPagePath(requestedPath string) bool {
-	return requestedPath != "" && !strings.Contains(requestedPath, "/")
+func isApplicationPagePath(requestedPath string) bool {
+	if requestedPath == "settings" {
+		return true
+	}
+
+	parts := strings.Split(requestedPath, "/")
+	return len(parts) == 2 && parts[0] == "workspaces" && parts[1] != ""
 }

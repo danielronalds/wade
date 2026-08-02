@@ -31,11 +31,11 @@ func (s Service) Get() (Settings, error) {
 func (s Service) Update(request Settings) (Settings, error) {
 	normalised, err := normaliseAndValidateSettings(request)
 	if err != nil {
-		return Settings{}, err
+		return Settings{}, InvalidSettingsError{Err: err}
 	}
 	configuration, err := resolveRuntimeConfig(normalised)
 	if err != nil {
-		return Settings{}, err
+		return Settings{}, InvalidSettingsError{Err: err}
 	}
 
 	persisted, err := s.settings.Load()
@@ -65,11 +65,11 @@ func (s Service) Reload() (Settings, error) {
 	}
 	normalised, err := normaliseAndValidateSettings(settings)
 	if err != nil {
-		return Settings{}, err
+		return Settings{}, InvalidSettingsError{Err: err}
 	}
 	configuration, err := resolveRuntimeConfig(normalised)
 	if err != nil {
-		return Settings{}, err
+		return Settings{}, InvalidSettingsError{Err: err}
 	}
 
 	s.runtime.ApplyConfig(configuration)

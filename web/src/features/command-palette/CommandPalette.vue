@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { useCommandPaletteKeyboardShortcuts } from '@/features/command-palette/composables/useCommandPaletteKeyboardShortcuts';
-import ActiveSessionPalette from '@/features/command-palette/components/ActiveSessionPalette.vue';
+import ActiveWorkspacePalette from '@/features/command-palette/components/ActiveWorkspacePalette.vue';
 import GeneralCommandPalette from '@/features/command-palette/components/GeneralCommandPalette.vue';
-import ProjectPalette from '@/features/command-palette/components/ProjectPalette.vue';
-import RemoteProjectPalette from '@/features/command-palette/components/RemoteProjectPalette.vue';
+import RemoteRepositoryPalette from '@/features/command-palette/components/RemoteRepositoryPalette.vue';
+import WorkspacePalette from '@/features/command-palette/components/WorkspacePalette.vue';
 import CreateWorktreePalette from '@/features/command-palette/components/worktrees/CreateWorktreePalette.vue';
 import RemoteWorktreePalette from '@/features/command-palette/components/worktrees/RemoteWorktreePalette.vue';
 import RemoveWorktreePalette from '@/features/command-palette/components/worktrees/RemoveWorktreePalette.vue';
+import { useCommandPaletteKeyboardShortcuts } from '@/features/command-palette/composables/useCommandPaletteKeyboardShortcuts';
+import { useWorkspaceDetailsStore } from '@/stores/useWorkspaceDetailsStore';
 
 const PaletteModes = {
-  Projects: 'projects',
-  ActiveSessions: 'active-sessions',
+  Workspaces: 'workspaces',
+  ActiveWorkspaces: 'active-workspaces',
   Commands: 'commands',
-  RemoteProject: 'remote-project',
+  RemoteRepository: 'remote-repository',
   CreateWorktree: 'create-worktree',
   RemoteWorktree: 'remote-worktree',
   RemoveWorktree: 'remove-worktree'
@@ -23,12 +24,15 @@ const PaletteModes = {
 type PaletteMode = typeof PaletteModes[keyof typeof PaletteModes];
 
 const route = useRoute();
+const workspaceDetailsStore = useWorkspaceDetailsStore();
 const activePalette = ref<PaletteMode | undefined>();
 let previouslyFocusedElement: HTMLElement | null = null;
 
-const currentProjectName = computed(() => route.name === 'project'
-  ? String(route.params.projectName ?? '')
+const currentWorkspaceId = computed(() => route.name === 'workspace'
+  ? String(route.params.workspaceId ?? '')
   : '');
+const currentWorkspace = computed(() => workspaceDetailsStore.getWorkspaceDetails(currentWorkspaceId.value));
+const currentRepositoryId = computed(() => currentWorkspace.value?.repositoryId ?? '');
 
 const restorePreviousFocus = () => {
   const element = previouslyFocusedElement;
@@ -64,8 +68,8 @@ const closePalette = (restoreFocus = true) => {
   previouslyFocusedElement = null;
 };
 
-const openProjectWorktreePalette = (mode: PaletteMode) => {
-  if (currentProjectName.value === '') {
+const openRepositoryWorktreePalette = (mode: PaletteMode) => {
+  if (currentRepositoryId.value === '') {
     return;
   }
 
@@ -73,48 +77,49 @@ const openProjectWorktreePalette = (mode: PaletteMode) => {
 };
 
 useCommandPaletteKeyboardShortcuts({
-  openActiveSessionPicker: () => openPalette(PaletteModes.ActiveSessions),
+  openActiveWorkspacePicker: () => openPalette(PaletteModes.ActiveWorkspaces),
   openCommandPalette: () => openPalette(PaletteModes.Commands),
-  openProjectPicker: () => openPalette(PaletteModes.Projects)
+  openWorkspacePicker: () => openPalette(PaletteModes.Workspaces)
 });
 </script>
 
 <template>
-  <ProjectPalette
-    v-if="activePalette === PaletteModes.Projects"
+  <WorkspacePalette
+    v-if="activePalette === PaletteModes.Workspaces"
     @close="closePalette"
   />
-  <ActiveSessionPalette
-    v-if="activePalette === PaletteModes.ActiveSessions"
+  <ActiveWorkspacePalette
+    v-if="activePalette === PaletteModes.ActiveWorkspaces"
     @close="closePalette"
   />
   <GeneralCommandPalette
     v-if="activePalette === PaletteModes.Commands"
     @close="closePalette"
-    @open-project-picker="openPalette(PaletteModes.Projects)"
-    @open-active-session-picker="openPalette(PaletteModes.ActiveSessions)"
-    @open-remote-project-picker="openPalette(PaletteModes.RemoteProject)"
-    @open-create-worktree="openProjectWorktreePalette(PaletteModes.CreateWorktree)"
-    @open-remote-worktree-picker="openProjectWorktreePalette(PaletteModes.RemoteWorktree)"
-    @open-remove-worktree="openProjectWorktreePalette(PaletteModes.RemoveWorktree)"
+    @open-workspace-picker="openPalette(PaletteModes.Workspaces)"
+    @open-active-workspace-picker="openPalette(PaletteModes.ActiveWorkspaces)"
+    @open-remote-repository-picker="openPalette(PaletteModes.RemoteRepository)"
+    @open-create-worktree="openRepositoryWorktreePalette(PaletteModes.CreateWorktree)"
+    @open-remote-worktree-picker="openRepositoryWorktreePalette(PaletteModes.RemoteWorktree)"
+    @open-remove-worktree="openRepositoryWorktreePalette(PaletteModes.RemoveWorktree)"
   />
-  <RemoteProjectPalette
-    v-if="activePalette === PaletteModes.RemoteProject"
+  <RemoteRepositoryPalette
+    v-if="activePalette === PaletteModes.RemoteRepository"
     @close="closePalette"
   />
   <CreateWorktreePalette
     v-if="activePalette === PaletteModes.CreateWorktree"
-    :project-name="currentProjectName"
+    :repository-id="currentRepositoryId"
     @close="closePalette"
   />
   <RemoteWorktreePalette
     v-if="activePalette === PaletteModes.RemoteWorktree"
-    :project-name="currentProjectName"
+    :repository-id="currentRepositoryId"
     @close="closePalette"
   />
   <RemoveWorktreePalette
     v-if="activePalette === PaletteModes.RemoveWorktree"
-    :project-name="currentProjectName"
+    :repository-id="currentRepositoryId"
+    :workspace-id="currentWorkspaceId"
     @close="closePalette"
   />
 </template>

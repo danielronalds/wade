@@ -1,10 +1,5 @@
-import {
-  getConnectTerminalSessionUrl,
-  type ConnectTerminalSessionParams
-} from '@/api/generated/wade';
-
-export const createTerminalWebSocket = (params: ConnectTerminalSessionParams) => {
-  const url = new URL(getConnectTerminalSessionUrl(params), window.location.href);
+export const createTerminalWebSocket = (socketUrl: string) => {
+  const url = new URL(socketUrl, window.location.href);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
 
   const socket = new WebSocket(url);

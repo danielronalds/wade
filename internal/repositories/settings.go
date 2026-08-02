@@ -29,7 +29,7 @@ type Agent struct {
 	Name    string `json:"name"`
 	Command string `json:"command"`
 	Default bool   `json:"default"`
-}
+} // @name Agent
 
 // Settings is the editable user configuration stored on disk.
 type Settings struct {

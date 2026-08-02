@@ -2,6 +2,20 @@ package review
 
 import "fmt"
 
+type WorkspaceNotGitRepositoryError struct{}
+
+func (WorkspaceNotGitRepositoryError) Error() string {
+	return "workspace is not a Git repository"
+}
+
+type InvalidScopeError struct {
+	Scope Scope
+}
+
+func (e InvalidScopeError) Error() string {
+	return fmt.Sprintf("invalid review scope %q", e.Scope)
+}
+
 type SnapshotNotFoundError struct {
 	SnapshotID string
 }

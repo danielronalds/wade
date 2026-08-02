@@ -11,13 +11,13 @@ import (
 	"strings"
 )
 
-func worktreePath(mainPath string, projectName string, branch string) (string, error) {
+func worktreePath(mainPath string, repositoryName string, branch string) (string, error) {
 	sanitised := sanitiseForDirectory(branch)
 	if sanitised == "" {
 		return "", fmt.Errorf("invalid branch %q: results in empty directory name after sanitisation", branch)
 	}
 
-	return filepath.Join(filepath.Dir(mainPath), projectName+"-"+sanitised), nil
+	return filepath.Join(filepath.Dir(mainPath), repositoryName+"-"+sanitised), nil
 }
 
 func samePath(first string, second string) bool {

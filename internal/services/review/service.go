@@ -129,7 +129,6 @@ func (s Service) BuildWindowData(ctx context.Context, cwd string) (WindowData, e
 }
 
 func (s Service) LoadFileContents(ctx context.Context, repoRoot string, file File, scope Scope) (FileContents, error) {
-	scope = normaliseScope(scope)
 	if scope == ScopeCurrent {
 		content, err := workingTreeContent(s.files, repoRoot, file.Path)
 		if err != nil {
@@ -182,25 +181,13 @@ func (s Service) LoadFileContents(ctx context.Context, repoRoot string, file Fil
 }
 
 func IsValidScope(scope Scope) bool {
-	scope = normaliseScope(scope)
 	return scope == ScopePullRequest || scope == ScopeWorkingTree || scope == ScopeLastCommit || scope == ScopeCurrent
-}
-
-func normaliseScope(scope Scope) Scope {
-	switch scope {
-	case ScopeGitDiff:
-		return ScopeWorkingTree
-	case ScopeAllFiles:
-		return ScopeCurrent
-	default:
-		return scope
-	}
 }
 
 func repoRoot(ctx context.Context, cwd string, git gitRepository) (string, error) {
 	root, err := git.RepoRoot(ctx, cwd)
 	if err != nil {
-		return "", errors.New("not inside a git repository")
+		return "", WorkspaceNotGitRepositoryError{}
 	}
 
 	return root, nil
