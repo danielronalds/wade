@@ -2,7 +2,6 @@ import { defineStore } from 'pinia';
 import { computed, reactive, readonly } from 'vue';
 import {
   getSettings,
-  reloadConfig,
   updateSettings
 } from '@/api/generated/wade';
 import { useProjects } from '@/features/projects/composables/useProjects';
@@ -92,15 +91,14 @@ export const useSettingsStore = defineStore('settings', () => {
 
     saveRequest = (async () => {
       try {
-        await updateSettings(cloneSettings(settingsToSave));
-        await reloadConfig();
+        const savedSettings = await updateSettings(cloneSettings(settingsToSave)) as Settings;
 
         const availableProjects = await syncProjects();
         if (availableProjects) {
           removeUnavailableRecentProjects(availableProjects);
         }
 
-        replaceSettings(settingsToSave);
+        replaceSettings(savedSettings);
         state.hasLoaded = true;
         applyThemeAccentColor(state.settings.themeAccentColor);
         state.statusMessage = 'Settings saved';
@@ -123,7 +121,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const isLoading = computed(() => state.load.isRunning);
   const isSaving = computed(() => state.save.isRunning);
   const loadError = computed(() => state.load.error);
-  const projectDirectories = computed(() => state.settings.projectDirectories);
+  const workspaceDirectories = computed(() => state.settings.workspaceDirectories);
   const saveError = computed(() => state.save.error);
   const settings = computed(() => state.settings);
   const statusMessage = computed(() => state.statusMessage);
@@ -135,7 +133,7 @@ export const useSettingsStore = defineStore('settings', () => {
     isSaving: readonly(isSaving),
     loadError: readonly(loadError),
     loadSettings,
-    projectDirectories: readonly(projectDirectories),
+    workspaceDirectories: readonly(workspaceDirectories),
     saveError: readonly(saveError),
     saveSettings,
     settings: readonly(settings),

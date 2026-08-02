@@ -182,7 +182,7 @@ func TestWindowDataExcludesClosedPullRequest(t *testing.T) {
 }
 
 func newTestService() Service {
-	return NewService(repositories.NewGitRepository(), repositories.NewGitHubRepository(repositories.RunCommand), repositories.NewFileRepository())
+	return *NewService(nil, repositories.NewGitRepository(), repositories.NewGitHubRepository(repositories.RunCommand), repositories.NewFileRepository())
 }
 
 func requireGit(t *testing.T) {

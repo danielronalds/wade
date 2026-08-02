@@ -1,4 +1,4 @@
-package terminalsessions
+package terminals
 
 // TODO: Review properly
 
@@ -16,8 +16,9 @@ type Size struct {
 }
 
 type WadeEnvironment struct {
-	Session string
-	Address string
+	WorkspaceID string
+	TerminalID  string
+	Address     string
 }
 
 type Session struct {
@@ -67,7 +68,9 @@ func withShellEnvironment(command *exec.Cmd, shell string, environment WadeEnvir
 	command.Env = setEnvironmentValues(
 		os.Environ(),
 		environmentVariable{name: "SHELL", value: shell},
-		environmentVariable{name: "WADE_SESSION", value: environment.Session},
+		environmentVariable{name: "WADE_SESSION", value: environment.WorkspaceID},
+		environmentVariable{name: "WADE_WORKSPACE_ID", value: environment.WorkspaceID},
+		environmentVariable{name: "WADE_TERMINAL_ID", value: environment.TerminalID},
 		environmentVariable{name: "WADE_ADDR", value: environment.Address},
 	)
 	return command

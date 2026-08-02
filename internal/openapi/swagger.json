@@ -66,8 +66,11 @@
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.configPayload"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -95,8 +98,11 @@
                 "summary": "Reload runtime config",
                 "operationId": "reloadConfig",
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.configPayload"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -817,9 +823,9 @@
                 "agents",
                 "copyIgnoredFilesOnWorktreeCreation",
                 "openWorktreesInNewTabs",
-                "projectDirectories",
                 "shell",
                 "themeAccentColor",
+                "workspaceDirectories",
                 "worktreeCopyExcludes"
             ],
             "properties": {
@@ -835,17 +841,17 @@
                 "openWorktreesInNewTabs": {
                     "type": "boolean"
                 },
-                "projectDirectories": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "shell": {
                     "type": "string"
                 },
                 "themeAccentColor": {
                     "type": "string"
+                },
+                "workspaceDirectories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "worktreeCopyExcludes": {
                     "type": "array",
@@ -1186,14 +1192,18 @@
             "type": "string",
             "enum": [
                 "pull-request",
-                "git-diff",
+                "working-tree",
                 "last-commit",
+                "current",
+                "git-diff",
                 "all-files"
             ],
             "x-enum-varnames": [
                 "ScopePullRequest",
-                "ScopeGitDiff",
+                "ScopeWorkingTree",
                 "ScopeLastCommit",
+                "ScopeCurrent",
+                "ScopeGitDiff",
                 "ScopeAllFiles"
             ]
         },

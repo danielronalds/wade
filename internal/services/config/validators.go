@@ -10,36 +10,36 @@ import (
 	"strings"
 )
 
-// ValidateProjectDirectories checks that project directory settings are usable.
-func ValidateProjectDirectories(directories []string) error {
+// ValidateWorkspaceDirectories checks that workspace directory settings are usable.
+func ValidateWorkspaceDirectories(directories []string) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("getting home directory: %w", err)
 	}
 
-	_, err = resolveProjectDirectories(homeDir, directories)
+	_, err = resolveWorkspaceDirectories(homeDir, directories)
 	return err
 }
 
-// resolveProjectDirectories expands configured project directory paths.
-func resolveProjectDirectories(homeDir string, directories []string) ([]string, error) {
-	projectDirs := make([]string, 0, len(directories))
+// resolveWorkspaceDirectories expands configured workspace directory paths.
+func resolveWorkspaceDirectories(homeDir string, directories []string) ([]string, error) {
+	workspaceDirs := make([]string, 0, len(directories))
 	for _, directory := range directories {
-		projectDir, err := resolveProjectDirectory(homeDir, directory)
+		projectDir, err := resolveWorkspaceDirectory(homeDir, directory)
 		if err != nil {
 			return nil, err
 		}
 
-		projectDirs = append(projectDirs, projectDir)
+		workspaceDirs = append(workspaceDirs, projectDir)
 	}
 
-	return projectDirs, nil
+	return workspaceDirs, nil
 }
 
-// resolveProjectDirectory expands a single path using ~ or an absolute path.
-func resolveProjectDirectory(homeDir string, directory string) (string, error) {
+// resolveWorkspaceDirectory expands a single path using ~ or an absolute path.
+func resolveWorkspaceDirectory(homeDir string, directory string) (string, error) {
 	if directory == "" {
-		return "", errors.New("project directory cannot be empty")
+		return "", errors.New("workspace directory cannot be empty")
 	}
 
 	if directory == "~" {
@@ -54,5 +54,5 @@ func resolveProjectDirectory(homeDir string, directory string) (string, error) {
 		return filepath.Clean(directory), nil
 	}
 
-	return "", fmt.Errorf("project directory %q must use ~ or an absolute path", directory)
+	return "", fmt.Errorf("workspace directory %q must use ~ or an absolute path", directory)
 }

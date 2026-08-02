@@ -1,4 +1,4 @@
-package terminalsessions
+package terminals
 
 // TODO: Review properly
 
@@ -8,14 +8,14 @@ import (
 )
 
 func TestAttachReplaysBufferedOutputBeforeLiveOutput(t *testing.T) {
-	projectSession := &ProjectSession{
-		buffer:  newOutputBuffer(projectSessionBufferBytes),
+	terminal := &Terminal{
+		buffer:  newOutputBuffer(terminalBufferBytes),
 		clients: make(map[*Client]struct{}),
 	}
-	projectSession.buffer.Write([]byte("old output"))
+	terminal.buffer.Write([]byte("old output"))
 
-	client := projectSession.Attach()
-	projectSession.broadcast([]byte("new output"))
+	client := terminal.Attach()
+	terminal.broadcast([]byte("new output"))
 
 	outputs := readClientOutputs(t, client, 4)
 	want := []ClientOutput{
@@ -29,13 +29,13 @@ func TestAttachReplaysBufferedOutputBeforeLiveOutput(t *testing.T) {
 }
 
 func TestAttachWithoutBufferedOutputDoesNotSendReplayMarkers(t *testing.T) {
-	projectSession := &ProjectSession{
-		buffer:  newOutputBuffer(projectSessionBufferBytes),
+	terminal := &Terminal{
+		buffer:  newOutputBuffer(terminalBufferBytes),
 		clients: make(map[*Client]struct{}),
 	}
 
-	client := projectSession.Attach()
-	projectSession.broadcast([]byte("new output"))
+	client := terminal.Attach()
+	terminal.broadcast([]byte("new output"))
 
 	outputs := readClientOutputs(t, client, 1)
 	want := []ClientOutput{{Kind: ClientOutputKindData, Data: []byte("new output")}}
@@ -70,38 +70,5 @@ func assertClientOutputs(t *testing.T, got []ClientOutput, want []ClientOutput) 
 
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("outputs = %#v, want %#v", got, want)
-	}
-}
-
-func TestShouldStartAgentCommandOnlyForAgentTerminal(t *testing.T) {
-	tests := map[string]struct {
-		terminalName string
-		agentCommand string
-		want         bool
-	}{
-		"agent terminal with command": {
-			terminalName: agentTerminalName,
-			agentCommand: "pi -c",
-			want:         true,
-		},
-		"agent terminal without command": {
-			terminalName: agentTerminalName,
-			agentCommand: "",
-			want:         false,
-		},
-		"misc terminal with command": {
-			terminalName: "misc",
-			agentCommand: "pi -c",
-			want:         false,
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			got := shouldStartAgentCommand(test.terminalName, test.agentCommand)
-			if got != test.want {
-				t.Fatalf("shouldStartAgentCommand() = %v, want %v", got, test.want)
-			}
-		})
 	}
 }

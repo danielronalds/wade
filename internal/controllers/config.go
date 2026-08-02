@@ -3,25 +3,24 @@ package controllers
 // TODO: Review properly
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
-	"strings"
 
 	"wade/internal/services/config"
 )
 
-type configReloader interface {
-	ReloadConfig() error
+type settingsService interface {
+	Get() (config.Settings, error)
+	Update(request config.Settings) (config.Settings, error)
+	Reload() (config.Settings, error)
 }
 
 // ConfigHandler reads and writes editable WADE settings.
 type ConfigHandler struct {
-	reloader configReloader
+	settings settingsService
 }
 
 type configPayload struct {
-	ProjectDirectories                 []string       `json:"projectDirectories"`
+	WorkspaceDirectories               []string       `json:"workspaceDirectories"`
 	Shell                              string         `json:"shell"`
 	Agents                             []config.Agent `json:"agents"`
 	CopyIgnoredFilesOnWorktreeCreation bool           `json:"copyIgnoredFilesOnWorktreeCreation"`
@@ -31,8 +30,8 @@ type configPayload struct {
 } // @name handlers.configPayload
 
 // NewConfig creates a handler for reading and writing WADE settings.
-func NewConfig(reloader configReloader) ConfigHandler {
-	return ConfigHandler{reloader: reloader}
+func NewConfig(settings settingsService) ConfigHandler {
+	return ConfigHandler{settings: settings}
 }
 
 // @Summary Get settings
@@ -43,43 +42,30 @@ func NewConfig(reloader configReloader) ConfigHandler {
 // @Failure 500 {object} errorResponse
 // @Router /api/config [get]
 func (h ConfigHandler) GetConfig(w http.ResponseWriter, _ *http.Request) {
-	settings, err := config.LoadSettings()
+	settings, err := h.settings.Get()
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "unable to load config")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, configPayload{
-		ProjectDirectories:                 settings.ProjectDirectories,
-		Shell:                              settings.Shell,
-		Agents:                             settings.Agents,
-		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
-		OpenWorktreesInNewTabs:             settings.OpenWorktreesInNewTabs,
-		WorktreeCopyExcludes:               settings.WorktreeCopyExcludes,
-		ThemeAccentColor:                   settings.ThemeAccentColor,
-	})
+	writeJSON(w, http.StatusOK, configResponse(settings))
 }
 
 // @Summary Reload runtime config
 // @ID reloadConfig
 // @Tags Config
 // @Produce json
-// @Success 204 "No Content"
+// @Success 200 {object} configPayload
 // @Failure 400 {object} errorResponse
 // @Router /api/config/reload [post]
 func (h ConfigHandler) ReloadConfig(w http.ResponseWriter, _ *http.Request) {
-	if h.reloader == nil {
+	settings, err := h.settings.Reload()
+	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, "unable to reload config")
 		return
 	}
 
-	if err := h.reloader.ReloadConfig(); err != nil {
-		log.Printf("config reload failed: %v", err)
-		writeJSONError(w, http.StatusBadRequest, "unable to reload config")
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, configResponse(settings))
 }
 
 // @Summary Update settings
@@ -88,98 +74,42 @@ func (h ConfigHandler) ReloadConfig(w http.ResponseWriter, _ *http.Request) {
 // @Accept json
 // @Produce json
 // @Param request body configPayload true "Settings"
-// @Success 204 "No Content"
+// @Success 200 {object} configPayload
 // @Failure 400 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Router /api/config [post]
 func (h ConfigHandler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	var request configPayload
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	if err := decodeJSONBody(r, &request); err != nil {
 		writeJSONError(w, http.StatusBadRequest, "invalid config request")
 		return
 	}
 
-	projectDirectories := trimProjectDirectories(request.ProjectDirectories)
-	if err := config.ValidateProjectDirectories(projectDirectories); err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	shell := strings.TrimSpace(request.Shell)
-	if err := config.ValidateShell(shell); err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	agents := trimAgents(request.Agents)
-	if err := config.ValidateAgents(agents); err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	worktreeCopyExcludes := trimWorktreeCopyExcludes(request.WorktreeCopyExcludes)
-	if err := config.ValidateWorktreeCopyExcludes(worktreeCopyExcludes); err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	themeAccentColor := config.NormaliseThemeAccentColor(request.ThemeAccentColor)
-	if err := config.ValidateThemeAccentColor(themeAccentColor); err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	settings, err := config.LoadSettings()
+	settings, err := h.settings.Update(config.Settings{
+		WorkspaceDirectories:               request.WorkspaceDirectories,
+		Shell:                              request.Shell,
+		Agents:                             request.Agents,
+		CopyIgnoredFilesOnWorktreeCreation: request.CopyIgnoredFilesOnWorktreeCreation,
+		OpenWorktreesInNewTabs:             request.OpenWorktreesInNewTabs,
+		WorktreeCopyExcludes:               request.WorktreeCopyExcludes,
+		ThemeAccentColor:                   request.ThemeAccentColor,
+	})
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "unable to load config")
+		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	settings.ProjectDirectories = projectDirectories
-	settings.Shell = shell
-	settings.Agents = agents
-	settings.CopyIgnoredFilesOnWorktreeCreation = request.CopyIgnoredFilesOnWorktreeCreation
-	settings.OpenWorktreesInNewTabs = request.OpenWorktreesInNewTabs
-	settings.WorktreeCopyExcludes = worktreeCopyExcludes
-	settings.ThemeAccentColor = themeAccentColor
-	if err := settings.Save(); err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "unable to save config")
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, configResponse(settings))
 }
 
-func trimProjectDirectories(projectDirectories []string) []string {
-	trimmed := make([]string, 0, len(projectDirectories))
-	for _, projectDirectory := range projectDirectories {
-		trimmed = append(trimmed, strings.TrimSpace(projectDirectory))
+func configResponse(settings config.Settings) configPayload {
+	return configPayload{
+		WorkspaceDirectories:               settings.WorkspaceDirectories,
+		Shell:                              settings.Shell,
+		Agents:                             settings.Agents,
+		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
+		OpenWorktreesInNewTabs:             settings.OpenWorktreesInNewTabs,
+		WorktreeCopyExcludes:               settings.WorktreeCopyExcludes,
+		ThemeAccentColor:                   settings.ThemeAccentColor,
 	}
-
-	return trimmed
-}
-
-func trimAgents(agents []config.Agent) []config.Agent {
-	trimmed := make([]config.Agent, 0, len(agents))
-	for _, agent := range agents {
-		trimmed = append(trimmed, config.Agent{
-			Name:    strings.TrimSpace(agent.Name),
-			Command: strings.TrimSpace(agent.Command),
-			Default: agent.Default,
-		})
-	}
-	return trimmed
-}
-
-func trimWorktreeCopyExcludes(excludes []string) []string {
-	trimmed := make([]string, 0, len(excludes))
-	for _, exclude := range excludes {
-		exclude = strings.TrimSpace(exclude)
-		if exclude == "" {
-			continue
-		}
-		trimmed = append(trimmed, exclude)
-	}
-
-	return trimmed
 }

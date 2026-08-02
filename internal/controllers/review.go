@@ -6,21 +6,12 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
-	"sync"
 
 	"wade/internal/services/review"
-	"wade/internal/services/workspaces"
 )
 
 type Review struct {
-	workspaces workspaces.Service
-	review     review.Service
-	cache      *reviewWindowCache
-}
-
-type reviewWindowCache struct {
-	mu    sync.RWMutex
-	items map[string]review.WindowData
+	review *review.Service
 }
 
 type reviewFileRequest struct {
@@ -28,14 +19,8 @@ type reviewFileRequest struct {
 	Scope  review.Scope `json:"scope"`
 } // @name handlers.reviewFileRequest
 
-func NewReview(workspaceService workspaces.Service, reviewService review.Service) Review {
-	return Review{
-		workspaces: workspaceService,
-		review:     reviewService,
-		cache: &reviewWindowCache{
-			items: make(map[string]review.WindowData),
-		},
-	}
+func NewReview(reviewService *review.Service) Review {
+	return Review{review: reviewService}
 }
 
 // @Summary Get review window data
@@ -48,19 +33,23 @@ func NewReview(workspaceService workspaces.Service, reviewService review.Service
 // @Failure 404 {object} errorResponse
 // @Router /api/review [get]
 func (h Review) GetReviewWindowData(w http.ResponseWriter, r *http.Request) {
-	projectPath, ok := resolveProjectPath(w, r, h.workspaces)
-	if !ok {
-		return
+	workspaceID := r.URL.Query().Get("project")
+	if previousSnapshotID, found := h.review.LatestSnapshotID(workspaceID); found {
+		_ = h.review.DeleteSnapshot(previousSnapshotID)
 	}
 
-	data, err := h.review.BuildWindowData(r.Context(), projectPath)
+	snapshot, err := h.review.CreateSnapshot(r.Context(), workspaceID)
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	window, err := h.review.SnapshotWindowData(snapshot.ID)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
-	h.cache.set(projectPath, data)
-	writeJSON(w, http.StatusOK, data)
+	writeJSON(w, http.StatusOK, window)
 }
 
 // @Summary Get review file contents
@@ -75,80 +64,32 @@ func (h Review) GetReviewWindowData(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} errorResponse
 // @Router /api/review/file [post]
 func (h Review) GetReviewFileContents(w http.ResponseWriter, r *http.Request) {
-	projectPath, ok := resolveProjectPath(w, r, h.workspaces)
-	if !ok {
-		return
-	}
-
 	var request reviewFileRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		writeJSONError(w, http.StatusBadRequest, "invalid review file request")
 		return
 	}
-
 	if request.FileID == "" || !review.IsValidScope(request.Scope) {
 		writeJSONError(w, http.StatusBadRequest, "invalid review file request")
 		return
 	}
 
-	data, found := h.cache.get(projectPath)
+	workspaceID := r.URL.Query().Get("project")
+	snapshotID, found := h.review.LatestSnapshotID(workspaceID)
 	if !found {
-		freshData, err := h.review.BuildWindowData(r.Context(), projectPath)
+		snapshot, err := h.review.CreateSnapshot(r.Context(), workspaceID)
 		if err != nil {
 			writeJSONError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-
-		data = freshData
-		h.cache.set(projectPath, data)
+		snapshotID = snapshot.ID
 	}
 
-	file, found := findReviewFile(data.Files, request.FileID)
-	if !found {
-		writeJSONError(w, http.StatusNotFound, "review file not found")
-		return
-	}
-
-	contents, err := h.review.LoadFileContents(r.Context(), data.RepoRoot, file, request.Scope)
+	contents, err := h.review.LoadSnapshotFileContents(r.Context(), snapshotID, request.FileID, request.Scope)
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
+		writeJSONError(w, http.StatusNotFound, err.Error())
 		return
 	}
 
 	writeJSON(w, http.StatusOK, contents)
-}
-
-func (c *reviewWindowCache) get(projectPath string) (review.WindowData, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	data, found := c.items[projectPath]
-	return data, found
-}
-
-func (c *reviewWindowCache) set(projectPath string, data review.WindowData) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.items[projectPath] = data
-}
-
-func resolveProjectPath(w http.ResponseWriter, r *http.Request, workspaceService workspaces.Service) (string, bool) {
-	projectPath, err := workspaceService.Path(r.URL.Query().Get("project"))
-	if err != nil {
-		writeJSONError(w, http.StatusNotFound, "project not found")
-		return "", false
-	}
-
-	return projectPath, true
-}
-
-func findReviewFile(files []review.File, fileID string) (review.File, bool) {
-	for _, file := range files {
-		if file.ID == fileID {
-			return file, true
-		}
-	}
-
-	return review.File{}, false
 }

@@ -53,6 +53,12 @@ func (s localRepositoryServiceStub) ResolveWorkspace(context.Context, string) (g
 	return s.workspaceContext, s.isGit, s.err
 }
 
+type terminalActivityStub map[string]int
+
+func (s terminalActivityStub) ActiveTerminalCount(workspaceID string) int {
+	return s[workspaceID]
+}
+
 type workspaceGitHubRepositoryStub struct {
 	pullRequestURL string
 }
@@ -67,6 +73,7 @@ func TestServiceListReturnsWorkspaceSummaries(t *testing.T) {
 		localRepositoryServiceStub{},
 		nil,
 	)
+	service.SetTerminalActivity(terminalActivityStub{"alpha": 2})
 
 	got, err := service.List(context.Background())
 	if err != nil {
@@ -74,7 +81,7 @@ func TestServiceListReturnsWorkspaceSummaries(t *testing.T) {
 	}
 
 	want := []WorkspaceSummary{
-		{ID: "alpha", Name: "alpha"},
+		{ID: "alpha", Name: "alpha", Activity: WorkspaceActivity{ActiveTerminalCount: 2}},
 		{ID: "bravo", Name: "bravo"},
 	}
 	if !reflect.DeepEqual(got, want) {

@@ -15,10 +15,6 @@ import (
 	"strings"
 )
 
-func NewService(git gitRepository, github gitHubRepository, files fileRepository) Service {
-	return Service{git: git, github: github, files: files}
-}
-
 func (s Service) BuildWindowData(ctx context.Context, cwd string) (WindowData, error) {
 	repoRoot, err := repoRoot(ctx, cwd, s.git)
 	if err != nil {
@@ -133,7 +129,8 @@ func (s Service) BuildWindowData(ctx context.Context, cwd string) (WindowData, e
 }
 
 func (s Service) LoadFileContents(ctx context.Context, repoRoot string, file File, scope Scope) (FileContents, error) {
-	if scope == ScopeAllFiles {
+	scope = normaliseScope(scope)
+	if scope == ScopeCurrent {
 		content, err := workingTreeContent(s.files, repoRoot, file.Path)
 		if err != nil {
 			return FileContents{}, err
@@ -143,26 +140,24 @@ func (s Service) LoadFileContents(ctx context.Context, repoRoot string, file Fil
 	}
 
 	comparison := file.LastCommit
-	originalRevision := "HEAD^"
-	modifiedRevision := "HEAD"
-
-	if scope == ScopeGitDiff {
+	if scope == ScopeWorkingTree {
 		comparison = file.GitDiff
-		originalRevision = "HEAD"
-		modifiedRevision = ""
 	}
-
 	if scope == ScopePullRequest {
 		comparison = file.PullRequest
 	}
-
 	if comparison == nil {
 		return FileContents{}, nil
 	}
 
-	if scope == ScopePullRequest {
-		originalRevision = comparison.originalRevision
-		modifiedRevision = comparison.modifiedRevision
+	originalRevision := comparison.originalRevision
+	modifiedRevision := comparison.modifiedRevision
+	if scope == ScopeLastCommit && originalRevision == "" && modifiedRevision == "" {
+		originalRevision = "HEAD^"
+		modifiedRevision = "HEAD"
+	}
+	if scope == ScopeWorkingTree && originalRevision == "" {
+		originalRevision = "HEAD"
 	}
 
 	originalContent := ""
@@ -187,7 +182,19 @@ func (s Service) LoadFileContents(ctx context.Context, repoRoot string, file Fil
 }
 
 func IsValidScope(scope Scope) bool {
-	return scope == ScopePullRequest || scope == ScopeGitDiff || scope == ScopeLastCommit || scope == ScopeAllFiles
+	scope = normaliseScope(scope)
+	return scope == ScopePullRequest || scope == ScopeWorkingTree || scope == ScopeLastCommit || scope == ScopeCurrent
+}
+
+func normaliseScope(scope Scope) Scope {
+	switch scope {
+	case ScopeGitDiff:
+		return ScopeWorkingTree
+	case ScopeAllFiles:
+		return ScopeCurrent
+	default:
+		return scope
+	}
 }
 
 func repoRoot(ctx context.Context, cwd string, git gitRepository) (string, error) {

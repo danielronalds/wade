@@ -32,9 +32,9 @@ export interface HandlersConfigPayload {
   agents: ConfigAgent[];
   copyIgnoredFilesOnWorktreeCreation: boolean;
   openWorktreesInNewTabs: boolean;
-  projectDirectories: string[];
   shell: string;
   themeAccentColor: string;
+  workspaceDirectories: string[];
   worktreeCopyExcludes: string[];
 }
 
@@ -82,8 +82,10 @@ export type ReviewScope = typeof ReviewScope[keyof typeof ReviewScope];
 
 export const ReviewScope = {
   ScopePullRequest: 'pull-request',
-  ScopeGitDiff: 'git-diff',
+  ScopeWorkingTree: 'working-tree',
   ScopeLastCommit: 'last-commit',
+  ScopeCurrent: 'current',
+  ScopeGitDiff: 'git-diff',
   ScopeAllFiles: 'all-files',
 } as const;
 
@@ -293,9 +295,9 @@ export const getUpdateSettingsUrl = () => {
 /**
  * @summary Update settings
  */
-export const updateSettings = async (handlersConfigPayload: HandlersConfigPayload, options?: RequestInit): Promise<void> => {
+export const updateSettings = async (handlersConfigPayload: HandlersConfigPayload, options?: RequestInit): Promise<HandlersConfigPayload> => {
 
-  return wadeFetch<void>(getUpdateSettingsUrl(),
+  return wadeFetch<HandlersConfigPayload>(getUpdateSettingsUrl(),
   {
     ...options,
     method: 'POST',
@@ -317,9 +319,9 @@ export const getReloadConfigUrl = () => {
 /**
  * @summary Reload runtime config
  */
-export const reloadConfig = async ( options?: RequestInit): Promise<void> => {
+export const reloadConfig = async ( options?: RequestInit): Promise<HandlersConfigPayload> => {
 
-  return wadeFetch<void>(getReloadConfigUrl(),
+  return wadeFetch<HandlersConfigPayload>(getReloadConfigUrl(),
   {
     ...options,
     method: 'POST'

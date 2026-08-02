@@ -2,13 +2,20 @@ package review
 
 // TODO: Review properly
 
-import "context"
+import (
+	"context"
+	"sync"
+	"time"
+)
 
 const (
 	ScopePullRequest Scope = "pull-request"
-	ScopeGitDiff     Scope = "git-diff"
+	ScopeWorkingTree Scope = "working-tree"
 	ScopeLastCommit  Scope = "last-commit"
-	ScopeAllFiles    Scope = "all-files"
+	ScopeCurrent     Scope = "current"
+
+	ScopeGitDiff  Scope = "git-diff"
+	ScopeAllFiles Scope = "all-files"
 )
 
 const (
@@ -66,10 +73,50 @@ type FileContents struct {
 	ModifiedContent string `json:"modifiedContent"`
 }
 
+type SnapshotBranch struct {
+	Ref    string  `json:"ref"`
+	Name   string  `json:"name"`
+	Remote *string `json:"remote"`
+}
+
+type SnapshotPullRequest struct {
+	Number  int    `json:"number"`
+	URL     string `json:"url"`
+	BaseRef string `json:"baseRef"`
+	HeadRef string `json:"headRef"`
+}
+
+type ReviewSnapshot struct {
+	ID          string               `json:"id"`
+	WorkspaceID string               `json:"workspaceId"`
+	Branch      *SnapshotBranch      `json:"branch"`
+	PullRequest *SnapshotPullRequest `json:"pullRequest"`
+	Files       []File               `json:"files"`
+	CreatedAt   time.Time            `json:"createdAt"`
+}
+
 type Service struct {
-	git    gitRepository
-	github gitHubRepository
-	files  fileRepository
+	workspaces WorkspaceRepository
+	git        gitRepository
+	github     gitHubRepository
+	files      fileRepository
+	state      *snapshotState
+}
+
+type WorkspaceRepository interface {
+	Path(workspaceID string) (string, error)
+}
+
+type snapshotState struct {
+	mu                sync.RWMutex
+	items             map[string]snapshotRecord
+	latestByWorkspace map[string]string
+}
+
+type snapshotRecord struct {
+	snapshot      ReviewSnapshot
+	workspacePath string
+	window        WindowData
 }
 
 type changedPath struct {

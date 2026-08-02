@@ -1,4 +1,4 @@
-package terminalsessions
+package terminals
 
 // TODO: Review properly
 

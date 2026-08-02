@@ -3,25 +3,24 @@ package controllers
 // TODO: Review properly
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
-	"wade/internal/services/terminalsessions"
+	"wade/internal/services/terminals"
 	"wade/internal/services/workspaces"
 
 	"github.com/gorilla/websocket"
 )
 
 type Terminals struct {
-	workspaces workspaces.Service
-	terminals  *terminalsessions.Service
-	upgrader   websocket.Upgrader
+	terminals *terminals.Service
+	upgrader  websocket.Upgrader
 }
 
-func NewTerminals(workspaceService workspaces.Service, terminals *terminalsessions.Service, checkOrigin func(r *http.Request) bool) Terminals {
+func NewTerminals(terminalService *terminals.Service, checkOrigin func(r *http.Request) bool) Terminals {
 	return Terminals{
-		workspaces: workspaceService,
-		terminals:  terminals,
+		terminals: terminalService,
 		upgrader: websocket.Upgrader{
 			CheckOrigin: checkOrigin,
 		},
@@ -39,13 +38,24 @@ func NewTerminals(workspaceService workspaces.Service, terminals *terminalsessio
 // @Failure 404 {object} errorResponse
 // @Router /api/terminal/reload [post]
 func (h Terminals) Reload(w http.ResponseWriter, r *http.Request) {
-	projectPath, err := h.workspaces.Path(r.URL.Query().Get("project"))
+	terminalID, err := h.terminals.LegacyTerminalID(r.URL.Query().Get("terminal"), r.URL.Query().Get("agent"))
 	if err != nil {
-		WriteJSONError(w, http.StatusNotFound, "project not found")
+		WriteJSONError(w, http.StatusNotFound, "terminal not found")
 		return
 	}
 
-	h.terminals.CloseTerminal(r.URL.Query().Get("terminal"), r.URL.Query().Get("agent"), projectPath)
+	err = h.terminals.Delete(r.URL.Query().Get("project"), terminalID)
+	var notFoundError terminals.TerminalNotFoundError
+	if err != nil && !errors.As(err, &notFoundError) {
+		if isWorkspaceLookupError(err) {
+			WriteJSONError(w, http.StatusNotFound, "project not found")
+			return
+		}
+
+		WriteJSONError(w, http.StatusInternalServerError, "unable to reload terminal")
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -61,16 +71,20 @@ func (h Terminals) Reload(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Failed to start terminal"
 // @Router /ws [get]
 func (h Terminals) Connect(w http.ResponseWriter, r *http.Request) {
-	projectName := r.URL.Query().Get("project")
-	projectPath, err := h.workspaces.Path(projectName)
+	workspaceID := r.URL.Query().Get("project")
+	terminalID, err := h.terminals.LegacyTerminalID(r.URL.Query().Get("terminal"), r.URL.Query().Get("agent"))
 	if err != nil {
-		http.Error(w, "project not found", http.StatusNotFound)
+		http.Error(w, "terminal not found", http.StatusNotFound)
 		return
 	}
 
-	terminalName := r.URL.Query().Get("terminal")
-	projectSession, err := h.terminals.GetOrStart(projectName, terminalName, r.URL.Query().Get("agent"), projectPath)
+	terminal, _, err := h.terminals.Put(workspaceID, terminalID)
 	if err != nil {
+		if isWorkspaceLookupError(err) {
+			http.Error(w, "project not found", http.StatusNotFound)
+			return
+		}
+
 		log.Printf("pty start failed: %v", err)
 		http.Error(w, "failed to start terminal", http.StatusInternalServerError)
 		return
@@ -83,7 +97,7 @@ func (h Terminals) Connect(w http.ResponseWriter, r *http.Request) {
 	}
 	defer connection.Close()
 
-	client := projectSession.Attach()
+	client := terminal.Attach()
 	defer client.Close()
 
 	done := make(chan struct{}, 2)
@@ -94,7 +108,7 @@ func (h Terminals) Connect(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	go func() {
-		streamWebSocketToTerminal(connection, projectSession)
+		streamWebSocketToTerminal(connection, terminal)
 		done <- struct{}{}
 	}()
 
@@ -106,7 +120,7 @@ const (
 	terminalReplayEndMessage   = `{"type":"replayEnd"}`
 )
 
-func streamTerminalToWebSocket(connection *websocket.Conn, client *terminalsessions.Client) {
+func streamTerminalToWebSocket(connection *websocket.Conn, client *terminals.Client) {
 	for output := range client.Output() {
 		if err := writeTerminalOutput(connection, output); err != nil {
 			return
@@ -114,18 +128,24 @@ func streamTerminalToWebSocket(connection *websocket.Conn, client *terminalsessi
 	}
 }
 
-func writeTerminalOutput(connection *websocket.Conn, output terminalsessions.ClientOutput) error {
+func writeTerminalOutput(connection *websocket.Conn, output terminals.ClientOutput) error {
 	switch output.Kind {
-	case terminalsessions.ClientOutputKindReplayStart:
+	case terminals.ClientOutputKindReplayStart:
 		return connection.WriteMessage(websocket.TextMessage, []byte(terminalReplayStartMessage))
-	case terminalsessions.ClientOutputKindReplayEnd:
+	case terminals.ClientOutputKindReplayEnd:
 		return connection.WriteMessage(websocket.TextMessage, []byte(terminalReplayEndMessage))
 	default:
 		return connection.WriteMessage(websocket.BinaryMessage, output.Data)
 	}
 }
 
-func streamWebSocketToTerminal(connection *websocket.Conn, session *terminalsessions.ProjectSession) {
+func isWorkspaceLookupError(err error) bool {
+	var notFoundError workspaces.WorkspaceNotFoundError
+	var invalidIDError workspaces.InvalidWorkspaceIDError
+	return errors.As(err, &notFoundError) || errors.As(err, &invalidIDError)
+}
+
+func streamWebSocketToTerminal(connection *websocket.Conn, terminal *terminals.Terminal) {
 	for {
 		messageType, data, err := connection.ReadMessage()
 		if err != nil {
@@ -134,9 +154,9 @@ func streamWebSocketToTerminal(connection *websocket.Conn, session *terminalsess
 
 		switch messageType {
 		case websocket.BinaryMessage:
-			_, _ = session.Write(data)
+			_, _ = terminal.Write(data)
 		case websocket.TextMessage:
-			session.ApplyControlMessage(data)
+			terminal.ApplyControlMessage(data)
 		}
 	}
 }

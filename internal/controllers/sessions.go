@@ -4,14 +4,23 @@ package controllers
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
-
-	"wade/internal/services/sessions"
+	"strings"
 )
 
+type sessionWorkspaceService interface {
+	Path(workspaceID string) (string, error)
+}
+
+type sessionTerminalService interface {
+	ActiveWorkspaceIDs() []string
+	DeleteAll(workspaceID string) int
+	InputToSelectedAgent(workspaceID string, text string) (int, error)
+}
+
 type Sessions struct {
-	sessions sessions.Service
+	workspaces sessionWorkspaceService
+	terminals  sessionTerminalService
 }
 
 type sessionsResponse struct {
@@ -22,8 +31,8 @@ type agentInputRequest struct {
 	Text string `json:"text"`
 } // @name handlers.agentInputRequest
 
-func NewSessions(sessions sessions.Service) Sessions {
-	return Sessions{sessions: sessions}
+func NewSessions(workspaceService sessionWorkspaceService, terminalService sessionTerminalService) Sessions {
+	return Sessions{workspaces: workspaceService, terminals: terminalService}
 }
 
 // @Summary List active project sessions
@@ -32,8 +41,8 @@ func NewSessions(sessions sessions.Service) Sessions {
 // @Produce json
 // @Success 200 {object} sessionsResponse
 // @Router /api/sessions [get]
-func (h Sessions) ListSessions(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, sessionsResponse{Sessions: h.sessions.List()})
+func (h Sessions) ListSessions(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, sessionsResponse{Sessions: h.terminals.ActiveWorkspaceIDs()})
 }
 
 // @Summary Close project session
@@ -46,20 +55,17 @@ func (h Sessions) ListSessions(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} errorResponse
 // @Router /api/sessions/{sessionName} [delete]
 func (h Sessions) CloseSession(w http.ResponseWriter, r *http.Request) {
-	err := h.sessions.Close(r.PathValue("sessionName"))
-	if errors.Is(err, sessions.ErrSessionRequired) {
+	workspaceID := strings.TrimSpace(r.PathValue("sessionName"))
+	if workspaceID == "" {
 		writeJSONError(w, http.StatusBadRequest, "session is required")
 		return
 	}
-	if errors.Is(err, sessions.ErrSessionNotFound) {
+	if _, err := h.workspaces.Path(workspaceID); err != nil {
 		writeJSONError(w, http.StatusNotFound, "session not found")
 		return
 	}
-	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "unable to close session")
-		return
-	}
 
+	h.terminals.DeleteAll(workspaceID)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -82,21 +88,29 @@ func (h Sessions) SendToAgent(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "invalid agent input request")
 		return
 	}
-
-	err := h.sessions.SendToAgent(r.PathValue("projectName"), request.Text)
-	switch {
-	case errors.Is(err, sessions.ErrSessionRequired):
-		writeJSONError(w, http.StatusBadRequest, "session is required")
-	case errors.Is(err, sessions.ErrAgentTextRequired):
+	if request.Text == "" {
 		writeJSONError(w, http.StatusBadRequest, "text is required")
-	case errors.Is(err, sessions.ErrSessionNotFound):
+		return
+	}
+
+	workspaceID := strings.TrimSpace(r.PathValue("projectName"))
+	if workspaceID == "" {
+		writeJSONError(w, http.StatusBadRequest, "session is required")
+		return
+	}
+	if _, err := h.workspaces.Path(workspaceID); err != nil {
 		writeJSONError(w, http.StatusNotFound, "session not found")
-	case errors.Is(err, sessions.ErrAgentSessionNotFound):
-		writeJSONError(w, http.StatusNotFound, "agent session not found")
-	case errors.Is(err, sessions.ErrAgentSessionAmbiguous):
-		writeJSONError(w, http.StatusConflict, "multiple active agent sessions")
+		return
+	}
+
+	activeAgentTerminals, err := h.terminals.InputToSelectedAgent(workspaceID, request.Text)
+	switch {
 	case err != nil:
 		writeJSONError(w, http.StatusInternalServerError, "unable to send text to agent session")
+	case activeAgentTerminals == 0:
+		writeJSONError(w, http.StatusNotFound, "agent session not found")
+	case activeAgentTerminals > 1:
+		writeJSONError(w, http.StatusConflict, "multiple active agent sessions")
 	default:
 		w.WriteHeader(http.StatusNoContent)
 	}

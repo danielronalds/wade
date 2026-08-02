@@ -5,14 +5,14 @@ import {
   cloneSettings,
   createEmptySettings,
   isValidAgents,
-  isValidProjectDirectory,
+  isValidWorkspaceDirectory,
   isValidShell,
   normaliseSettings,
   type Settings
 } from '@/types/settings';
 
-const settingsHaveChanged = (current: Settings, saved: Settings) => JSON.stringify(current.projectDirectories)
-  !== JSON.stringify(saved.projectDirectories)
+const settingsHaveChanged = (current: Settings, saved: Settings) => JSON.stringify(current.workspaceDirectories)
+  !== JSON.stringify(saved.workspaceDirectories)
   || current.shell !== saved.shell
   || JSON.stringify(current.agents) !== JSON.stringify(saved.agents)
   || current.copyIgnoredFilesOnWorktreeCreation !== saved.copyIgnoredFilesOnWorktreeCreation
@@ -42,8 +42,8 @@ export const useSettingsForm = () => {
   const statusMessage = ref('');
 
   const normalisedSettings = computed(() => normaliseSettings(form));
-  const hasInvalidProjectDirectories = computed(() => form.projectDirectories.some(
-    (directory) => !isValidProjectDirectory(directory)
+  const hasInvalidWorkspaceDirectories = computed(() => form.workspaceDirectories.some(
+    (directory) => !isValidWorkspaceDirectory(directory)
   ));
   const hasInvalidShell = computed(() => !isValidShell(form.shell));
   const hasInvalidAgents = computed(() => !isValidAgents(normalisedSettings.value.agents));
@@ -51,7 +51,7 @@ export const useSettingsForm = () => {
   const canSave = computed(() => !isLoading.value
     && !isSaving.value
     && hasChanges.value
-    && !hasInvalidProjectDirectories.value
+    && !hasInvalidWorkspaceDirectories.value
     && !hasInvalidShell.value
     && !hasInvalidAgents.value);
 
@@ -61,7 +61,7 @@ export const useSettingsForm = () => {
   };
 
   const replaceForm = (settings: Settings) => {
-    form.projectDirectories = [...settings.projectDirectories];
+    form.workspaceDirectories = [...settings.workspaceDirectories];
     form.shell = settings.shell;
     form.agents = settings.agents.map((agent) => ({ ...agent }));
     form.copyIgnoredFilesOnWorktreeCreation = settings.copyIgnoredFilesOnWorktreeCreation;
@@ -86,28 +86,28 @@ export const useSettingsForm = () => {
     }
   };
 
-  const updateProjectDirectory = (index: number, event: Event) => {
+  const updateWorkspaceDirectory = (index: number, event: Event) => {
     const nextDirectory = inputValue(event);
     if (nextDirectory === undefined) {
       return;
     }
 
-    form.projectDirectories = form.projectDirectories.map((directory, directoryIndex) => (
+    form.workspaceDirectories = form.workspaceDirectories.map((directory, directoryIndex) => (
       directoryIndex === index ? nextDirectory : directory
     ));
     clearMessages();
   };
 
-  const addProjectDirectory = async () => {
-    form.projectDirectories = [...form.projectDirectories, ''];
+  const addWorkspaceDirectory = async () => {
+    form.workspaceDirectories = [...form.workspaceDirectories, ''];
     clearMessages();
 
     await nextTick();
-    document.getElementById(`project-directory-${form.projectDirectories.length - 1}`)?.focus();
+    document.getElementById(`workspace-directory-${form.workspaceDirectories.length - 1}`)?.focus();
   };
 
-  const removeProjectDirectory = (index: number) => {
-    form.projectDirectories = form.projectDirectories.filter((_, directoryIndex) => directoryIndex !== index);
+  const removeWorkspaceDirectory = (index: number) => {
+    form.workspaceDirectories = form.workspaceDirectories.filter((_, directoryIndex) => directoryIndex !== index);
     clearMessages();
   };
 
@@ -257,14 +257,14 @@ export const useSettingsForm = () => {
     isSaving: readonly(isSaving),
     error: readonly(error),
     statusMessage: readonly(statusMessage),
-    hasInvalidProjectDirectories,
+    hasInvalidWorkspaceDirectories,
     hasInvalidShell,
     hasInvalidAgents,
     canSave,
-    isValidProjectDirectory,
-    updateProjectDirectory,
-    addProjectDirectory,
-    removeProjectDirectory,
+    isValidWorkspaceDirectory,
+    updateWorkspaceDirectory,
+    addWorkspaceDirectory,
+    removeWorkspaceDirectory,
     updateShell,
     updateAgentName,
     updateAgentCommand,

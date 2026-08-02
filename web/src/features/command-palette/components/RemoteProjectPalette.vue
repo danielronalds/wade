@@ -27,7 +27,7 @@ const router = useRouter();
 const { syncProjects } = useProjects();
 const { loadSettings } = useSettingsStore();
 const remoteProjects = ref<RemoteProject[]>([]);
-const projectDirectories = ref<string[]>([]);
+const workspaceDirectories = ref<string[]>([]);
 const selectedRemoteProject = ref<RemoteProject | undefined>();
 const {
   clearActionError,
@@ -44,7 +44,7 @@ const {
   errorTitle: 'Remote project request failed'
 });
 
-const directoryChoices = computed<DirectoryChoice[]>(() => projectDirectories.value.map((directory, index) => ({
+const directoryChoices = computed<DirectoryChoice[]>(() => workspaceDirectories.value.map((directory, index) => ({
   index,
   directory
 })));
@@ -54,7 +54,7 @@ const isChoosingDirectory = computed(() => Boolean(selectedRemoteProject.value))
 const directoryLabel = (choice: DirectoryChoice) => {
   const directory = choice.directory.trim();
 
-  return directory === '' ? `Project directory ${choice.index + 1}` : directory;
+  return directory === '' ? `Workspace directory ${choice.index + 1}` : directory;
 };
 
 const paletteSummary = computed(() => {
@@ -86,11 +86,11 @@ const statusMessage = computed(() => {
   }
 
   if (isChoosingDirectory.value && directoryChoices.value.length === 0) {
-    return 'No project directories configured';
+    return 'No workspace directories configured';
   }
 
   if (isChoosingDirectory.value) {
-    return 'No matching project directories';
+    return 'No matching workspace directories';
   }
 
   if (remoteProjects.value.length === 0) {
@@ -101,11 +101,11 @@ const statusMessage = computed(() => {
 });
 
 const searchPlaceholder = computed(() => isChoosingDirectory.value
-  ? 'Search project directories'
+  ? 'Search workspace directories'
   : 'Search GitHub projects');
 
 const resultsAriaLabel = computed(() => isChoosingDirectory.value
-  ? 'Project directories'
+  ? 'Workspace directories'
   : 'GitHub projects');
 
 const openProject = async (projectName: string, syncFirst = false) => {
@@ -156,11 +156,11 @@ const selectRemoteProject = async (project: RemoteProject) => {
     return;
   }
 
-  if (projectDirectories.value.length === 0) {
+  if (workspaceDirectories.value.length === 0) {
     return;
   }
 
-  if (projectDirectories.value.length === 1) {
+  if (workspaceDirectories.value.length === 1) {
     await cloneProject(project, 0);
     return;
   }
@@ -181,7 +181,7 @@ const loadRemoteProjects = async () => {
     ]);
 
     remoteProjects.value = projects;
-    projectDirectories.value = settings.projectDirectories;
+    workspaceDirectories.value = settings.workspaceDirectories;
   } catch (requestError) {
     setLoadError(requestError, 'Remote projects request failed');
   } finally {
@@ -198,17 +198,17 @@ const remoteProjectActionLabel = (project: RemoteProject) => {
     return project.localName === '' ? 'Already local' : 'Open local';
   }
 
-  if (projectDirectories.value.length === 0) {
-    return 'No project directory';
+  if (workspaceDirectories.value.length === 0) {
+    return 'No workspace directory';
   }
 
-  return projectDirectories.value.length === 1 ? 'Clone project' : 'Choose location';
+  return workspaceDirectories.value.length === 1 ? 'Clone project' : 'Choose location';
 };
 
 const isRemoteProjectDisabled = (project: RemoteProject) => isLoading.value
   || isCloning.value
   || (project.isLocal && project.localName === '')
-  || (!project.isLocal && projectDirectories.value.length === 0);
+  || (!project.isLocal && workspaceDirectories.value.length === 0);
 
 const { matchingItems: matchingRemoteProjects } = useFuzzyItems(
   remoteProjects,
@@ -233,7 +233,7 @@ const remoteProjectResults = computed<PaletteResult[]>(() => matchingRemoteProje
 })));
 
 const directoryResults = computed<PaletteResult[]>(() => matchingDirectoryChoices.value.map((match) => ({
-  id: `remote-project-directory:${match.item.index}`,
+  id: `remote-workspace-directory:${match.item.index}`,
   label: directoryLabel(match.item),
   actionLabel: isCloning.value ? 'Cloning' : 'Clone here',
   isDisabled: isCloning.value,

@@ -35,7 +35,7 @@ func TestDefaultSettingsOpensWorktreesInCurrentTab(t *testing.T) {
 }
 
 func TestParseSettingsDefaultsAgentsWhenMissing(t *testing.T) {
-	settings, err := parseSettings("config.json", []byte(`{"projectDirectories":["~/Code"]}`))
+	settings, err := parseSettings("config.json", []byte(`{"workspaceDirectories":["~/Code"]}`))
 	if err != nil {
 		t.Fatalf("parseSettings() error = %v, want nil", err)
 	}
@@ -45,9 +45,21 @@ func TestParseSettingsDefaultsAgentsWhenMissing(t *testing.T) {
 	}
 }
 
+func TestParseSettingsReadsLegacyProjectDirectories(t *testing.T) {
+	settings, err := parseSettings("config.json", []byte(`{"projectDirectories":["~/Legacy"]}`))
+	if err != nil {
+		t.Fatalf("parseSettings() error = %v, want nil", err)
+	}
+
+	want := []string{"~/Legacy"}
+	if !reflect.DeepEqual(settings.WorkspaceDirectories, want) {
+		t.Fatalf("WorkspaceDirectories = %#v, want %#v", settings.WorkspaceDirectories, want)
+	}
+}
+
 func TestParseSettingsUsesConfiguredAgents(t *testing.T) {
 	configuredAgents := []Agent{{Name: "Custom", Command: "custom-agent", Default: true}}
-	settings, err := parseSettings("config.json", []byte(`{"projectDirectories":["~/Code"],"agents":[{"name":"Custom","command":"custom-agent","default":true}]}`))
+	settings, err := parseSettings("config.json", []byte(`{"workspaceDirectories":["~/Code"],"agents":[{"name":"Custom","command":"custom-agent","default":true}]}`))
 	if err != nil {
 		t.Fatalf("parseSettings() error = %v, want nil", err)
 	}
@@ -58,7 +70,7 @@ func TestParseSettingsUsesConfiguredAgents(t *testing.T) {
 }
 
 func TestParseSettingsUsesConfiguredShell(t *testing.T) {
-	settings, err := parseSettings("config.json", []byte(`{"projectDirectories":["~/Code"],"shell":" /bin/zsh "}`))
+	settings, err := parseSettings("config.json", []byte(`{"workspaceDirectories":["~/Code"],"shell":" /bin/zsh "}`))
 	if err != nil {
 		t.Fatalf("parseSettings() error = %v, want nil", err)
 	}
@@ -82,15 +94,16 @@ func TestParseSettingsUsesConfiguredWorktreeNavigation(t *testing.T) {
 func TestSettingsSaveWritesAgentsAndPreservesUnknownKeys(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.json")
 	settings := Settings{
-		ProjectDirectories:     []string{"~/Code"},
+		WorkspaceDirectories:   []string{"~/Code"},
 		Shell:                  " /bin/zsh ",
 		Agents:                 []Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
 		OpenWorktreesInNewTabs: true,
 		path:                   path,
 		raw: map[string]json.RawMessage{
-			"agentCommand":     json.RawMessage(`"legacy-agent"`),
-			"agentPaneCommand": json.RawMessage(`"pane-agent"`),
-			"theme":            json.RawMessage(`"dark"`),
+			"projectDirectories": json.RawMessage(`["~/Legacy"]`),
+			"agentCommand":       json.RawMessage(`"legacy-agent"`),
+			"agentPaneCommand":   json.RawMessage(`"pane-agent"`),
+			"theme":              json.RawMessage(`"dark"`),
 		},
 	}
 
@@ -127,6 +140,12 @@ func TestSettingsSaveWritesAgentsAndPreservesUnknownKeys(t *testing.T) {
 
 	if saved["openWorktreesInNewTabs"] != true {
 		t.Fatalf("openWorktreesInNewTabs = %#v, want true", saved["openWorktreesInNewTabs"])
+	}
+	if !reflect.DeepEqual(saved["workspaceDirectories"], []any{"~/Code"}) {
+		t.Fatalf("workspaceDirectories = %#v, want [~/Code]", saved["workspaceDirectories"])
+	}
+	if _, ok := saved["projectDirectories"]; ok {
+		t.Fatal("projectDirectories was preserved, want it removed")
 	}
 
 	if _, ok := saved["agentCommand"]; ok {

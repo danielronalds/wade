@@ -5,34 +5,31 @@ package app
 import (
 	"wade/internal/services/config"
 	"wade/internal/services/remoterepositories"
-	"wade/internal/services/terminalsessions"
+	"wade/internal/services/terminals"
 	"wade/internal/services/workspaces"
+	"wade/internal/services/worktrees"
 )
 
-type configReloader struct {
+type runtimeConfigApplier struct {
 	workspaces         workspaces.Service
 	remoteRepositories *remoterepositories.Service
-	terminals          *terminalsessions.Service
+	terminals          *terminals.Service
+	worktrees          worktrees.Service
 }
 
-func (r configReloader) ReloadConfig() error {
-	configuration, err := config.Load()
-	if err != nil {
-		return err
-	}
-
-	r.workspaces.Reload(configuration.ProjectDirs)
-	r.remoteRepositories.Configure(remoteWorkspaceDirectories(configuration))
-	r.terminals.Configure(configuration.Shell, terminalAgents(configuration.Agents))
-	return nil
+func (a runtimeConfigApplier) ApplyConfig(configuration config.Config) {
+	a.workspaces.Reload(configuration.WorkspaceDirs)
+	a.remoteRepositories.Configure(remoteWorkspaceDirectories(configuration))
+	a.terminals.Configure(configuration.Shell, terminalAgents(configuration.Agents))
+	a.worktrees.Configure(configuration)
 }
 
 func remoteWorkspaceDirectories(configuration config.Config) []remoterepositories.WorkspaceDirectory {
-	workspaceDirectories := make([]remoterepositories.WorkspaceDirectory, 0, len(configuration.ProjectDirs))
-	for index, path := range configuration.ProjectDirs {
+	workspaceDirectories := make([]remoterepositories.WorkspaceDirectory, 0, len(configuration.WorkspaceDirs))
+	for index, path := range configuration.WorkspaceDirs {
 		setting := path
-		if index < len(configuration.ProjectDirectorySettings) {
-			setting = configuration.ProjectDirectorySettings[index]
+		if index < len(configuration.WorkspaceDirectorySettings) {
+			setting = configuration.WorkspaceDirectorySettings[index]
 		}
 
 		workspaceDirectories = append(workspaceDirectories, remoterepositories.WorkspaceDirectory{

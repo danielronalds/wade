@@ -26,15 +26,15 @@ func TestResolveRuntimeShellUsesConfiguredShellOverEnvironment(t *testing.T) {
 	}
 }
 
-func TestLoadPreservesConfiguredProjectDirectoryStrings(t *testing.T) {
+func TestLoadPreservesConfiguredWorkspaceDirectoryStrings(t *testing.T) {
 	homeDir := t.TempDir()
 	t.Setenv("HOME", homeDir)
 	t.Setenv("SHELL", "/bin/sh")
 
 	path := filepath.Join(homeDir, ".config", "wade", "config.json")
 	settings := repositories.Settings{
-		ProjectDirectories: []string{"~/Code"},
-		Agents:             []repositories.Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
+		WorkspaceDirectories: []string{"~/Code"},
+		Agents:               []repositories.Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
 	}
 	writeSettings(t, path, settings)
 
@@ -43,12 +43,12 @@ func TestLoadPreservesConfiguredProjectDirectoryStrings(t *testing.T) {
 		t.Fatalf("Load() error = %v, want nil", err)
 	}
 
-	if len(configuration.ProjectDirectorySettings) != 1 || configuration.ProjectDirectorySettings[0] != "~/Code" {
-		t.Fatalf("ProjectDirectorySettings = %#v, want [~/Code]", configuration.ProjectDirectorySettings)
+	if len(configuration.WorkspaceDirectorySettings) != 1 || configuration.WorkspaceDirectorySettings[0] != "~/Code" {
+		t.Fatalf("WorkspaceDirectorySettings = %#v, want [~/Code]", configuration.WorkspaceDirectorySettings)
 	}
 	wantResolvedPath := filepath.Join(homeDir, "Code")
-	if len(configuration.ProjectDirs) != 1 || configuration.ProjectDirs[0] != wantResolvedPath {
-		t.Fatalf("ProjectDirs = %#v, want [%s]", configuration.ProjectDirs, wantResolvedPath)
+	if len(configuration.WorkspaceDirs) != 1 || configuration.WorkspaceDirs[0] != wantResolvedPath {
+		t.Fatalf("WorkspaceDirs = %#v, want [%s]", configuration.WorkspaceDirs, wantResolvedPath)
 	}
 }
 
@@ -60,9 +60,9 @@ func TestLoadUsesConfiguredShellOverEnvironment(t *testing.T) {
 
 	path := filepath.Join(homeDir, ".config", "wade", "config.json")
 	settings := repositories.Settings{
-		ProjectDirectories: []string{},
-		Shell:              shell,
-		Agents:             []repositories.Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
+		WorkspaceDirectories: []string{},
+		Shell:                shell,
+		Agents:               []repositories.Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
 	}
 	writeSettings(t, path, settings)
 
@@ -84,9 +84,9 @@ func TestLoadUsesEnvironmentShellWhenShellSettingIsEmpty(t *testing.T) {
 
 	path := filepath.Join(homeDir, ".config", "wade", "config.json")
 	settings := repositories.Settings{
-		ProjectDirectories: []string{},
-		Shell:              "",
-		Agents:             []repositories.Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
+		WorkspaceDirectories: []string{},
+		Shell:                "",
+		Agents:               []repositories.Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
 	}
 	writeSettings(t, path, settings)
 
@@ -108,8 +108,8 @@ func TestLoadUsesAddressEnvironmentOverride(t *testing.T) {
 
 	path := filepath.Join(homeDir, ".config", "wade", "config.json")
 	settings := repositories.Settings{
-		ProjectDirectories: []string{},
-		Agents:             []repositories.Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
+		WorkspaceDirectories: []string{},
+		Agents:               []repositories.Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
 	}
 	writeSettings(t, path, settings)
 
