@@ -2,7 +2,7 @@ basePath: /
 consumes:
 - application/json
 definitions:
-  config.Agent:
+  Agent:
     properties:
       command:
         type: string
@@ -15,35 +15,285 @@ definitions:
     - default
     - name
     type: object
-  handlers.agentInputRequest:
+  Branch:
     properties:
-      text:
+      checkedOutWorkspaceId:
+        type: string
+        x-nullable: true
+      hasLocalBranch:
+        type: boolean
+      name:
+        type: string
+      ref:
+        type: string
+      remote:
+        type: string
+        x-nullable: true
+    required:
+    - checkedOutWorkspaceId
+    - hasLocalBranch
+    - name
+    - ref
+    - remote
+    type: object
+  BranchList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/Branch'
+        type: array
+    required:
+    - items
+    type: object
+  CreateWorktreeRequest:
+    properties:
+      branchRef:
         type: string
     required:
-    - text
+    - branchRef
     type: object
-  handlers.cloneRemoteProjectRequest:
+  IssueReference:
     properties:
-      directoryIndex:
+      key:
+        type: string
+      provider:
+        type: string
+      url:
+        type: string
+    required:
+    - key
+    - provider
+    - url
+    type: object
+  MaterialiseWorkspaceRequest:
+    properties:
+      remoteRepositoryId:
+        type: string
+      workspaceDirectory:
+        type: string
+    required:
+    - remoteRepositoryId
+    - workspaceDirectory
+    type: object
+  Problem:
+    properties:
+      code:
+        type: string
+      detail:
+        type: string
+      status:
         type: integer
-      nameWithOwner:
+      title:
+        type: string
+      type:
         type: string
     required:
-    - directoryIndex
-    - nameWithOwner
+    - code
+    - detail
+    - status
+    - title
+    - type
     type: object
-  handlers.cloneRemoteProjectResponse:
+  RemoteRepository:
     properties:
-      project:
-        $ref: '#/definitions/remote.ClonedProject'
+      cloneUrl:
+        type: string
+      id:
+        type: string
+      localWorkspaceIds:
+        items:
+          type: string
+        type: array
+      name:
+        type: string
+      webUrl:
+        type: string
     required:
-    - project
+    - cloneUrl
+    - id
+    - localWorkspaceIds
+    - name
+    - webUrl
     type: object
-  handlers.configPayload:
+  RemoteRepositoryList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/RemoteRepository'
+        type: array
+    required:
+    - items
+    type: object
+  Repository:
+    properties:
+      id:
+        type: string
+      mainWorkspaceId:
+        type: string
+      remoteRepositoryId:
+        type: string
+        x-nullable: true
+      workspaceIds:
+        items:
+          type: string
+        type: array
+    required:
+    - id
+    - mainWorkspaceId
+    - remoteRepositoryId
+    - workspaceIds
+    type: object
+  ReviewChangeStatus:
+    enum:
+    - modified
+    - added
+    - deleted
+    - renamed
+    type: string
+    x-enum-varnames:
+    - StatusModified
+    - StatusAdded
+    - StatusDeleted
+    - StatusRenamed
+  ReviewFile:
+    properties:
+      gitDiff:
+        allOf:
+        - $ref: '#/definitions/ReviewFileComparison'
+        x-nullable: true
+      hasWorkingTreeFile:
+        type: boolean
+      id:
+        type: string
+      inGitDiff:
+        type: boolean
+      inLastCommit:
+        type: boolean
+      inPullRequest:
+        type: boolean
+      lastCommit:
+        allOf:
+        - $ref: '#/definitions/ReviewFileComparison'
+        x-nullable: true
+      path:
+        type: string
+      pullRequest:
+        allOf:
+        - $ref: '#/definitions/ReviewFileComparison'
+        x-nullable: true
+      worktreeStatus:
+        allOf:
+        - $ref: '#/definitions/ReviewChangeStatus'
+        x-nullable: true
+    required:
+    - gitDiff
+    - hasWorkingTreeFile
+    - id
+    - inGitDiff
+    - inLastCommit
+    - inPullRequest
+    - lastCommit
+    - path
+    - pullRequest
+    - worktreeStatus
+    type: object
+  ReviewFileComparison:
+    properties:
+      displayPath:
+        type: string
+      hasModified:
+        type: boolean
+      hasOriginal:
+        type: boolean
+      newPath:
+        type: string
+        x-nullable: true
+      oldPath:
+        type: string
+        x-nullable: true
+      status:
+        $ref: '#/definitions/ReviewChangeStatus'
+    required:
+    - displayPath
+    - hasModified
+    - hasOriginal
+    - newPath
+    - oldPath
+    - status
+    type: object
+  ReviewFileContents:
+    properties:
+      modifiedContent:
+        type: string
+      originalContent:
+        type: string
+    required:
+    - modifiedContent
+    - originalContent
+    type: object
+  ReviewSnapshot:
+    properties:
+      branch:
+        allOf:
+        - $ref: '#/definitions/ReviewSnapshotBranch'
+        x-nullable: true
+      createdAt:
+        type: string
+      files:
+        items:
+          $ref: '#/definitions/ReviewFile'
+        type: array
+      id:
+        type: string
+      pullRequest:
+        allOf:
+        - $ref: '#/definitions/ReviewSnapshotPullRequest'
+        x-nullable: true
+      workspaceId:
+        type: string
+    required:
+    - branch
+    - createdAt
+    - files
+    - id
+    - pullRequest
+    - workspaceId
+    type: object
+  ReviewSnapshotBranch:
+    properties:
+      name:
+        type: string
+      ref:
+        type: string
+      remote:
+        type: string
+        x-nullable: true
+    required:
+    - name
+    - ref
+    - remote
+    type: object
+  ReviewSnapshotPullRequest:
+    properties:
+      baseRef:
+        type: string
+      headRef:
+        type: string
+      number:
+        type: integer
+      url:
+        type: string
+    required:
+    - baseRef
+    - headRef
+    - number
+    - url
+    type: object
+  Settings:
     properties:
       agents:
         items:
-          $ref: '#/definitions/config.Agent'
+          $ref: '#/definitions/Agent'
         type: array
       copyIgnoredFilesOnWorktreeCreation:
         type: boolean
@@ -52,6 +302,10 @@ definitions:
       shell:
         type: string
       themeAccentColor:
+        enum:
+        - white
+        - orange
+        - purple
         type: string
       workspaceDirectories:
         items:
@@ -70,327 +324,243 @@ definitions:
     - workspaceDirectories
     - worktreeCopyExcludes
     type: object
-  handlers.createWorktreeRequest:
+  Terminal:
     properties:
-      branch:
+      agent:
         type: string
-      project:
-        type: string
-    required:
-    - branch
-    - project
-    type: object
-  handlers.errorResponse:
-    properties:
-      message:
-        type: string
-    required:
-    - message
-    type: object
-  handlers.projectResponse:
-    properties:
-      gitBranch:
-        type: string
-      githubUrl:
-        type: string
-      linearTicketUrl:
-        type: string
-      name:
-        type: string
-      pullRequestUrl:
-        type: string
-    required:
-    - gitBranch
-    - githubUrl
-    - linearTicketUrl
-    - name
-    - pullRequestUrl
-    type: object
-  handlers.projectsResponse:
-    properties:
-      projects:
-        items:
-          type: string
-        type: array
-    required:
-    - projects
-    type: object
-  handlers.remoteProjectsResponse:
-    properties:
-      projects:
-        items:
-          $ref: '#/definitions/remote.Project'
-        type: array
-    required:
-    - projects
-    type: object
-  handlers.removeWorktreeRequest:
-    properties:
-      project:
-        type: string
-      worktree:
-        type: string
-    required:
-    - project
-    - worktree
-    type: object
-  handlers.reviewFileRequest:
-    properties:
-      fileId:
-        type: string
-      scope:
-        $ref: '#/definitions/review.Scope'
-    required:
-    - fileId
-    - scope
-    type: object
-  handlers.sessionsResponse:
-    properties:
-      sessions:
-        items:
-          type: string
-        type: array
-    required:
-    - sessions
-    type: object
-  handlers.worktreeResponse:
-    properties:
-      worktree:
-        $ref: '#/definitions/worktree.Worktree'
-    required:
-    - worktree
-    type: object
-  handlers.worktreesResponse:
-    properties:
-      worktrees:
-        items:
-          $ref: '#/definitions/worktree.Worktree'
-        type: array
-    required:
-    - worktrees
-    type: object
-  remote.ClonedProject:
-    properties:
-      name:
-        type: string
-      path:
-        type: string
-    required:
-    - name
-    - path
-    type: object
-  remote.Project:
-    properties:
-      isLocal:
-        type: boolean
-      localName:
-        type: string
-      name:
-        type: string
-      nameWithOwner:
-        type: string
-      sshUrl:
-        type: string
-      url:
-        type: string
-    required:
-    - isLocal
-    - localName
-    - name
-    - nameWithOwner
-    - sshUrl
-    - url
-    type: object
-  review.ChangeStatus:
-    enum:
-    - modified
-    - added
-    - deleted
-    - renamed
-    type: string
-    x-enum-varnames:
-    - StatusModified
-    - StatusAdded
-    - StatusDeleted
-    - StatusRenamed
-  review.File:
-    properties:
-      gitDiff:
-        $ref: '#/definitions/review.FileComparison'
-      hasWorkingTreeFile:
-        type: boolean
+        x-nullable: true
       id:
         type: string
-      inGitDiff:
-        type: boolean
-      inLastCommit:
-        type: boolean
-      inPullRequest:
-        type: boolean
-      lastCommit:
-        $ref: '#/definitions/review.FileComparison'
-      path:
-        type: string
-      pullRequest:
-        $ref: '#/definitions/review.FileComparison'
-      worktreeStatus:
-        $ref: '#/definitions/review.ChangeStatus'
-    required:
-    - gitDiff
-    - hasWorkingTreeFile
-    - id
-    - inGitDiff
-    - inLastCommit
-    - inPullRequest
-    - lastCommit
-    - path
-    - pullRequest
-    - worktreeStatus
-    type: object
-  review.FileComparison:
-    properties:
-      displayPath:
-        type: string
-      hasModified:
-        type: boolean
-      hasOriginal:
-        type: boolean
-      newPath:
-        type: string
-      oldPath:
+      role:
+        $ref: '#/definitions/TerminalRole'
+      socketUrl:
         type: string
       status:
-        $ref: '#/definitions/review.ChangeStatus'
+        $ref: '#/definitions/TerminalStatus'
+      workspaceId:
+        type: string
     required:
-    - displayPath
-    - hasModified
-    - hasOriginal
-    - newPath
-    - oldPath
+    - agent
+    - id
+    - role
+    - socketUrl
     - status
+    - workspaceId
     type: object
-  review.FileContents:
-    properties:
-      modifiedContent:
-        type: string
-      originalContent:
-        type: string
-    required:
-    - modifiedContent
-    - originalContent
-    type: object
-  review.PullRequest:
-    properties:
-      baseRefName:
-        type: string
-      headRefName:
-        type: string
-      number:
-        type: integer
-      url:
-        type: string
-    required:
-    - baseRefName
-    - headRefName
-    - number
-    - url
-    type: object
-  review.Scope:
+  TerminalInputMode:
     enum:
-    - pull-request
-    - working-tree
-    - last-commit
-    - current
-    - git-diff
-    - all-files
+    - raw
+    - bracketed-paste
     type: string
     x-enum-varnames:
-    - ScopePullRequest
-    - ScopeWorkingTree
-    - ScopeLastCommit
-    - ScopeCurrent
-    - ScopeGitDiff
-    - ScopeAllFiles
-  review.WindowData:
+    - InputModeRaw
+    - InputModeBracketedPaste
+  TerminalInputRequest:
     properties:
-      branchName:
-        type: string
-      files:
-        items:
-          $ref: '#/definitions/review.File'
-        type: array
-      pullRequest:
-        $ref: '#/definitions/review.PullRequest'
-      repoRoot:
+      mode:
+        $ref: '#/definitions/TerminalInputMode'
+      text:
         type: string
     required:
-    - branchName
-    - files
-    - pullRequest
-    - repoRoot
+    - mode
+    - text
     type: object
-  worktree.RemoteBranch:
+  TerminalList:
     properties:
+      items:
+        items:
+          $ref: '#/definitions/Terminal'
+        type: array
+    required:
+    - items
+    type: object
+  TerminalRole:
+    enum:
+    - agent
+    - misc
+    - server
+    - scratchpad
+    type: string
+    x-enum-varnames:
+    - TerminalRoleAgent
+    - TerminalRoleMisc
+    - TerminalRoleServer
+    - TerminalRoleScratchpad
+  TerminalStatus:
+    enum:
+    - running
+    type: string
+    x-enum-varnames:
+    - TerminalStatusRunning
+  Workspace:
+    properties:
+      activity:
+        $ref: '#/definitions/WorkspaceActivity'
       branch:
+        allOf:
+        - $ref: '#/definitions/WorkspaceBranch'
+        x-nullable: true
+      id:
         type: string
-      hasLocalBranch:
-        type: boolean
-      isCheckedOut:
+      links:
+        $ref: '#/definitions/WorkspaceLinks'
+      name:
+        type: string
+      remoteRepositoryId:
+        type: string
+        x-nullable: true
+      repositoryId:
+        type: string
+        x-nullable: true
+      worktree:
+        allOf:
+        - $ref: '#/definitions/WorktreeReference'
+        x-nullable: true
+    required:
+    - activity
+    - branch
+    - id
+    - links
+    - name
+    - remoteRepositoryId
+    - repositoryId
+    - worktree
+    type: object
+  WorkspaceActivity:
+    properties:
+      activeTerminalCount:
+        type: integer
+    required:
+    - activeTerminalCount
+    type: object
+  WorkspaceBranch:
+    properties:
+      commit:
+        type: string
+      isDetached:
         type: boolean
       name:
         type: string
-      worktreeName:
-        type: string
-      worktreeProjectName:
+      ref:
         type: string
     required:
-    - branch
-    - hasLocalBranch
-    - isCheckedOut
+    - commit
+    - isDetached
     - name
-    - worktreeName
-    - worktreeProjectName
+    - ref
     type: object
-  worktree.RemoteBranchList:
+  WorkspaceLinks:
     properties:
-      branches:
-        items:
-          $ref: '#/definitions/worktree.RemoteBranch'
-        type: array
-      remote:
+      issue:
+        allOf:
+        - $ref: '#/definitions/IssueReference'
+        x-nullable: true
+      pullRequest:
         type: string
+        x-nullable: true
+      repository:
+        type: string
+        x-nullable: true
     required:
-    - branches
-    - remote
+    - issue
+    - pullRequest
+    - repository
     type: object
-  worktree.Worktree:
+  WorkspaceList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/WorkspaceSummary'
+        type: array
+    required:
+    - items
+    type: object
+  WorkspaceSummary:
+    properties:
+      activity:
+        $ref: '#/definitions/WorkspaceActivity'
+      branch:
+        allOf:
+        - $ref: '#/definitions/WorkspaceBranch'
+        x-nullable: true
+      id:
+        type: string
+      links:
+        $ref: '#/definitions/WorkspaceLinks'
+      name:
+        type: string
+      remoteRepositoryId:
+        type: string
+        x-nullable: true
+      repositoryId:
+        type: string
+        x-nullable: true
+      worktree:
+        allOf:
+        - $ref: '#/definitions/WorktreeReference'
+        x-nullable: true
+    required:
+    - activity
+    - branch
+    - id
+    - links
+    - name
+    - remoteRepositoryId
+    - repositoryId
+    - worktree
+    type: object
+  Worktree:
     properties:
       branch:
+        allOf:
+        - $ref: '#/definitions/Branch'
+        x-nullable: true
+      id:
         type: string
       ignoredFileCopyWarnings:
         items:
           type: string
         type: array
-      isBase:
-        type: boolean
-      isCurrent:
+      isMain:
         type: boolean
       isRemovable:
         type: boolean
       name:
         type: string
-      path:
+      repositoryId:
         type: string
-      projectName:
+      workspaceId:
         type: string
     required:
     - branch
-    - isBase
-    - isCurrent
+    - id
+    - isMain
     - isRemovable
     - name
-    - path
-    - projectName
+    - repositoryId
+    - workspaceId
+    type: object
+  WorktreeList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/Worktree'
+        type: array
+    required:
+    - items
+    type: object
+  WorktreeReference:
+    properties:
+      id:
+        type: string
+      isMain:
+        type: boolean
+      isRemovable:
+        type: boolean
+    required:
+    - id
+    - isMain
+    - isRemovable
     type: object
 info:
   contact: {}
@@ -398,69 +568,6 @@ info:
   title: WADE API
   version: 0.1.0
 paths:
-  /api/config:
-    get:
-      operationId: getSettings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.configPayload'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: Get settings
-      tags:
-      - Config
-    post:
-      consumes:
-      - application/json
-      operationId: updateSettings
-      parameters:
-      - description: Settings
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.configPayload'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.configPayload'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: Update settings
-      tags:
-      - Config
-  /api/config/reload:
-    post:
-      operationId: reloadConfig
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.configPayload'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: Reload runtime config
-      tags:
-      - Config
   /api/openapi.json:
     get:
       operationId: getOpenAPISpec
@@ -474,310 +581,107 @@ paths:
       summary: Get OpenAPI spec
       tags:
       - OpenAPI
-  /api/project:
+  /api/v1/remote-repositories:
     get:
-      operationId: getProjectDetails
-      parameters:
-      - description: Project name
-        in: query
-        name: project
-        required: true
-        type: string
+      operationId: listRemoteRepositories
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.projectResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: Get project details
-      tags:
-      - Projects
-  /api/projects:
-    get:
-      operationId: listProjects
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.projectsResponse'
+            $ref: '#/definitions/RemoteRepositoryList'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: List projects
+            $ref: '#/definitions/Problem'
+      summary: List remote repositories
       tags:
-      - Projects
-  /api/remote-projects:
+      - Remote repositories
+  /api/v1/repositories/{repositoryId}:
     get:
-      operationId: listRemoteProjects
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.remoteProjectsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: List remote projects
-      tags:
-      - Remote projects
-  /api/remote-projects/clone:
-    post:
-      consumes:
-      - application/json
-      operationId: cloneRemoteProject
+      operationId: getRepository
       parameters:
-      - description: Remote project clone request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.cloneRemoteProjectRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.cloneRemoteProjectResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: Clone remote project
-      tags:
-      - Remote projects
-  /api/review:
-    get:
-      operationId: getReviewWindowData
-      parameters:
-      - description: Project name
-        in: query
-        name: project
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/review.WindowData'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: Get review window data
-      tags:
-      - Review
-  /api/review/file:
-    post:
-      consumes:
-      - application/json
-      operationId: getReviewFileContents
-      parameters:
-      - description: Project name
-        in: query
-        name: project
-        required: true
-        type: string
-      - description: Review file request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.reviewFileRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/review.FileContents'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: Get review file contents
-      tags:
-      - Review
-  /api/sessions:
-    get:
-      operationId: listActiveProjectSessions
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.sessionsResponse'
-      summary: List active project sessions
-      tags:
-      - Sessions
-  /api/sessions/{projectName}/agent:
-    post:
-      consumes:
-      - application/json
-      operationId: sendTextToAgentTerminal
-      parameters:
-      - description: Project name
+      - description: Repository ID
         in: path
-        name: projectName
+        name: repositoryId
         required: true
         type: string
-      - description: Agent input
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.agentInputRequest'
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
+        "200":
+          description: OK
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/Repository'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/Problem'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: Send text to the active agent terminal
+            $ref: '#/definitions/Problem'
+      summary: Get a local repository
       tags:
-      - Sessions
-  /api/sessions/{sessionName}:
-    delete:
-      operationId: closeProjectSession
-      parameters:
-      - description: Session project name
-        in: path
-        name: sessionName
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: Close project session
-      tags:
-      - Sessions
-  /api/terminal/reload:
-    post:
-      operationId: reloadTerminalSession
-      parameters:
-      - description: Project name
-        in: query
-        name: project
-        required: true
-        type: string
-      - description: Terminal name
-        in: query
-        name: terminal
-        type: string
-      - description: Agent name
-        in: query
-        name: agent
-        type: string
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: Reload terminal session
-      tags:
-      - Terminals
-  /api/worktrees:
-    delete:
-      consumes:
-      - application/json
-      operationId: removeWorktree
-      parameters:
-      - description: Worktree removal request
-        in: body
-        name: request
-        schema:
-          $ref: '#/definitions/handlers.removeWorktreeRequest'
-      - description: Project name
-        in: query
-        name: project
-        type: string
-      - description: Worktree name
-        in: query
-        name: worktree
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.worktreeResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: Remove worktree
-      tags:
-      - Worktrees
+      - Repositories
+  /api/v1/repositories/{repositoryId}/branches:
     get:
-      operationId: listWorktrees
+      operationId: listRepositoryBranches
       parameters:
-      - description: Project name
+      - description: Repository ID
+        in: path
+        name: repositoryId
+        required: true
+        type: string
+      - description: Branch kind
+        enum:
+        - local
+        - remote
         in: query
-        name: project
+        name: kind
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/BranchList'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: List repository branches
+      tags:
+      - Branches
+  /api/v1/repositories/{repositoryId}/worktrees:
+    get:
+      operationId: listRepositoryWorktrees
+      parameters:
+      - description: Repository ID
+        in: path
+        name: repositoryId
         required: true
         type: string
       produces:
@@ -786,54 +690,141 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.worktreesResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/WorktreeList'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: List worktrees
+            $ref: '#/definitions/Problem'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: List repository worktrees
       tags:
       - Worktrees
     post:
       consumes:
       - application/json
-      operationId: createWorktree
+      operationId: createRepositoryWorktree
       parameters:
+      - description: Repository ID
+        in: path
+        name: repositoryId
+        required: true
+        type: string
       - description: Worktree creation request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handlers.createWorktreeRequest'
+          $ref: '#/definitions/CreateWorktreeRequest'
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
+          headers:
+            Location:
+              description: Created worktree URL
+              type: string
           schema:
-            $ref: '#/definitions/handlers.worktreeResponse'
+            $ref: '#/definitions/Worktree'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/Problem'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: Create worktree
+            $ref: '#/definitions/Problem'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Create a repository worktree
       tags:
       - Worktrees
-  /api/worktrees/remote-branches:
-    get:
-      operationId: listRemoteBranches
+  /api/v1/repositories/{repositoryId}/worktrees/{worktreeId}:
+    delete:
+      operationId: deleteRepositoryWorktree
       parameters:
-      - description: Project name
-        in: query
-        name: project
+      - description: Repository ID
+        in: path
+        name: repositoryId
+        required: true
+        type: string
+      - description: Worktree ID
+        in: path
+        name: worktreeId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Remove a repository worktree
+      tags:
+      - Worktrees
+  /api/v1/review-snapshots/{snapshotId}:
+    delete:
+      operationId: deleteReviewSnapshot
+      parameters:
+      - description: Review snapshot ID
+        in: path
+        name: snapshotId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Delete a review snapshot
+      tags:
+      - Review snapshots
+    get:
+      operationId: getReviewSnapshot
+      parameters:
+      - description: Review snapshot ID
+        in: path
+        name: snapshotId
         required: true
         type: string
       produces:
@@ -842,49 +833,521 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/worktree.RemoteBranchList'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/ReviewSnapshot'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
-      summary: List remote branches
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Get a review snapshot
       tags:
-      - Worktrees
-  /ws:
+      - Review snapshots
+  /api/v1/review-snapshots/{snapshotId}/files/{fileId}/contents:
+    get:
+      operationId: getReviewSnapshotFileContents
+      parameters:
+      - description: Review snapshot ID
+        in: path
+        name: snapshotId
+        required: true
+        type: string
+      - description: Snapshot file ID
+        in: path
+        name: fileId
+        required: true
+        type: string
+      - description: Comparison scope
+        enum:
+        - pull-request
+        - working-tree
+        - last-commit
+        - current
+        in: query
+        name: scope
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ReviewFileContents'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Get review snapshot file contents
+      tags:
+      - Review snapshots
+  /api/v1/settings:
+    get:
+      operationId: getSettings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Settings'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Get settings
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      operationId: updateSettings
+      parameters:
+      - description: Complete settings
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/Settings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Settings'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Update settings
+      tags:
+      - Settings
+  /api/v1/settings/reload:
+    post:
+      operationId: reloadSettings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Settings'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Reload settings from disk
+      tags:
+      - Settings
+  /api/v1/workspaces:
+    get:
+      operationId: listWorkspaces
+      parameters:
+      - description: Filter by activity
+        enum:
+        - active
+        in: query
+        name: activity
+        type: string
+      - description: Local repository ID
+        in: query
+        name: repositoryId
+        type: string
+      - description: Remote repository ID
+        in: query
+        name: remoteRepositoryId
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/WorkspaceList'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: List workspaces
+      tags:
+      - Workspaces
+    post:
+      consumes:
+      - application/json
+      operationId: materialiseWorkspace
+      parameters:
+      - description: Workspace materialisation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/MaterialiseWorkspaceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          headers:
+            Location:
+              description: Created workspace URL
+              type: string
+          schema:
+            $ref: '#/definitions/Workspace'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Problem'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Materialise a remote repository as a workspace
+      tags:
+      - Workspaces
+  /api/v1/workspaces/{workspaceId}:
+    get:
+      operationId: getWorkspace
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Workspace'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Get a workspace
+      tags:
+      - Workspaces
+  /api/v1/workspaces/{workspaceId}/review-snapshots:
+    post:
+      operationId: createReviewSnapshot
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          headers:
+            Location:
+              description: Created review snapshot URL
+              type: string
+          schema:
+            $ref: '#/definitions/ReviewSnapshot'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Create a review snapshot
+      tags:
+      - Review snapshots
+  /api/v1/workspaces/{workspaceId}/terminals:
+    delete:
+      operationId: deleteWorkspaceTerminals
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Close all workspace terminals
+      tags:
+      - Terminals
+    get:
+      operationId: listWorkspaceTerminals
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TerminalList'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: List workspace terminals
+      tags:
+      - Terminals
+  /api/v1/workspaces/{workspaceId}/terminals/{terminalId}:
+    delete:
+      operationId: deleteWorkspaceTerminal
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Terminal ID
+        in: path
+        name: terminalId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Close a workspace terminal
+      tags:
+      - Terminals
+    get:
+      operationId: getWorkspaceTerminal
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Terminal ID
+        in: path
+        name: terminalId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Terminal'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Get a workspace terminal
+      tags:
+      - Terminals
+    put:
+      operationId: putWorkspaceTerminal
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Terminal ID
+        in: path
+        name: terminalId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Terminal'
+        "201":
+          description: Created
+          headers:
+            Location:
+              description: Created terminal URL
+              type: string
+          schema:
+            $ref: '#/definitions/Terminal'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Start or reconnect to a terminal
+      tags:
+      - Terminals
+  /api/v1/workspaces/{workspaceId}/terminals/{terminalId}/input:
+    post:
+      consumes:
+      - application/json
+      operationId: sendWorkspaceTerminalInput
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Terminal ID
+        in: path
+        name: terminalId
+        required: true
+        type: string
+      - description: Terminal input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/TerminalInputRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Problem'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Send input to a workspace terminal
+      tags:
+      - Terminals
+  /api/v1/workspaces/{workspaceId}/terminals/{terminalId}/socket:
     get:
       description: Upgrades the connection to a WebSocket for terminal input, output,
         and control messages.
-      operationId: connectTerminalSession
+      operationId: connectWorkspaceTerminal
       parameters:
-      - description: Project name
-        in: query
-        name: project
+      - description: Workspace ID
+        in: path
+        name: workspaceId
         required: true
         type: string
-      - description: Terminal name
-        in: query
-        name: terminal
-        type: string
-      - description: Agent name
-        in: query
-        name: agent
+      - description: Terminal ID
+        in: path
+        name: terminalId
+        required: true
         type: string
       responses:
         "101":
           description: Switching Protocols
         "404":
-          description: Project not found
+          description: Terminal not found
+          schema:
+            type: string
+        "422":
+          description: Invalid terminal ID
           schema:
             type: string
         "500":
-          description: Failed to start terminal
+          description: Connection failed
           schema:
             type: string
-      summary: Connect to terminal session
+      summary: Connect to a workspace terminal
       tags:
       - Terminals
 produces:

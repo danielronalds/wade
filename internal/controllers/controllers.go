@@ -1,15 +1,13 @@
 package controllers
 
-// TODO: Review properly
-
 type Controllers struct {
-	Config         ConfigHandler
-	Projects       Projects
-	RemoteProjects RemoteProjects
-	Sessions       Sessions
-	Terminals      Terminals
-	Worktrees      Worktrees
-	Review         Review
-	Docs           Docs
-	Page           Page
+	Workspaces         Workspaces
+	Repositories       Repositories
+	RemoteRepositories RemoteRepositories
+	Worktrees          Worktrees
+	Terminals          Terminals
+	ReviewSnapshots    ReviewSnapshots
+	Settings           Settings
+	Docs               Docs
+	Page               Page
 }

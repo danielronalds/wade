@@ -158,40 +158,6 @@ func TestInputTargetsExactTerminalWithBracketedPaste(t *testing.T) {
 	}
 }
 
-func TestInputToSelectedAgentUsesActivatedTerminal(t *testing.T) {
-	service := NewService(
-		workspaceRepositoryStub{},
-		"/bin/sh",
-		"editor.localhost:8765",
-		[]Agent{
-			{Name: "Pi", Command: "pi -c", Default: true},
-			{Name: "Claude", Command: "claude"},
-		},
-	)
-	piName := "Pi"
-	claudeName := "Claude"
-	_, _ = addWritableTerminal(t, service, "wade", "agent:pi", TerminalRoleAgent, &piName)
-	selected, selectedOutput := addWritableTerminal(t, service, "wade", "agent:claude", TerminalRoleAgent, &claudeName)
-	selected.ApplyControlMessage([]byte(`{"type":"activate"}`))
-
-	activeTerminals, err := service.InputToSelectedAgent("wade", "reference")
-	if err != nil {
-		t.Fatalf("InputToSelectedAgent() error = %v", err)
-	}
-	if activeTerminals != 1 {
-		t.Fatalf("InputToSelectedAgent() active terminals = %d, want 1", activeTerminals)
-	}
-
-	want := []byte("\x1b[200~reference\x1b[201~")
-	got := make([]byte, len(want))
-	if _, err := io.ReadFull(selectedOutput, got); err != nil {
-		t.Fatalf("reading selected agent output: %v", err)
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("selected agent output = %q, want %q", got, want)
-	}
-}
-
 func TestCloseTerminalsForDirectoryUsesWorkspaceIdentity(t *testing.T) {
 	service := NewService(
 		workspaceRepositoryStub{workspaceID: "wade", found: true},
@@ -207,30 +173,6 @@ func TestCloseTerminalsForDirectoryUsesWorkspaceIdentity(t *testing.T) {
 	}
 	if service.ActiveTerminalCount("wade") != 0 {
 		t.Fatalf("ActiveTerminalCount() = %d, want 0", service.ActiveTerminalCount("wade"))
-	}
-}
-
-func TestInputToSelectedAgentReportsAmbiguousAgents(t *testing.T) {
-	service := NewService(
-		workspaceRepositoryStub{},
-		"/bin/sh",
-		"editor.localhost:8765",
-		[]Agent{
-			{Name: "Pi", Command: "pi -c", Default: true},
-			{Name: "Claude", Command: "claude"},
-		},
-	)
-	piName := "Pi"
-	claudeName := "Claude"
-	_, _ = addWritableTerminal(t, service, "wade", "agent:pi", TerminalRoleAgent, &piName)
-	_, _ = addWritableTerminal(t, service, "wade", "agent:claude", TerminalRoleAgent, &claudeName)
-
-	activeTerminals, err := service.InputToSelectedAgent("wade", "reference")
-	if err != nil {
-		t.Fatalf("InputToSelectedAgent() error = %v, want nil", err)
-	}
-	if activeTerminals != 2 {
-		t.Fatalf("InputToSelectedAgent() active terminals = %d, want 2", activeTerminals)
 	}
 }
 
@@ -262,7 +204,7 @@ func addWritableTerminal(
 		Status:      TerminalStatusRunning,
 		key:         key,
 		manager:     service,
-		process:     &Session{command: &exec.Cmd{}, terminal: terminalFile},
+		process:     &Process{command: &exec.Cmd{}, terminal: terminalFile},
 		buffer:      newOutputBuffer(terminalBufferBytes),
 		clients:     make(map[*Client]struct{}),
 	}

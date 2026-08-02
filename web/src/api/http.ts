@@ -1,13 +1,13 @@
-type ErrorResponse = {
-  message: string;
+type ProblemResponse = {
+  detail: string;
 };
 
-const isErrorResponse = (value: unknown): value is ErrorResponse => {
+const isProblemResponse = (value: unknown): value is ProblemResponse => {
   if (!value || typeof value !== 'object') {
     return false;
   }
 
-  return typeof (value as Partial<ErrorResponse>).message === 'string';
+  return typeof (value as Partial<ProblemResponse>).detail === 'string';
 };
 
 export const responseErrorMessage = async (response: Response, fallback: string) => {
@@ -18,8 +18,8 @@ export const responseErrorMessage = async (response: Response, fallback: string)
 
   try {
     const body: unknown = JSON.parse(text);
-    if (isErrorResponse(body) && body.message.trim() !== '') {
-      return body.message;
+    if (isProblemResponse(body) && body.detail.trim() !== '') {
+      return body.detail;
     }
   } catch {
     return text.trim();

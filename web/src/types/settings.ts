@@ -1,20 +1,7 @@
-import { defaultThemeAccentColor, normaliseThemeAccentColor, type ThemeAccentColor } from '@/utils/theme';
+import type { Agent, Settings } from '@/api/generated/wade';
+import { defaultThemeAccentColor, normaliseThemeAccentColor } from '@/utils/theme';
 
-export type Agent = {
-  name: string;
-  command: string;
-  default: boolean;
-};
-
-export type Settings = {
-  workspaceDirectories: string[];
-  shell: string;
-  agents: Agent[];
-  copyIgnoredFilesOnWorktreeCreation: boolean;
-  openWorktreesInNewTabs: boolean;
-  worktreeCopyExcludes: string[];
-  themeAccentColor: ThemeAccentColor;
-};
+export type { Agent, Settings };
 
 export const defaultAgents: Agent[] = [
   { name: 'Pi', command: 'pi -c', default: true },

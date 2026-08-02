@@ -53,15 +53,15 @@ func New(configuration config.Config, staticFiles fs.FS) *Application {
 	settingsService := config.NewService(repositories.NewSettingsRepository(), runtimeApplier)
 
 	controllerSet := controllers.Controllers{
-		Config:         controllers.NewConfig(settingsService),
-		Projects:       controllers.NewProjects(workspaceService),
-		RemoteProjects: controllers.NewRemoteProjects(remoteRepositoryService),
-		Sessions:       controllers.NewSessions(workspaceService, terminalService),
-		Terminals:      controllers.NewTerminals(terminalService, server.AllowSameOrigin),
-		Worktrees:      controllers.NewWorktrees(localRepositoryService, worktreeService),
-		Review:         controllers.NewReview(reviewService),
-		Docs:           controllers.NewDocs(),
-		Page:           controllers.NewPage(staticFiles),
+		Workspaces:         controllers.NewWorkspaces(workspaceService, remoteRepositoryService),
+		Repositories:       controllers.NewRepositories(localRepositoryService),
+		RemoteRepositories: controllers.NewRemoteRepositories(remoteRepositoryService),
+		Worktrees:          controllers.NewWorktrees(localRepositoryService, worktreeService),
+		Terminals:          controllers.NewTerminals(terminalService, server.AllowSameOrigin),
+		ReviewSnapshots:    controllers.NewReviewSnapshots(reviewService),
+		Settings:           controllers.NewSettings(settingsService),
+		Docs:               controllers.NewDocs(),
+		Page:               controllers.NewPage(staticFiles),
 	}
 
 	httpServer := server.New(controllerSet)

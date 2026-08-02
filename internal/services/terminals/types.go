@@ -1,10 +1,10 @@
 package terminals
 
-type TerminalRole string
+type TerminalRole string // @name TerminalRole
 
-type TerminalStatus string
+type TerminalStatus string // @name TerminalStatus
 
-type InputMode string
+type InputMode string // @name TerminalInputMode
 
 const (
 	TerminalRoleAgent      TerminalRole = "agent"

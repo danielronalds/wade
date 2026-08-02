@@ -8,7 +8,7 @@ type RemoteRepository struct {
 	WebURL            string   `json:"webUrl"`
 	CloneURL          string   `json:"cloneUrl"`
 	LocalWorkspaceIDs []string `json:"localWorkspaceIds"`
-}
+} // @name RemoteRepository
 
 type WorkspaceDirectory struct {
 	Setting string

@@ -1,20 +1,20 @@
 import { onBeforeUnmount, onMounted } from 'vue';
 
 export const useCommandPaletteKeyboardShortcuts = ({
-  openActiveSessionPicker,
+  openActiveWorkspacePicker,
   openCommandPalette,
-  openProjectPicker
+  openWorkspacePicker
 }: CommandPaletteKeyboardShortcutsOptions) => {
   const handleKeydown = (event: KeyboardEvent) => {
     if (isCtrlShortcut(event, 'p')) {
       stopEvent(event);
-      openProjectPicker();
+      openWorkspacePicker();
       return;
     }
 
     if (isCtrlShortcut(event, 's')) {
       stopEvent(event);
-      openActiveSessionPicker();
+      openActiveWorkspacePicker();
       return;
     }
 
@@ -34,9 +34,9 @@ export const useCommandPaletteKeyboardShortcuts = ({
 };
 
 type CommandPaletteKeyboardShortcutsOptions = {
-  openActiveSessionPicker: () => void;
+  openActiveWorkspacePicker: () => void;
   openCommandPalette: () => void;
-  openProjectPicker: () => void;
+  openWorkspacePicker: () => void;
 };
 
 const isCtrlShortcut = (event: KeyboardEvent, key: string) => event.ctrlKey

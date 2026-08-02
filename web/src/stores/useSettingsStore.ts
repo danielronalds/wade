@@ -2,10 +2,11 @@ import { defineStore } from 'pinia';
 import { computed, reactive, readonly } from 'vue';
 import {
   getSettings,
+  reloadSettings,
   updateSettings
 } from '@/api/generated/wade';
-import { useProjects } from '@/features/projects/composables/useProjects';
-import { useRecentProjects } from '@/features/projects/composables/useRecentProjects';
+import { useRecentWorkspaces } from '@/features/workspaces/composables/useRecentWorkspaces';
+import { useWorkspaces } from '@/features/workspaces/composables/useWorkspaces';
 import {
   cloneSettings,
   createEmptySettings,
@@ -19,8 +20,8 @@ const errorMessage = (error: unknown, fallback: string) => error instanceof Erro
   : fallback;
 
 export const useSettingsStore = defineStore('settings', () => {
-  const { syncProjects } = useProjects();
-  const { removeUnavailableRecentProjects } = useRecentProjects();
+  const { syncWorkspaces } = useWorkspaces();
+  const { removeUnavailableRecentWorkspaces } = useRecentWorkspaces();
 
   const state = reactive({
     hasLoaded: false,
@@ -59,7 +60,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
     loadRequest = (async () => {
       try {
-        const nextSettings = await getSettings() as Settings;
+        const nextSettings = await getSettings();
 
         replaceSettings(nextSettings);
         state.hasLoaded = true;
@@ -91,11 +92,11 @@ export const useSettingsStore = defineStore('settings', () => {
 
     saveRequest = (async () => {
       try {
-        const savedSettings = await updateSettings(cloneSettings(settingsToSave)) as Settings;
+        const savedSettings = await updateSettings(cloneSettings(settingsToSave));
 
-        const availableProjects = await syncProjects();
-        if (availableProjects) {
-          removeUnavailableRecentProjects(availableProjects);
+        const availableWorkspaces = await syncWorkspaces();
+        if (availableWorkspaces) {
+          removeUnavailableRecentWorkspaces(availableWorkspaces);
         }
 
         replaceSettings(savedSettings);
@@ -116,6 +117,15 @@ export const useSettingsStore = defineStore('settings', () => {
     return saveRequest;
   };
 
+  const reloadSettingsFromDisk = async () => {
+    const reloadedSettings = await reloadSettings();
+    replaceSettings(reloadedSettings);
+    state.hasLoaded = true;
+    applyThemeAccentColor(state.settings.themeAccentColor);
+
+    return currentSettings();
+  };
+
   const agents = computed(() => state.settings.agents);
   const hasLoaded = computed(() => state.hasLoaded);
   const isLoading = computed(() => state.load.isRunning);
@@ -133,6 +143,7 @@ export const useSettingsStore = defineStore('settings', () => {
     isSaving: readonly(isSaving),
     loadError: readonly(loadError),
     loadSettings,
+    reloadSettingsFromDisk,
     workspaceDirectories: readonly(workspaceDirectories),
     saveError: readonly(saveError),
     saveSettings,

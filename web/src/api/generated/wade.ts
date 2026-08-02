@@ -4,117 +4,67 @@
  * WADE API client generated from internal/openapi/swagger.json.
  */
 import { wadeFetch } from '../httpClient';
-export interface ConfigAgent {
+export interface Agent {
   command: string;
   default: boolean;
   name: string;
 }
 
-export interface HandlersAgentInputRequest {
-  text: string;
-}
-
-export interface HandlersCloneRemoteProjectRequest {
-  directoryIndex: number;
-  nameWithOwner: string;
-}
-
-export interface RemoteClonedProject {
+export interface Branch {
+  /** @nullable */
+  checkedOutWorkspaceId: string | null;
+  hasLocalBranch: boolean;
   name: string;
-  path: string;
+  ref: string;
+  /** @nullable */
+  remote: string | null;
 }
 
-export interface HandlersCloneRemoteProjectResponse {
-  project: RemoteClonedProject;
+export interface BranchList {
+  items: Branch[];
 }
 
-export interface HandlersConfigPayload {
-  agents: ConfigAgent[];
-  copyIgnoredFilesOnWorktreeCreation: boolean;
-  openWorktreesInNewTabs: boolean;
-  shell: string;
-  themeAccentColor: string;
-  workspaceDirectories: string[];
-  worktreeCopyExcludes: string[];
+export interface CreateWorktreeRequest {
+  branchRef: string;
 }
 
-export interface HandlersCreateWorktreeRequest {
-  branch: string;
-  project: string;
-}
-
-export interface HandlersErrorResponse {
-  message: string;
-}
-
-export interface HandlersProjectResponse {
-  gitBranch: string;
-  githubUrl: string;
-  linearTicketUrl: string;
-  name: string;
-  pullRequestUrl: string;
-}
-
-export interface HandlersProjectsResponse {
-  projects: string[];
-}
-
-export interface RemoteProject {
-  isLocal: boolean;
-  localName: string;
-  name: string;
-  nameWithOwner: string;
-  sshUrl: string;
+export interface IssueReference {
+  key: string;
+  provider: string;
   url: string;
 }
 
-export interface HandlersRemoteProjectsResponse {
-  projects: RemoteProject[];
+export interface MaterialiseWorkspaceRequest {
+  remoteRepositoryId: string;
+  workspaceDirectory: string;
 }
 
-export interface HandlersRemoveWorktreeRequest {
-  project: string;
-  worktree: string;
+export interface Problem {
+  code: string;
+  detail: string;
+  status: number;
+  title: string;
+  type: string;
 }
 
-export type ReviewScope = typeof ReviewScope[keyof typeof ReviewScope];
-
-
-export const ReviewScope = {
-  ScopePullRequest: 'pull-request',
-  ScopeWorkingTree: 'working-tree',
-  ScopeLastCommit: 'last-commit',
-  ScopeCurrent: 'current',
-  ScopeGitDiff: 'git-diff',
-  ScopeAllFiles: 'all-files',
-} as const;
-
-export interface HandlersReviewFileRequest {
-  fileId: string;
-  scope: ReviewScope;
-}
-
-export interface HandlersSessionsResponse {
-  sessions: string[];
-}
-
-export interface WorktreeWorktree {
-  branch: string;
-  ignoredFileCopyWarnings?: string[];
-  isBase: boolean;
-  isCurrent: boolean;
-  isRemovable: boolean;
+export interface RemoteRepository {
+  cloneUrl: string;
+  id: string;
+  localWorkspaceIds: string[];
   name: string;
-  path: string;
-  projectName: string;
+  webUrl: string;
 }
 
-export interface HandlersWorktreeResponse {
-  worktree: WorktreeWorktree;
+export interface RemoteRepositoryList {
+  items: RemoteRepository[];
 }
 
-export interface HandlersWorktreesResponse {
-  worktrees: WorktreeWorktree[];
+export interface Repository {
+  id: string;
+  mainWorkspaceId: string;
+  /** @nullable */
+  remoteRepositoryId: string | null;
+  workspaceIds: string[];
 }
 
 export type ReviewChangeStatus = typeof ReviewChangeStatus[keyof typeof ReviewChangeStatus];
@@ -131,22 +81,24 @@ export interface ReviewFileComparison {
   displayPath: string;
   hasModified: boolean;
   hasOriginal: boolean;
-  newPath: string;
-  oldPath: string;
+  /** @nullable */
+  newPath: string | null;
+  /** @nullable */
+  oldPath: string | null;
   status: ReviewChangeStatus;
 }
 
 export interface ReviewFile {
-  gitDiff: ReviewFileComparison;
+  gitDiff: ReviewFileComparison | null;
   hasWorkingTreeFile: boolean;
   id: string;
   inGitDiff: boolean;
   inLastCommit: boolean;
   inPullRequest: boolean;
-  lastCommit: ReviewFileComparison;
+  lastCommit: ReviewFileComparison | null;
   path: string;
-  pullRequest: ReviewFileComparison;
-  worktreeStatus: ReviewChangeStatus;
+  pullRequest: ReviewFileComparison | null;
+  worktreeStatus: ReviewChangeStatus | null;
 }
 
 export interface ReviewFileContents {
@@ -154,183 +106,217 @@ export interface ReviewFileContents {
   originalContent: string;
 }
 
-export interface ReviewPullRequest {
-  baseRefName: string;
-  headRefName: string;
+export interface ReviewSnapshotBranch {
+  name: string;
+  ref: string;
+  /** @nullable */
+  remote: string | null;
+}
+
+export interface ReviewSnapshotPullRequest {
+  baseRef: string;
+  headRef: string;
   number: number;
   url: string;
 }
 
-export interface ReviewWindowData {
-  branchName: string;
+export interface ReviewSnapshot {
+  branch: ReviewSnapshotBranch | null;
+  createdAt: string;
   files: ReviewFile[];
-  pullRequest: ReviewPullRequest;
-  repoRoot: string;
+  id: string;
+  pullRequest: ReviewSnapshotPullRequest | null;
+  workspaceId: string;
 }
 
-export interface WorktreeRemoteBranch {
-  branch: string;
-  hasLocalBranch: boolean;
-  isCheckedOut: boolean;
+export type SettingsThemeAccentColor = typeof SettingsThemeAccentColor[keyof typeof SettingsThemeAccentColor];
+
+
+export const SettingsThemeAccentColor = {
+  white: 'white',
+  orange: 'orange',
+  purple: 'purple',
+} as const;
+
+export interface Settings {
+  agents: Agent[];
+  copyIgnoredFilesOnWorktreeCreation: boolean;
+  openWorktreesInNewTabs: boolean;
+  shell: string;
+  themeAccentColor: SettingsThemeAccentColor;
+  workspaceDirectories: string[];
+  worktreeCopyExcludes: string[];
+}
+
+export type TerminalRole = typeof TerminalRole[keyof typeof TerminalRole];
+
+
+export const TerminalRole = {
+  TerminalRoleAgent: 'agent',
+  TerminalRoleMisc: 'misc',
+  TerminalRoleServer: 'server',
+  TerminalRoleScratchpad: 'scratchpad',
+} as const;
+
+export type TerminalStatus = typeof TerminalStatus[keyof typeof TerminalStatus];
+
+
+export const TerminalStatus = {
+  TerminalStatusRunning: 'running',
+} as const;
+
+export interface Terminal {
+  /** @nullable */
+  agent: string | null;
+  id: string;
+  role: TerminalRole;
+  socketUrl: string;
+  status: TerminalStatus;
+  workspaceId: string;
+}
+
+export type TerminalInputMode = typeof TerminalInputMode[keyof typeof TerminalInputMode];
+
+
+export const TerminalInputMode = {
+  InputModeRaw: 'raw',
+  InputModeBracketedPaste: 'bracketed-paste',
+} as const;
+
+export interface TerminalInputRequest {
+  mode: TerminalInputMode;
+  text: string;
+}
+
+export interface TerminalList {
+  items: Terminal[];
+}
+
+export interface WorkspaceActivity {
+  activeTerminalCount: number;
+}
+
+export interface WorkspaceBranch {
+  commit: string;
+  isDetached: boolean;
   name: string;
-  worktreeName: string;
-  worktreeProjectName: string;
+  ref: string;
 }
 
-export interface WorktreeRemoteBranchList {
-  branches: WorktreeRemoteBranch[];
-  remote: string;
+export interface WorkspaceLinks {
+  issue: IssueReference | null;
+  /** @nullable */
+  pullRequest: string | null;
+  /** @nullable */
+  repository: string | null;
+}
+
+export interface WorktreeReference {
+  id: string;
+  isMain: boolean;
+  isRemovable: boolean;
+}
+
+export interface Workspace {
+  activity: WorkspaceActivity;
+  branch: WorkspaceBranch | null;
+  id: string;
+  links: WorkspaceLinks;
+  name: string;
+  /** @nullable */
+  remoteRepositoryId: string | null;
+  /** @nullable */
+  repositoryId: string | null;
+  worktree: WorktreeReference | null;
+}
+
+export interface WorkspaceSummary {
+  activity: WorkspaceActivity;
+  branch: WorkspaceBranch | null;
+  id: string;
+  links: WorkspaceLinks;
+  name: string;
+  /** @nullable */
+  remoteRepositoryId: string | null;
+  /** @nullable */
+  repositoryId: string | null;
+  worktree: WorktreeReference | null;
+}
+
+export interface WorkspaceList {
+  items: WorkspaceSummary[];
+}
+
+export interface Worktree {
+  branch: Branch | null;
+  id: string;
+  ignoredFileCopyWarnings?: string[];
+  isMain: boolean;
+  isRemovable: boolean;
+  name: string;
+  repositoryId: string;
+  workspaceId: string;
+}
+
+export interface WorktreeList {
+  items: Worktree[];
 }
 
 export type GetOpenAPISpec200 = { [key: string]: unknown };
 
-export type GetProjectDetailsParams = {
+export type ListRepositoryBranchesParams = {
 /**
- * Project name
+ * Branch kind
  */
-project: string;
+kind?: ListRepositoryBranchesKind;
 };
 
-export type GetReviewWindowDataParams = {
+export type ListRepositoryBranchesKind = typeof ListRepositoryBranchesKind[keyof typeof ListRepositoryBranchesKind];
+
+
+export const ListRepositoryBranchesKind = {
+  local: 'local',
+  remote: 'remote',
+} as const;
+
+export type GetReviewSnapshotFileContentsParams = {
 /**
- * Project name
+ * Comparison scope
  */
-project: string;
+scope: GetReviewSnapshotFileContentsScope;
 };
 
-export type GetReviewFileContentsParams = {
+export type GetReviewSnapshotFileContentsScope = typeof GetReviewSnapshotFileContentsScope[keyof typeof GetReviewSnapshotFileContentsScope];
+
+
+export const GetReviewSnapshotFileContentsScope = {
+  'pull-request': 'pull-request',
+  'working-tree': 'working-tree',
+  'last-commit': 'last-commit',
+  current: 'current',
+} as const;
+
+export type ListWorkspacesParams = {
 /**
- * Project name
+ * Filter by activity
  */
-project: string;
+activity?: ListWorkspacesActivity;
+/**
+ * Local repository ID
+ */
+repositoryId?: string;
+/**
+ * Remote repository ID
+ */
+remoteRepositoryId?: string;
 };
 
-export type ReloadTerminalSessionParams = {
-/**
- * Project name
- */
-project: string;
-/**
- * Terminal name
- */
-terminal?: string;
-/**
- * Agent name
- */
-agent?: string;
-};
-
-export type ListWorktreesParams = {
-/**
- * Project name
- */
-project: string;
-};
-
-export type RemoveWorktreeParams = {
-/**
- * Project name
- */
-project?: string;
-/**
- * Worktree name
- */
-worktree?: string;
-};
-
-export type ListRemoteBranchesParams = {
-/**
- * Project name
- */
-project: string;
-};
-
-export type ConnectTerminalSessionParams = {
-/**
- * Project name
- */
-project: string;
-/**
- * Terminal name
- */
-terminal?: string;
-/**
- * Agent name
- */
-agent?: string;
-};
-
-export const getGetSettingsUrl = () => {
+export type ListWorkspacesActivity = typeof ListWorkspacesActivity[keyof typeof ListWorkspacesActivity];
 
 
-
-
-  return `/api/config`
-}
-
-/**
- * @summary Get settings
- */
-export const getSettings = async ( options?: RequestInit): Promise<HandlersConfigPayload> => {
-
-  return wadeFetch<HandlersConfigPayload>(getGetSettingsUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export const getUpdateSettingsUrl = () => {
-
-
-
-
-  return `/api/config`
-}
-
-/**
- * @summary Update settings
- */
-export const updateSettings = async (handlersConfigPayload: HandlersConfigPayload, options?: RequestInit): Promise<HandlersConfigPayload> => {
-
-  return wadeFetch<HandlersConfigPayload>(getUpdateSettingsUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(handlersConfigPayload)
-  }
-);}
-
-
-
-export const getReloadConfigUrl = () => {
-
-
-
-
-  return `/api/config/reload`
-}
-
-/**
- * @summary Reload runtime config
- */
-export const reloadConfig = async ( options?: RequestInit): Promise<HandlersConfigPayload> => {
-
-  return wadeFetch<HandlersConfigPayload>(getReloadConfigUrl(),
-  {
-    ...options,
-    method: 'POST'
-
-
-  }
-);}
-
-
+export const ListWorkspacesActivity = {
+  active: 'active',
+} as const;
 
 export const getGetOpenAPISpecUrl = () => {
 
@@ -356,7 +342,56 @@ export const getOpenAPISpec = async ( options?: RequestInit): Promise<GetOpenAPI
 
 
 
-export const getGetProjectDetailsUrl = (params: GetProjectDetailsParams,) => {
+export const getListRemoteRepositoriesUrl = () => {
+
+
+
+
+  return `/api/v1/remote-repositories`
+}
+
+/**
+ * @summary List remote repositories
+ */
+export const listRemoteRepositories = async ( options?: RequestInit): Promise<RemoteRepositoryList> => {
+
+  return wadeFetch<RemoteRepositoryList>(getListRemoteRepositoriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetRepositoryUrl = (repositoryId: string,) => {
+
+
+
+
+  return `/api/v1/repositories/${encodeURIComponent(String(repositoryId))}`
+}
+
+/**
+ * @summary Get a local repository
+ */
+export const getRepository = async (repositoryId: string, options?: RequestInit): Promise<Repository> => {
+
+  return wadeFetch<Repository>(getGetRepositoryUrl(repositoryId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getListRepositoryBranchesUrl = (repositoryId: string,
+    params?: ListRepositoryBranchesParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -368,15 +403,16 @@ export const getGetProjectDetailsUrl = (params: GetProjectDetailsParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/project?${stringifiedParams}` : `/api/project`
+  return stringifiedParams.length > 0 ? `/api/v1/repositories/${encodeURIComponent(String(repositoryId))}/branches?${stringifiedParams}` : `/api/v1/repositories/${encodeURIComponent(String(repositoryId))}/branches`
 }
 
 /**
- * @summary Get project details
+ * @summary List repository branches
  */
-export const getProjectDetails = async (params: GetProjectDetailsParams, options?: RequestInit): Promise<HandlersProjectResponse> => {
+export const listRepositoryBranches = async (repositoryId: string,
+    params?: ListRepositoryBranchesParams, options?: RequestInit): Promise<BranchList> => {
 
-  return wadeFetch<HandlersProjectResponse>(getGetProjectDetailsUrl(params),
+  return wadeFetch<BranchList>(getListRepositoryBranchesUrl(repositoryId,params),
   {
     ...options,
     method: 'GET'
@@ -387,20 +423,20 @@ export const getProjectDetails = async (params: GetProjectDetailsParams, options
 
 
 
-export const getListProjectsUrl = () => {
+export const getListRepositoryWorktreesUrl = (repositoryId: string,) => {
 
 
 
 
-  return `/api/projects`
+  return `/api/v1/repositories/${encodeURIComponent(String(repositoryId))}/worktrees`
 }
 
 /**
- * @summary List projects
+ * @summary List repository worktrees
  */
-export const listProjects = async ( options?: RequestInit): Promise<HandlersProjectsResponse> => {
+export const listRepositoryWorktrees = async (repositoryId: string, options?: RequestInit): Promise<WorktreeList> => {
 
-  return wadeFetch<HandlersProjectsResponse>(getListProjectsUrl(),
+  return wadeFetch<WorktreeList>(getListRepositoryWorktreesUrl(repositoryId),
   {
     ...options,
     method: 'GET'
@@ -411,180 +447,47 @@ export const listProjects = async ( options?: RequestInit): Promise<HandlersProj
 
 
 
-export const getListRemoteProjectsUrl = () => {
+export const getCreateRepositoryWorktreeUrl = (repositoryId: string,) => {
 
 
 
 
-  return `/api/remote-projects`
+  return `/api/v1/repositories/${encodeURIComponent(String(repositoryId))}/worktrees`
 }
 
 /**
- * @summary List remote projects
+ * @summary Create a repository worktree
  */
-export const listRemoteProjects = async ( options?: RequestInit): Promise<HandlersRemoteProjectsResponse> => {
+export const createRepositoryWorktree = async (repositoryId: string,
+    createWorktreeRequest: CreateWorktreeRequest, options?: RequestInit): Promise<Worktree> => {
 
-  return wadeFetch<HandlersRemoteProjectsResponse>(getListRemoteProjectsUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export const getCloneRemoteProjectUrl = () => {
-
-
-
-
-  return `/api/remote-projects/clone`
-}
-
-/**
- * @summary Clone remote project
- */
-export const cloneRemoteProject = async (handlersCloneRemoteProjectRequest: HandlersCloneRemoteProjectRequest, options?: RequestInit): Promise<HandlersCloneRemoteProjectResponse> => {
-
-  return wadeFetch<HandlersCloneRemoteProjectResponse>(getCloneRemoteProjectUrl(),
+  return wadeFetch<Worktree>(getCreateRepositoryWorktreeUrl(repositoryId),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(handlersCloneRemoteProjectRequest)
+    body: JSON.stringify(createWorktreeRequest)
   }
 );}
 
 
 
-export const getGetReviewWindowDataUrl = (params: GetReviewWindowDataParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getDeleteRepositoryWorktreeUrl = (repositoryId: string,
+    worktreeId: string,) => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/review?${stringifiedParams}` : `/api/review`
+  return `/api/v1/repositories/${encodeURIComponent(String(repositoryId))}/worktrees/${encodeURIComponent(String(worktreeId))}`
 }
 
 /**
- * @summary Get review window data
+ * @summary Remove a repository worktree
  */
-export const getReviewWindowData = async (params: GetReviewWindowDataParams, options?: RequestInit): Promise<ReviewWindowData> => {
+export const deleteRepositoryWorktree = async (repositoryId: string,
+    worktreeId: string, options?: RequestInit): Promise<void> => {
 
-  return wadeFetch<ReviewWindowData>(getGetReviewWindowDataUrl(params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export const getGetReviewFileContentsUrl = (params: GetReviewFileContentsParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/api/review/file?${stringifiedParams}` : `/api/review/file`
-}
-
-/**
- * @summary Get review file contents
- */
-export const getReviewFileContents = async (handlersReviewFileRequest: HandlersReviewFileRequest,
-    params: GetReviewFileContentsParams, options?: RequestInit): Promise<ReviewFileContents> => {
-
-  return wadeFetch<ReviewFileContents>(getGetReviewFileContentsUrl(params),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(handlersReviewFileRequest)
-  }
-);}
-
-
-
-export const getListActiveProjectSessionsUrl = () => {
-
-
-
-
-  return `/api/sessions`
-}
-
-/**
- * @summary List active project sessions
- */
-export const listActiveProjectSessions = async ( options?: RequestInit): Promise<HandlersSessionsResponse> => {
-
-  return wadeFetch<HandlersSessionsResponse>(getListActiveProjectSessionsUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export const getSendTextToAgentTerminalUrl = (projectName: string,) => {
-
-
-
-
-  return `/api/sessions/${encodeURIComponent(String(projectName))}/agent`
-}
-
-/**
- * @summary Send text to the active agent terminal
- */
-export const sendTextToAgentTerminal = async (projectName: string,
-    handlersAgentInputRequest: HandlersAgentInputRequest, options?: RequestInit): Promise<void> => {
-
-  return wadeFetch<void>(getSendTextToAgentTerminalUrl(projectName),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(handlersAgentInputRequest)
-  }
-);}
-
-
-
-export const getCloseProjectSessionUrl = (sessionName: string,) => {
-
-
-
-
-  return `/api/sessions/${encodeURIComponent(String(sessionName))}`
-}
-
-/**
- * @summary Close project session
- */
-export const closeProjectSession = async (sessionName: string, options?: RequestInit): Promise<void> => {
-
-  return wadeFetch<void>(getCloseProjectSessionUrl(sessionName),
+  return wadeFetch<void>(getDeleteRepositoryWorktreeUrl(repositoryId,worktreeId),
   {
     ...options,
     method: 'DELETE'
@@ -595,7 +498,57 @@ export const closeProjectSession = async (sessionName: string, options?: Request
 
 
 
-export const getReloadTerminalSessionUrl = (params: ReloadTerminalSessionParams,) => {
+export const getGetReviewSnapshotUrl = (snapshotId: string,) => {
+
+
+
+
+  return `/api/v1/review-snapshots/${encodeURIComponent(String(snapshotId))}`
+}
+
+/**
+ * @summary Get a review snapshot
+ */
+export const getReviewSnapshot = async (snapshotId: string, options?: RequestInit): Promise<ReviewSnapshot> => {
+
+  return wadeFetch<ReviewSnapshot>(getGetReviewSnapshotUrl(snapshotId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getDeleteReviewSnapshotUrl = (snapshotId: string,) => {
+
+
+
+
+  return `/api/v1/review-snapshots/${encodeURIComponent(String(snapshotId))}`
+}
+
+/**
+ * @summary Delete a review snapshot
+ */
+export const deleteReviewSnapshot = async (snapshotId: string, options?: RequestInit): Promise<void> => {
+
+  return wadeFetch<void>(getDeleteReviewSnapshotUrl(snapshotId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getGetReviewSnapshotFileContentsUrl = (snapshotId: string,
+    fileId: string,
+    params: GetReviewSnapshotFileContentsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -607,15 +560,89 @@ export const getReloadTerminalSessionUrl = (params: ReloadTerminalSessionParams,
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/terminal/reload?${stringifiedParams}` : `/api/terminal/reload`
+  return stringifiedParams.length > 0 ? `/api/v1/review-snapshots/${encodeURIComponent(String(snapshotId))}/files/${encodeURIComponent(String(fileId))}/contents?${stringifiedParams}` : `/api/v1/review-snapshots/${encodeURIComponent(String(snapshotId))}/files/${encodeURIComponent(String(fileId))}/contents`
 }
 
 /**
- * @summary Reload terminal session
+ * @summary Get review snapshot file contents
  */
-export const reloadTerminalSession = async (params: ReloadTerminalSessionParams, options?: RequestInit): Promise<void> => {
+export const getReviewSnapshotFileContents = async (snapshotId: string,
+    fileId: string,
+    params: GetReviewSnapshotFileContentsParams, options?: RequestInit): Promise<ReviewFileContents> => {
 
-  return wadeFetch<void>(getReloadTerminalSessionUrl(params),
+  return wadeFetch<ReviewFileContents>(getGetReviewSnapshotFileContentsUrl(snapshotId,fileId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetSettingsUrl = () => {
+
+
+
+
+  return `/api/v1/settings`
+}
+
+/**
+ * @summary Get settings
+ */
+export const getSettings = async ( options?: RequestInit): Promise<Settings> => {
+
+  return wadeFetch<Settings>(getGetSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getUpdateSettingsUrl = () => {
+
+
+
+
+  return `/api/v1/settings`
+}
+
+/**
+ * @summary Update settings
+ */
+export const updateSettings = async (settings: Settings, options?: RequestInit): Promise<Settings> => {
+
+  return wadeFetch<Settings>(getUpdateSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(settings)
+  }
+);}
+
+
+
+export const getReloadSettingsUrl = () => {
+
+
+
+
+  return `/api/v1/settings/reload`
+}
+
+/**
+ * @summary Reload settings from disk
+ */
+export const reloadSettings = async ( options?: RequestInit): Promise<Settings> => {
+
+  return wadeFetch<Settings>(getReloadSettingsUrl(),
   {
     ...options,
     method: 'POST'
@@ -626,7 +653,7 @@ export const reloadTerminalSession = async (params: ReloadTerminalSessionParams,
 
 
 
-export const getListWorktreesUrl = (params: ListWorktreesParams,) => {
+export const getListWorkspacesUrl = (params?: ListWorkspacesParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -638,15 +665,15 @@ export const getListWorktreesUrl = (params: ListWorktreesParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/worktrees?${stringifiedParams}` : `/api/worktrees`
+  return stringifiedParams.length > 0 ? `/api/v1/workspaces?${stringifiedParams}` : `/api/v1/workspaces`
 }
 
 /**
- * @summary List worktrees
+ * @summary List workspaces
  */
-export const listWorktrees = async (params: ListWorktreesParams, options?: RequestInit): Promise<HandlersWorktreesResponse> => {
+export const listWorkspaces = async (params?: ListWorkspacesParams, options?: RequestInit): Promise<WorkspaceList> => {
 
-  return wadeFetch<HandlersWorktreesResponse>(getListWorktreesUrl(params),
+  return wadeFetch<WorkspaceList>(getListWorkspacesUrl(params),
   {
     ...options,
     method: 'GET'
@@ -657,83 +684,44 @@ export const listWorktrees = async (params: ListWorktreesParams, options?: Reque
 
 
 
-export const getCreateWorktreeUrl = () => {
+export const getMaterialiseWorkspaceUrl = () => {
 
 
 
 
-  return `/api/worktrees`
+  return `/api/v1/workspaces`
 }
 
 /**
- * @summary Create worktree
+ * @summary Materialise a remote repository as a workspace
  */
-export const createWorktree = async (handlersCreateWorktreeRequest: HandlersCreateWorktreeRequest, options?: RequestInit): Promise<HandlersWorktreeResponse> => {
+export const materialiseWorkspace = async (materialiseWorkspaceRequest: MaterialiseWorkspaceRequest, options?: RequestInit): Promise<Workspace> => {
 
-  return wadeFetch<HandlersWorktreeResponse>(getCreateWorktreeUrl(),
+  return wadeFetch<Workspace>(getMaterialiseWorkspaceUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(handlersCreateWorktreeRequest)
+    body: JSON.stringify(materialiseWorkspaceRequest)
   }
 );}
 
 
 
-export const getRemoveWorktreeUrl = (params?: RemoveWorktreeParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getGetWorkspaceUrl = (workspaceId: string,) => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/worktrees?${stringifiedParams}` : `/api/worktrees`
+  return `/api/v1/workspaces/${encodeURIComponent(String(workspaceId))}`
 }
 
 /**
- * @summary Remove worktree
+ * @summary Get a workspace
  */
-export const removeWorktree = async (handlersRemoveWorktreeRequest?: HandlersRemoveWorktreeRequest,
-    params?: RemoveWorktreeParams, options?: RequestInit): Promise<HandlersWorktreeResponse> => {
+export const getWorkspace = async (workspaceId: string, options?: RequestInit): Promise<Workspace> => {
 
-  return wadeFetch<HandlersWorktreeResponse>(getRemoveWorktreeUrl(params),
-  {
-    ...options,
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(handlersRemoveWorktreeRequest)
-  }
-);}
-
-
-
-export const getListRemoteBranchesUrl = (params: ListRemoteBranchesParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/api/worktrees/remote-branches?${stringifiedParams}` : `/api/worktrees/remote-branches`
-}
-
-/**
- * @summary List remote branches
- */
-export const listRemoteBranches = async (params: ListRemoteBranchesParams, options?: RequestInit): Promise<WorktreeRemoteBranchList> => {
-
-  return wadeFetch<WorktreeRemoteBranchList>(getListRemoteBranchesUrl(params),
+  return wadeFetch<Workspace>(getGetWorkspaceUrl(workspaceId),
   {
     ...options,
     method: 'GET'
@@ -744,28 +732,200 @@ export const listRemoteBranches = async (params: ListRemoteBranchesParams, optio
 
 
 
-export const getConnectTerminalSessionUrl = (params: ConnectTerminalSessionParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getCreateReviewSnapshotUrl = (workspaceId: string,) => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/ws?${stringifiedParams}` : `/ws`
+  return `/api/v1/workspaces/${encodeURIComponent(String(workspaceId))}/review-snapshots`
+}
+
+/**
+ * @summary Create a review snapshot
+ */
+export const createReviewSnapshot = async (workspaceId: string, options?: RequestInit): Promise<ReviewSnapshot> => {
+
+  return wadeFetch<ReviewSnapshot>(getCreateReviewSnapshotUrl(workspaceId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export const getListWorkspaceTerminalsUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/v1/workspaces/${encodeURIComponent(String(workspaceId))}/terminals`
+}
+
+/**
+ * @summary List workspace terminals
+ */
+export const listWorkspaceTerminals = async (workspaceId: string, options?: RequestInit): Promise<TerminalList> => {
+
+  return wadeFetch<TerminalList>(getListWorkspaceTerminalsUrl(workspaceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getDeleteWorkspaceTerminalsUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/v1/workspaces/${encodeURIComponent(String(workspaceId))}/terminals`
+}
+
+/**
+ * @summary Close all workspace terminals
+ */
+export const deleteWorkspaceTerminals = async (workspaceId: string, options?: RequestInit): Promise<void> => {
+
+  return wadeFetch<void>(getDeleteWorkspaceTerminalsUrl(workspaceId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getGetWorkspaceTerminalUrl = (workspaceId: string,
+    terminalId: string,) => {
+
+
+
+
+  return `/api/v1/workspaces/${encodeURIComponent(String(workspaceId))}/terminals/${encodeURIComponent(String(terminalId))}`
+}
+
+/**
+ * @summary Get a workspace terminal
+ */
+export const getWorkspaceTerminal = async (workspaceId: string,
+    terminalId: string, options?: RequestInit): Promise<Terminal> => {
+
+  return wadeFetch<Terminal>(getGetWorkspaceTerminalUrl(workspaceId,terminalId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getPutWorkspaceTerminalUrl = (workspaceId: string,
+    terminalId: string,) => {
+
+
+
+
+  return `/api/v1/workspaces/${encodeURIComponent(String(workspaceId))}/terminals/${encodeURIComponent(String(terminalId))}`
+}
+
+/**
+ * @summary Start or reconnect to a terminal
+ */
+export const putWorkspaceTerminal = async (workspaceId: string,
+    terminalId: string, options?: RequestInit): Promise<Terminal> => {
+
+  return wadeFetch<Terminal>(getPutWorkspaceTerminalUrl(workspaceId,terminalId),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+export const getDeleteWorkspaceTerminalUrl = (workspaceId: string,
+    terminalId: string,) => {
+
+
+
+
+  return `/api/v1/workspaces/${encodeURIComponent(String(workspaceId))}/terminals/${encodeURIComponent(String(terminalId))}`
+}
+
+/**
+ * @summary Close a workspace terminal
+ */
+export const deleteWorkspaceTerminal = async (workspaceId: string,
+    terminalId: string, options?: RequestInit): Promise<void> => {
+
+  return wadeFetch<void>(getDeleteWorkspaceTerminalUrl(workspaceId,terminalId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getSendWorkspaceTerminalInputUrl = (workspaceId: string,
+    terminalId: string,) => {
+
+
+
+
+  return `/api/v1/workspaces/${encodeURIComponent(String(workspaceId))}/terminals/${encodeURIComponent(String(terminalId))}/input`
+}
+
+/**
+ * @summary Send input to a workspace terminal
+ */
+export const sendWorkspaceTerminalInput = async (workspaceId: string,
+    terminalId: string,
+    terminalInputRequest: TerminalInputRequest, options?: RequestInit): Promise<void> => {
+
+  return wadeFetch<void>(getSendWorkspaceTerminalInputUrl(workspaceId,terminalId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(terminalInputRequest)
+  }
+);}
+
+
+
+export const getConnectWorkspaceTerminalUrl = (workspaceId: string,
+    terminalId: string,) => {
+
+
+
+
+  return `/api/v1/workspaces/${encodeURIComponent(String(workspaceId))}/terminals/${encodeURIComponent(String(terminalId))}/socket`
 }
 
 /**
  * Upgrades the connection to a WebSocket for terminal input, output, and control messages.
- * @summary Connect to terminal session
+ * @summary Connect to a workspace terminal
  */
-export const connectTerminalSession = async (params: ConnectTerminalSessionParams, options?: RequestInit): Promise<unknown> => {
+export const connectWorkspaceTerminal = async (workspaceId: string,
+    terminalId: string, options?: RequestInit): Promise<unknown> => {
 
-  return wadeFetch<unknown>(getConnectTerminalSessionUrl(params),
+  return wadeFetch<unknown>(getConnectWorkspaceTerminalUrl(workspaceId,terminalId),
   {
     ...options,
     method: 'GET'

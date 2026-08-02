@@ -13,9 +13,6 @@ const (
 	ScopeWorkingTree Scope = "working-tree"
 	ScopeLastCommit  Scope = "last-commit"
 	ScopeCurrent     Scope = "current"
-
-	ScopeGitDiff  Scope = "git-diff"
-	ScopeAllFiles Scope = "all-files"
 )
 
 const (
@@ -27,39 +24,39 @@ const (
 
 type Scope string
 
-type ChangeStatus string
+type ChangeStatus string // @name ReviewChangeStatus
 
 type PullRequest struct {
 	Number      int    `json:"number"`
 	URL         string `json:"url"`
 	BaseRefName string `json:"baseRefName"`
 	HeadRefName string `json:"headRefName"`
-}
+} // @name PullRequest
 
 type FileComparison struct {
 	Status      ChangeStatus `json:"status"`
-	OldPath     *string      `json:"oldPath"`
-	NewPath     *string      `json:"newPath"`
+	OldPath     *string      `json:"oldPath" extensions:"x-nullable"`
+	NewPath     *string      `json:"newPath" extensions:"x-nullable"`
 	DisplayPath string       `json:"displayPath"`
 	HasOriginal bool         `json:"hasOriginal"`
 	HasModified bool         `json:"hasModified"`
 
 	originalRevision string
 	modifiedRevision string
-}
+} // @name ReviewFileComparison
 
 type File struct {
 	ID                 string          `json:"id"`
 	Path               string          `json:"path"`
-	WorktreeStatus     *ChangeStatus   `json:"worktreeStatus"`
+	WorktreeStatus     *ChangeStatus   `json:"worktreeStatus" extensions:"x-nullable"`
 	HasWorkingTreeFile bool            `json:"hasWorkingTreeFile"`
 	InGitDiff          bool            `json:"inGitDiff"`
 	InLastCommit       bool            `json:"inLastCommit"`
 	InPullRequest      bool            `json:"inPullRequest"`
-	GitDiff            *FileComparison `json:"gitDiff"`
-	LastCommit         *FileComparison `json:"lastCommit"`
-	PullRequest        *FileComparison `json:"pullRequest"`
-}
+	GitDiff            *FileComparison `json:"gitDiff" extensions:"x-nullable"`
+	LastCommit         *FileComparison `json:"lastCommit" extensions:"x-nullable"`
+	PullRequest        *FileComparison `json:"pullRequest" extensions:"x-nullable"`
+} // @name ReviewFile
 
 type WindowData struct {
 	RepoRoot    string       `json:"repoRoot"`
@@ -71,29 +68,29 @@ type WindowData struct {
 type FileContents struct {
 	OriginalContent string `json:"originalContent"`
 	ModifiedContent string `json:"modifiedContent"`
-}
+} // @name ReviewFileContents
 
 type SnapshotBranch struct {
 	Ref    string  `json:"ref"`
 	Name   string  `json:"name"`
-	Remote *string `json:"remote"`
-}
+	Remote *string `json:"remote" extensions:"x-nullable"`
+} // @name ReviewSnapshotBranch
 
 type SnapshotPullRequest struct {
 	Number  int    `json:"number"`
 	URL     string `json:"url"`
 	BaseRef string `json:"baseRef"`
 	HeadRef string `json:"headRef"`
-}
+} // @name ReviewSnapshotPullRequest
 
 type ReviewSnapshot struct {
 	ID          string               `json:"id"`
 	WorkspaceID string               `json:"workspaceId"`
-	Branch      *SnapshotBranch      `json:"branch"`
-	PullRequest *SnapshotPullRequest `json:"pullRequest"`
+	Branch      *SnapshotBranch      `json:"branch" extensions:"x-nullable"`
+	PullRequest *SnapshotPullRequest `json:"pullRequest" extensions:"x-nullable"`
 	Files       []File               `json:"files"`
 	CreatedAt   time.Time            `json:"createdAt"`
-}
+} // @name ReviewSnapshot
 
 type Service struct {
 	workspaces WorkspaceRepository
@@ -108,9 +105,8 @@ type WorkspaceRepository interface {
 }
 
 type snapshotState struct {
-	mu                sync.RWMutex
-	items             map[string]snapshotRecord
-	latestByWorkspace map[string]string
+	mu    sync.RWMutex
+	items map[string]snapshotRecord
 }
 
 type snapshotRecord struct {

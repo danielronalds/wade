@@ -8,14 +8,14 @@ type Worktree struct {
 	RepositoryID            string   `json:"repositoryId"`
 	WorkspaceID             string   `json:"workspaceId"`
 	Name                    string   `json:"name"`
-	Branch                  *Branch  `json:"branch"`
+	Branch                  *Branch  `json:"branch" extensions:"x-nullable"`
 	IsMain                  bool     `json:"isMain"`
 	IsRemovable             bool     `json:"isRemovable"`
 	IgnoredFileCopyWarnings []string `json:"ignoredFileCopyWarnings,omitempty"`
 
 	path               string
 	workspaceDirectory string
-}
+} // @name Worktree
 
 func (w Worktree) Path() string {
 	return w.path
@@ -24,10 +24,10 @@ func (w Worktree) Path() string {
 type Branch struct {
 	Ref                   string  `json:"ref"`
 	Name                  string  `json:"name"`
-	Remote                *string `json:"remote"`
+	Remote                *string `json:"remote" extensions:"x-nullable"`
 	HasLocalBranch        bool    `json:"hasLocalBranch"`
-	CheckedOutWorkspaceID *string `json:"checkedOutWorkspaceId"`
-}
+	CheckedOutWorkspaceID *string `json:"checkedOutWorkspaceId" extensions:"x-nullable"`
+} // @name Branch
 
 type BranchKind string
 

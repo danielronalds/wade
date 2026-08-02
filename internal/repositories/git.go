@@ -20,14 +20,6 @@ func NewGitRepository() GitRepository {
 	return GitRepository{}
 }
 
-func (r GitRepository) CurrentBranch(ctx context.Context, projectPath string) (string, error) {
-	return r.runString(ctx, time.Second, projectPath, "branch", "--show-current")
-}
-
-func (r GitRepository) OriginURL(ctx context.Context, projectPath string) (string, error) {
-	return r.runString(ctx, time.Second, projectPath, "remote", "get-url", "origin")
-}
-
 func (r GitRepository) IsGitWorktree(ctx context.Context, workspacePath string) (bool, error) {
 	output, err := r.runString(ctx, time.Second, workspacePath, "rev-parse", "--is-inside-work-tree")
 	if err != nil {
@@ -80,64 +72,64 @@ func (r GitRepository) OriginRemoteURL(ctx context.Context, workspacePath string
 	return r.runOptionalString(ctx, time.Second, workspacePath, "config", "--get", "remote.origin.url")
 }
 
-func (r GitRepository) WorktreeListPorcelain(ctx context.Context, projectPath string) (string, error) {
-	return r.runString(ctx, gitCommandTimeout, projectPath, "worktree", "list", "--porcelain")
+func (r GitRepository) WorktreeListPorcelain(ctx context.Context, repositoryPath string) (string, error) {
+	return r.runString(ctx, gitCommandTimeout, repositoryPath, "worktree", "list", "--porcelain")
 }
 
-func (r GitRepository) Remotes(ctx context.Context, projectPath string) (string, error) {
-	return r.runString(ctx, gitCommandTimeout, projectPath, "remote")
+func (r GitRepository) Remotes(ctx context.Context, repositoryPath string) (string, error) {
+	return r.runString(ctx, gitCommandTimeout, repositoryPath, "remote")
 }
 
-func (r GitRepository) FetchRemote(ctx context.Context, projectPath string, remote string) error {
-	_, err := r.runString(ctx, gitCommandTimeout, projectPath, "fetch", remote, "--prune")
+func (r GitRepository) FetchRemote(ctx context.Context, repositoryPath string, remote string) error {
+	_, err := r.runString(ctx, gitCommandTimeout, repositoryPath, "fetch", remote, "--prune")
 	return err
 }
 
-func (r GitRepository) RemoteBranches(ctx context.Context, projectPath string) (string, error) {
-	return r.runString(ctx, gitCommandTimeout, projectPath, "branch", "-r", "--format=%(refname:short)")
+func (r GitRepository) RemoteBranches(ctx context.Context, repositoryPath string) (string, error) {
+	return r.runString(ctx, gitCommandTimeout, repositoryPath, "branch", "-r", "--format=%(refname:short)")
 }
 
-func (r GitRepository) LocalBranches(ctx context.Context, projectPath string) (string, error) {
-	return r.runString(ctx, gitCommandTimeout, projectPath, "branch", "--format=%(refname:short)")
+func (r GitRepository) LocalBranches(ctx context.Context, repositoryPath string) (string, error) {
+	return r.runString(ctx, gitCommandTimeout, repositoryPath, "branch", "--format=%(refname:short)")
 }
 
-func (r GitRepository) ValidateBranchName(ctx context.Context, projectPath string, branch string) error {
-	_, err := r.runString(ctx, gitCommandTimeout, projectPath, "check-ref-format", "--branch", branch)
+func (r GitRepository) ValidateBranchName(ctx context.Context, repositoryPath string, branch string) error {
+	_, err := r.runString(ctx, gitCommandTimeout, repositoryPath, "check-ref-format", "--branch", branch)
 	return err
 }
 
-func (r GitRepository) AddWorktree(ctx context.Context, projectPath string, targetPath string, branch string) error {
-	_, err := r.runString(ctx, gitCommandTimeout, projectPath, "worktree", "add", targetPath, branch)
+func (r GitRepository) AddWorktree(ctx context.Context, repositoryPath string, targetPath string, branch string) error {
+	_, err := r.runString(ctx, gitCommandTimeout, repositoryPath, "worktree", "add", targetPath, branch)
 	return err
 }
 
-func (r GitRepository) AddTrackingWorktree(ctx context.Context, projectPath string, localBranch string, targetPath string, remoteBranch string) error {
-	_, err := r.runString(ctx, gitCommandTimeout, projectPath, "worktree", "add", "--track", "-b", localBranch, targetPath, remoteBranch)
+func (r GitRepository) AddTrackingWorktree(ctx context.Context, repositoryPath string, localBranch string, targetPath string, remoteBranch string) error {
+	_, err := r.runString(ctx, gitCommandTimeout, repositoryPath, "worktree", "add", "--track", "-b", localBranch, targetPath, remoteBranch)
 	return err
 }
 
-func (r GitRepository) AddNewBranchWorktree(ctx context.Context, projectPath string, localBranch string, targetPath string) error {
-	_, err := r.runString(ctx, gitCommandTimeout, projectPath, "worktree", "add", "-b", localBranch, targetPath)
+func (r GitRepository) AddNewBranchWorktree(ctx context.Context, repositoryPath string, localBranch string, targetPath string) error {
+	_, err := r.runString(ctx, gitCommandTimeout, repositoryPath, "worktree", "add", "-b", localBranch, targetPath)
 	return err
 }
 
-func (r GitRepository) RemoveWorktree(ctx context.Context, projectPath string, targetPath string) error {
-	_, err := r.runString(ctx, gitCommandTimeout, projectPath, "worktree", "remove", targetPath)
+func (r GitRepository) RemoveWorktree(ctx context.Context, repositoryPath string, targetPath string) error {
+	_, err := r.runString(ctx, gitCommandTimeout, repositoryPath, "worktree", "remove", targetPath)
 	return err
 }
 
-func (r GitRepository) PruneWorktrees(ctx context.Context, projectPath string) error {
-	_, err := r.runString(ctx, gitCommandTimeout, projectPath, "worktree", "prune")
+func (r GitRepository) PruneWorktrees(ctx context.Context, repositoryPath string) error {
+	_, err := r.runString(ctx, gitCommandTimeout, repositoryPath, "worktree", "prune")
 	return err
 }
 
-func (r GitRepository) DeleteBranch(ctx context.Context, projectPath string, branch string) error {
-	_, err := r.runString(ctx, gitCommandTimeout, projectPath, "branch", "-D", "--", branch)
+func (r GitRepository) DeleteBranch(ctx context.Context, repositoryPath string, branch string) error {
+	_, err := r.runString(ctx, gitCommandTimeout, repositoryPath, "branch", "-D", "--", branch)
 	return err
 }
 
-func (r GitRepository) IgnoredPaths(ctx context.Context, projectPath string) (string, error) {
-	return r.runString(ctx, gitCommandTimeout, projectPath, "ls-files", "--ignored", "--exclude-standard", "--others", "--directory")
+func (r GitRepository) IgnoredPaths(ctx context.Context, repositoryPath string) (string, error) {
+	return r.runString(ctx, gitCommandTimeout, repositoryPath, "ls-files", "--ignored", "--exclude-standard", "--others", "--directory")
 }
 
 func (r GitRepository) RepoRoot(ctx context.Context, cwd string) (string, error) {
@@ -194,8 +186,8 @@ func (r GitRepository) RevisionContent(ctx context.Context, repoRoot string, rev
 	return r.runBytes(ctx, reviewGitCommandTimeout, repoRoot, "git", "show", fmt.Sprintf("%s:%s", revision, filePath))
 }
 
-func (r GitRepository) runString(ctx context.Context, timeout time.Duration, projectPath string, args ...string) (string, error) {
-	output, err := r.runBytes(ctx, timeout, projectPath, "git", append([]string{"-C", projectPath}, args...)...)
+func (r GitRepository) runString(ctx context.Context, timeout time.Duration, repositoryPath string, args ...string) (string, error) {
+	output, err := r.runBytes(ctx, timeout, repositoryPath, "git", append([]string{"-C", repositoryPath}, args...)...)
 	text := strings.TrimSpace(string(output))
 	if err != nil {
 		if text == "" {
@@ -207,12 +199,12 @@ func (r GitRepository) runString(ctx context.Context, timeout time.Duration, pro
 	return text, nil
 }
 
-func (r GitRepository) runOptionalString(ctx context.Context, timeout time.Duration, projectPath string, args ...string) (string, bool, error) {
+func (r GitRepository) runOptionalString(ctx context.Context, timeout time.Duration, repositoryPath string, args ...string) (string, bool, error) {
 	commandContext, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	command := exec.CommandContext(commandContext, "git", append([]string{"-C", projectPath}, args...)...)
-	command.Dir = projectPath
+	command := exec.CommandContext(commandContext, "git", append([]string{"-C", repositoryPath}, args...)...)
+	command.Dir = repositoryPath
 	output, err := command.CombinedOutput()
 	if err == nil {
 		return strings.TrimSpace(string(output)), true, nil

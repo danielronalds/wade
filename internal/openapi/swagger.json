@@ -17,102 +17,6 @@
     },
     "basePath": "/",
     "paths": {
-        "/api/config": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Config"
-                ],
-                "summary": "Get settings",
-                "operationId": "getSettings",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.configPayload"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Config"
-                ],
-                "summary": "Update settings",
-                "operationId": "updateSettings",
-                "parameters": [
-                    {
-                        "description": "Settings",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.configPayload"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.configPayload"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/config/reload": {
-            "post": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Config"
-                ],
-                "summary": "Reload runtime config",
-                "operationId": "reloadConfig",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.configPayload"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/api/openapi.json": {
             "get": {
                 "produces": [
@@ -133,404 +37,149 @@
                 }
             }
         },
-        "/api/project": {
+        "/api/v1/remote-repositories": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Projects"
+                    "Remote repositories"
                 ],
-                "summary": "Get project details",
-                "operationId": "getProjectDetails",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project name",
-                        "name": "project",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
+                "summary": "List remote repositories",
+                "operationId": "listRemoteRepositories",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.projectResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/projects": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Projects"
-                ],
-                "summary": "List projects",
-                "operationId": "listProjects",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.projectsResponse"
+                            "$ref": "#/definitions/RemoteRepositoryList"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Problem"
                         }
                     }
                 }
             }
         },
-        "/api/remote-projects": {
+        "/api/v1/repositories/{repositoryId}": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Remote projects"
+                    "Repositories"
                 ],
-                "summary": "List remote projects",
-                "operationId": "listRemoteProjects",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.remoteProjectsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/remote-projects/clone": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Remote projects"
-                ],
-                "summary": "Clone remote project",
-                "operationId": "cloneRemoteProject",
-                "parameters": [
-                    {
-                        "description": "Remote project clone request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.cloneRemoteProjectRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.cloneRemoteProjectResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/review": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Review"
-                ],
-                "summary": "Get review window data",
-                "operationId": "getReviewWindowData",
+                "summary": "Get a local repository",
+                "operationId": "getRepository",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project name",
-                        "name": "project",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/review.WindowData"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/review/file": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Review"
-                ],
-                "summary": "Get review file contents",
-                "operationId": "getReviewFileContents",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project name",
-                        "name": "project",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "description": "Review file request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.reviewFileRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/review.FileContents"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/sessions": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Sessions"
-                ],
-                "summary": "List active project sessions",
-                "operationId": "listActiveProjectSessions",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.sessionsResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/sessions/{projectName}/agent": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Sessions"
-                ],
-                "summary": "Send text to the active agent terminal",
-                "operationId": "sendTextToAgentTerminal",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project name",
-                        "name": "projectName",
+                        "description": "Repository ID",
+                        "name": "repositoryId",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Agent input",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.agentInputRequest"
-                        }
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Repository"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Problem"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Problem"
                         }
                     }
                 }
             }
         },
-        "/api/sessions/{sessionName}": {
-            "delete": {
+        "/api/v1/repositories/{repositoryId}/branches": {
+            "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Sessions"
+                    "Branches"
                 ],
-                "summary": "Close project session",
-                "operationId": "closeProjectSession",
+                "summary": "List repository branches",
+                "operationId": "listRepositoryBranches",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Session project name",
-                        "name": "sessionName",
+                        "description": "Repository ID",
+                        "name": "repositoryId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "local",
+                            "remote"
+                        ],
+                        "type": "string",
+                        "description": "Branch kind",
+                        "name": "kind",
+                        "in": "query"
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/BranchList"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Problem"
                         }
-                    }
-                }
-            }
-        },
-        "/api/terminal/reload": {
-            "post": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Terminals"
-                ],
-                "summary": "Reload terminal session",
-                "operationId": "reloadTerminalSession",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project name",
-                        "name": "project",
-                        "in": "query",
-                        "required": true
                     },
-                    {
-                        "type": "string",
-                        "description": "Terminal name",
-                        "name": "terminal",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Agent name",
-                        "name": "agent",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "404": {
-                        "description": "Not Found",
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
                         }
                     }
                 }
             }
         },
-        "/api/worktrees": {
+        "/api/v1/repositories/{repositoryId}/worktrees": {
             "get": {
                 "produces": [
                     "application/json"
@@ -538,14 +187,14 @@
                 "tags": [
                     "Worktrees"
                 ],
-                "summary": "List worktrees",
-                "operationId": "listWorktrees",
+                "summary": "List repository worktrees",
+                "operationId": "listRepositoryWorktrees",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project name",
-                        "name": "project",
-                        "in": "query",
+                        "description": "Repository ID",
+                        "name": "repositoryId",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -553,19 +202,31 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.worktreesResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/WorktreeList"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
                         }
                     }
                 }
@@ -580,41 +241,293 @@
                 "tags": [
                     "Worktrees"
                 ],
-                "summary": "Create worktree",
-                "operationId": "createWorktree",
+                "summary": "Create a repository worktree",
+                "operationId": "createRepositoryWorktree",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository ID",
+                        "name": "repositoryId",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "description": "Worktree creation request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.createWorktreeRequest"
+                            "$ref": "#/definitions/CreateWorktreeRequest"
                         }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/Worktree"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "Created worktree URL"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/repositories/{repositoryId}/worktrees/{worktreeId}": {
+            "delete": {
+                "tags": [
+                    "Worktrees"
+                ],
+                "summary": "Remove a repository worktree",
+                "operationId": "deleteRepositoryWorktree",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository ID",
+                        "name": "repositoryId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Worktree ID",
+                        "name": "worktreeId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/review-snapshots/{snapshotId}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Review snapshots"
+                ],
+                "summary": "Get a review snapshot",
+                "operationId": "getReviewSnapshot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Review snapshot ID",
+                        "name": "snapshotId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.worktreeResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/ReviewSnapshot"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
                         }
                     }
                 }
             },
             "delete": {
+                "tags": [
+                    "Review snapshots"
+                ],
+                "summary": "Delete a review snapshot",
+                "operationId": "deleteReviewSnapshot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Review snapshot ID",
+                        "name": "snapshotId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/review-snapshots/{snapshotId}/files/{fileId}/contents": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Review snapshots"
+                ],
+                "summary": "Get review snapshot file contents",
+                "operationId": "getReviewSnapshotFileContents",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Review snapshot ID",
+                        "name": "snapshotId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Snapshot file ID",
+                        "name": "fileId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "pull-request",
+                            "working-tree",
+                            "last-commit",
+                            "current"
+                        ],
+                        "type": "string",
+                        "description": "Comparison scope",
+                        "name": "scope",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ReviewFileContents"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/settings": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Get settings",
+                "operationId": "getSettings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Settings"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            },
+            "put": {
                 "consumes": [
                     "application/json"
                 ],
@@ -622,70 +535,214 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Worktrees"
+                    "Settings"
                 ],
-                "summary": "Remove worktree",
-                "operationId": "removeWorktree",
+                "summary": "Update settings",
+                "operationId": "updateSettings",
                 "parameters": [
                     {
-                        "description": "Worktree removal request",
+                        "description": "Complete settings",
                         "name": "request",
                         "in": "body",
+                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.removeWorktreeRequest"
+                            "$ref": "#/definitions/Settings"
                         }
-                    },
-                    {
-                        "type": "string",
-                        "description": "Project name",
-                        "name": "project",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Worktree name",
-                        "name": "worktree",
-                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.worktreeResponse"
+                            "$ref": "#/definitions/Settings"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Problem"
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
                         }
                     }
                 }
             }
         },
-        "/api/worktrees/remote-branches": {
+        "/api/v1/settings/reload": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Reload settings from disk",
+                "operationId": "reloadSettings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Settings"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/workspaces": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Worktrees"
+                    "Workspaces"
                 ],
-                "summary": "List remote branches",
-                "operationId": "listRemoteBranches",
+                "summary": "List workspaces",
+                "operationId": "listWorkspaces",
+                "parameters": [
+                    {
+                        "enum": [
+                            "active"
+                        ],
+                        "type": "string",
+                        "description": "Filter by activity",
+                        "name": "activity",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Local repository ID",
+                        "name": "repositoryId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Remote repository ID",
+                        "name": "remoteRepositoryId",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/WorkspaceList"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workspaces"
+                ],
+                "summary": "Materialise a remote repository as a workspace",
+                "operationId": "materialiseWorkspace",
+                "parameters": [
+                    {
+                        "description": "Workspace materialisation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MaterialiseWorkspaceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/Workspace"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "Created workspace URL"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/workspaces/{workspaceId}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workspaces"
+                ],
+                "summary": "Get a workspace",
+                "operationId": "getWorkspace",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project name",
-                        "name": "project",
-                        "in": "query",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -693,51 +750,421 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/worktree.RemoteBranchList"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Workspace"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
                         }
                     }
                 }
             }
         },
-        "/ws": {
+        "/api/v1/workspaces/{workspaceId}/review-snapshots": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Review snapshots"
+                ],
+                "summary": "Create a review snapshot",
+                "operationId": "createReviewSnapshot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ReviewSnapshot"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "Created review snapshot URL"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/workspaces/{workspaceId}/terminals": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Terminals"
+                ],
+                "summary": "List workspace terminals",
+                "operationId": "listWorkspaceTerminals",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/TerminalList"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Terminals"
+                ],
+                "summary": "Close all workspace terminals",
+                "operationId": "deleteWorkspaceTerminals",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/workspaces/{workspaceId}/terminals/{terminalId}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Terminals"
+                ],
+                "summary": "Get a workspace terminal",
+                "operationId": "getWorkspaceTerminal",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Terminal ID",
+                        "name": "terminalId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Terminal"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Terminals"
+                ],
+                "summary": "Start or reconnect to a terminal",
+                "operationId": "putWorkspaceTerminal",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Terminal ID",
+                        "name": "terminalId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Terminal"
+                        }
+                    },
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/Terminal"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "Created terminal URL"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Terminals"
+                ],
+                "summary": "Close a workspace terminal",
+                "operationId": "deleteWorkspaceTerminal",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Terminal ID",
+                        "name": "terminalId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/workspaces/{workspaceId}/terminals/{terminalId}/input": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Terminals"
+                ],
+                "summary": "Send input to a workspace terminal",
+                "operationId": "sendWorkspaceTerminalInput",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Terminal ID",
+                        "name": "terminalId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Terminal input",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TerminalInputRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/workspaces/{workspaceId}/terminals/{terminalId}/socket": {
             "get": {
                 "description": "Upgrades the connection to a WebSocket for terminal input, output, and control messages.",
                 "tags": [
                     "Terminals"
                 ],
-                "summary": "Connect to terminal session",
-                "operationId": "connectTerminalSession",
+                "summary": "Connect to a workspace terminal",
+                "operationId": "connectWorkspaceTerminal",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project name",
-                        "name": "project",
-                        "in": "query",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Terminal name",
-                        "name": "terminal",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Agent name",
-                        "name": "agent",
-                        "in": "query"
+                        "description": "Terminal ID",
+                        "name": "terminalId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -745,13 +1172,19 @@
                         "description": "Switching Protocols"
                     },
                     "404": {
-                        "description": "Project not found",
+                        "description": "Terminal not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid terminal ID",
                         "schema": {
                             "type": "string"
                         }
                     },
                     "500": {
-                        "description": "Failed to start terminal",
+                        "description": "Connection failed",
                         "schema": {
                             "type": "string"
                         }
@@ -761,7 +1194,7 @@
         }
     },
     "definitions": {
-        "config.Agent": {
+        "Agent": {
             "type": "object",
             "required": [
                 "command",
@@ -780,276 +1213,72 @@
                 }
             }
         },
-        "handlers.agentInputRequest": {
+        "Branch": {
             "type": "object",
             "required": [
-                "text"
-            ],
-            "properties": {
-                "text": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.cloneRemoteProjectRequest": {
-            "type": "object",
-            "required": [
-                "directoryIndex",
-                "nameWithOwner"
-            ],
-            "properties": {
-                "directoryIndex": {
-                    "type": "integer"
-                },
-                "nameWithOwner": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.cloneRemoteProjectResponse": {
-            "type": "object",
-            "required": [
-                "project"
-            ],
-            "properties": {
-                "project": {
-                    "$ref": "#/definitions/remote.ClonedProject"
-                }
-            }
-        },
-        "handlers.configPayload": {
-            "type": "object",
-            "required": [
-                "agents",
-                "copyIgnoredFilesOnWorktreeCreation",
-                "openWorktreesInNewTabs",
-                "shell",
-                "themeAccentColor",
-                "workspaceDirectories",
-                "worktreeCopyExcludes"
-            ],
-            "properties": {
-                "agents": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/config.Agent"
-                    }
-                },
-                "copyIgnoredFilesOnWorktreeCreation": {
-                    "type": "boolean"
-                },
-                "openWorktreesInNewTabs": {
-                    "type": "boolean"
-                },
-                "shell": {
-                    "type": "string"
-                },
-                "themeAccentColor": {
-                    "type": "string"
-                },
-                "workspaceDirectories": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "worktreeCopyExcludes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "handlers.createWorktreeRequest": {
-            "type": "object",
-            "required": [
-                "branch",
-                "project"
-            ],
-            "properties": {
-                "branch": {
-                    "type": "string"
-                },
-                "project": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.errorResponse": {
-            "type": "object",
-            "required": [
-                "message"
-            ],
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.projectResponse": {
-            "type": "object",
-            "required": [
-                "gitBranch",
-                "githubUrl",
-                "linearTicketUrl",
+                "checkedOutWorkspaceId",
+                "hasLocalBranch",
                 "name",
-                "pullRequestUrl"
+                "ref",
+                "remote"
             ],
             "properties": {
-                "gitBranch": {
-                    "type": "string"
+                "checkedOutWorkspaceId": {
+                    "type": "string",
+                    "x-nullable": true
                 },
-                "githubUrl": {
-                    "type": "string"
-                },
-                "linearTicketUrl": {
-                    "type": "string"
+                "hasLocalBranch": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
                 },
-                "pullRequestUrl": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.projectsResponse": {
-            "type": "object",
-            "required": [
-                "projects"
-            ],
-            "properties": {
-                "projects": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "handlers.remoteProjectsResponse": {
-            "type": "object",
-            "required": [
-                "projects"
-            ],
-            "properties": {
-                "projects": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/remote.Project"
-                    }
-                }
-            }
-        },
-        "handlers.removeWorktreeRequest": {
-            "type": "object",
-            "required": [
-                "project",
-                "worktree"
-            ],
-            "properties": {
-                "project": {
+                "ref": {
                     "type": "string"
                 },
-                "worktree": {
-                    "type": "string"
+                "remote": {
+                    "type": "string",
+                    "x-nullable": true
                 }
             }
         },
-        "handlers.reviewFileRequest": {
+        "BranchList": {
             "type": "object",
             "required": [
-                "fileId",
-                "scope"
+                "items"
             ],
             "properties": {
-                "fileId": {
-                    "type": "string"
-                },
-                "scope": {
-                    "$ref": "#/definitions/review.Scope"
-                }
-            }
-        },
-        "handlers.sessionsResponse": {
-            "type": "object",
-            "required": [
-                "sessions"
-            ],
-            "properties": {
-                "sessions": {
+                "items": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/Branch"
                     }
                 }
             }
         },
-        "handlers.worktreeResponse": {
+        "CreateWorktreeRequest": {
             "type": "object",
             "required": [
-                "worktree"
+                "branchRef"
             ],
             "properties": {
-                "worktree": {
-                    "$ref": "#/definitions/worktree.Worktree"
-                }
-            }
-        },
-        "handlers.worktreesResponse": {
-            "type": "object",
-            "required": [
-                "worktrees"
-            ],
-            "properties": {
-                "worktrees": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/worktree.Worktree"
-                    }
-                }
-            }
-        },
-        "remote.ClonedProject": {
-            "type": "object",
-            "required": [
-                "name",
-                "path"
-            ],
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "path": {
+                "branchRef": {
                     "type": "string"
                 }
             }
         },
-        "remote.Project": {
+        "IssueReference": {
             "type": "object",
             "required": [
-                "isLocal",
-                "localName",
-                "name",
-                "nameWithOwner",
-                "sshUrl",
+                "key",
+                "provider",
                 "url"
             ],
             "properties": {
-                "isLocal": {
-                    "type": "boolean"
-                },
-                "localName": {
+                "key": {
                     "type": "string"
                 },
-                "name": {
-                    "type": "string"
-                },
-                "nameWithOwner": {
-                    "type": "string"
-                },
-                "sshUrl": {
+                "provider": {
                     "type": "string"
                 },
                 "url": {
@@ -1057,7 +1286,120 @@
                 }
             }
         },
-        "review.ChangeStatus": {
+        "MaterialiseWorkspaceRequest": {
+            "type": "object",
+            "required": [
+                "remoteRepositoryId",
+                "workspaceDirectory"
+            ],
+            "properties": {
+                "remoteRepositoryId": {
+                    "type": "string"
+                },
+                "workspaceDirectory": {
+                    "type": "string"
+                }
+            }
+        },
+        "Problem": {
+            "type": "object",
+            "required": [
+                "code",
+                "detail",
+                "status",
+                "title",
+                "type"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "detail": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "RemoteRepository": {
+            "type": "object",
+            "required": [
+                "cloneUrl",
+                "id",
+                "localWorkspaceIds",
+                "name",
+                "webUrl"
+            ],
+            "properties": {
+                "cloneUrl": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "localWorkspaceIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "webUrl": {
+                    "type": "string"
+                }
+            }
+        },
+        "RemoteRepositoryList": {
+            "type": "object",
+            "required": [
+                "items"
+            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/RemoteRepository"
+                    }
+                }
+            }
+        },
+        "Repository": {
+            "type": "object",
+            "required": [
+                "id",
+                "mainWorkspaceId",
+                "remoteRepositoryId",
+                "workspaceIds"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "mainWorkspaceId": {
+                    "type": "string"
+                },
+                "remoteRepositoryId": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "workspaceIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "ReviewChangeStatus": {
             "type": "string",
             "enum": [
                 "modified",
@@ -1072,7 +1414,7 @@
                 "StatusRenamed"
             ]
         },
-        "review.File": {
+        "ReviewFile": {
             "type": "object",
             "required": [
                 "gitDiff",
@@ -1088,7 +1430,12 @@
             ],
             "properties": {
                 "gitDiff": {
-                    "$ref": "#/definitions/review.FileComparison"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ReviewFileComparison"
+                        }
+                    ],
+                    "x-nullable": true
                 },
                 "hasWorkingTreeFile": {
                     "type": "boolean"
@@ -1106,20 +1453,35 @@
                     "type": "boolean"
                 },
                 "lastCommit": {
-                    "$ref": "#/definitions/review.FileComparison"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ReviewFileComparison"
+                        }
+                    ],
+                    "x-nullable": true
                 },
                 "path": {
                     "type": "string"
                 },
                 "pullRequest": {
-                    "$ref": "#/definitions/review.FileComparison"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ReviewFileComparison"
+                        }
+                    ],
+                    "x-nullable": true
                 },
                 "worktreeStatus": {
-                    "$ref": "#/definitions/review.ChangeStatus"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ReviewChangeStatus"
+                        }
+                    ],
+                    "x-nullable": true
                 }
             }
         },
-        "review.FileComparison": {
+        "ReviewFileComparison": {
             "type": "object",
             "required": [
                 "displayPath",
@@ -1140,17 +1502,19 @@
                     "type": "boolean"
                 },
                 "newPath": {
-                    "type": "string"
+                    "type": "string",
+                    "x-nullable": true
                 },
                 "oldPath": {
-                    "type": "string"
+                    "type": "string",
+                    "x-nullable": true
                 },
                 "status": {
-                    "$ref": "#/definitions/review.ChangeStatus"
+                    "$ref": "#/definitions/ReviewChangeStatus"
                 }
             }
         },
-        "review.FileContents": {
+        "ReviewFileContents": {
             "type": "object",
             "required": [
                 "modifiedContent",
@@ -1165,19 +1529,83 @@
                 }
             }
         },
-        "review.PullRequest": {
+        "ReviewSnapshot": {
             "type": "object",
             "required": [
-                "baseRefName",
-                "headRefName",
+                "branch",
+                "createdAt",
+                "files",
+                "id",
+                "pullRequest",
+                "workspaceId"
+            ],
+            "properties": {
+                "branch": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ReviewSnapshotBranch"
+                        }
+                    ],
+                    "x-nullable": true
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ReviewFile"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "pullRequest": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ReviewSnapshotPullRequest"
+                        }
+                    ],
+                    "x-nullable": true
+                },
+                "workspaceId": {
+                    "type": "string"
+                }
+            }
+        },
+        "ReviewSnapshotBranch": {
+            "type": "object",
+            "required": [
+                "name",
+                "ref",
+                "remote"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "ref": {
+                    "type": "string"
+                },
+                "remote": {
+                    "type": "string",
+                    "x-nullable": true
+                }
+            }
+        },
+        "ReviewSnapshotPullRequest": {
+            "type": "object",
+            "required": [
+                "baseRef",
+                "headRef",
                 "number",
                 "url"
             ],
             "properties": {
-                "baseRefName": {
+                "baseRef": {
                     "type": "string"
                 },
-                "headRefName": {
+                "headRef": {
                     "type": "string"
                 },
                 "number": {
@@ -1188,113 +1616,348 @@
                 }
             }
         },
-        "review.Scope": {
-            "type": "string",
-            "enum": [
-                "pull-request",
-                "working-tree",
-                "last-commit",
-                "current",
-                "git-diff",
-                "all-files"
-            ],
-            "x-enum-varnames": [
-                "ScopePullRequest",
-                "ScopeWorkingTree",
-                "ScopeLastCommit",
-                "ScopeCurrent",
-                "ScopeGitDiff",
-                "ScopeAllFiles"
-            ]
-        },
-        "review.WindowData": {
+        "Settings": {
             "type": "object",
             "required": [
-                "branchName",
-                "files",
-                "pullRequest",
-                "repoRoot"
+                "agents",
+                "copyIgnoredFilesOnWorktreeCreation",
+                "openWorktreesInNewTabs",
+                "shell",
+                "themeAccentColor",
+                "workspaceDirectories",
+                "worktreeCopyExcludes"
             ],
             "properties": {
-                "branchName": {
-                    "type": "string"
-                },
-                "files": {
+                "agents": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/review.File"
+                        "$ref": "#/definitions/Agent"
                     }
                 },
-                "pullRequest": {
-                    "$ref": "#/definitions/review.PullRequest"
+                "copyIgnoredFilesOnWorktreeCreation": {
+                    "type": "boolean"
                 },
-                "repoRoot": {
+                "openWorktreesInNewTabs": {
+                    "type": "boolean"
+                },
+                "shell": {
+                    "type": "string"
+                },
+                "themeAccentColor": {
+                    "type": "string",
+                    "enum": [
+                        "white",
+                        "orange",
+                        "purple"
+                    ]
+                },
+                "workspaceDirectories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "worktreeCopyExcludes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "Terminal": {
+            "type": "object",
+            "required": [
+                "agent",
+                "id",
+                "role",
+                "socketUrl",
+                "status",
+                "workspaceId"
+            ],
+            "properties": {
+                "agent": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "id": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/TerminalRole"
+                },
+                "socketUrl": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/TerminalStatus"
+                },
+                "workspaceId": {
                     "type": "string"
                 }
             }
         },
-        "worktree.RemoteBranch": {
+        "TerminalInputMode": {
+            "type": "string",
+            "enum": [
+                "raw",
+                "bracketed-paste"
+            ],
+            "x-enum-varnames": [
+                "InputModeRaw",
+                "InputModeBracketedPaste"
+            ]
+        },
+        "TerminalInputRequest": {
             "type": "object",
             "required": [
-                "branch",
-                "hasLocalBranch",
-                "isCheckedOut",
-                "name",
-                "worktreeName",
-                "worktreeProjectName"
+                "mode",
+                "text"
             ],
             "properties": {
+                "mode": {
+                    "$ref": "#/definitions/TerminalInputMode"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "TerminalList": {
+            "type": "object",
+            "required": [
+                "items"
+            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Terminal"
+                    }
+                }
+            }
+        },
+        "TerminalRole": {
+            "type": "string",
+            "enum": [
+                "agent",
+                "misc",
+                "server",
+                "scratchpad"
+            ],
+            "x-enum-varnames": [
+                "TerminalRoleAgent",
+                "TerminalRoleMisc",
+                "TerminalRoleServer",
+                "TerminalRoleScratchpad"
+            ]
+        },
+        "TerminalStatus": {
+            "type": "string",
+            "enum": [
+                "running"
+            ],
+            "x-enum-varnames": [
+                "TerminalStatusRunning"
+            ]
+        },
+        "Workspace": {
+            "type": "object",
+            "required": [
+                "activity",
+                "branch",
+                "id",
+                "links",
+                "name",
+                "remoteRepositoryId",
+                "repositoryId",
+                "worktree"
+            ],
+            "properties": {
+                "activity": {
+                    "$ref": "#/definitions/WorkspaceActivity"
+                },
                 "branch": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/WorkspaceBranch"
+                        }
+                    ],
+                    "x-nullable": true
+                },
+                "id": {
                     "type": "string"
                 },
-                "hasLocalBranch": {
-                    "type": "boolean"
+                "links": {
+                    "$ref": "#/definitions/WorkspaceLinks"
                 },
-                "isCheckedOut": {
+                "name": {
+                    "type": "string"
+                },
+                "remoteRepositoryId": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "repositoryId": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "worktree": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/WorktreeReference"
+                        }
+                    ],
+                    "x-nullable": true
+                }
+            }
+        },
+        "WorkspaceActivity": {
+            "type": "object",
+            "required": [
+                "activeTerminalCount"
+            ],
+            "properties": {
+                "activeTerminalCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "WorkspaceBranch": {
+            "type": "object",
+            "required": [
+                "commit",
+                "isDetached",
+                "name",
+                "ref"
+            ],
+            "properties": {
+                "commit": {
+                    "type": "string"
+                },
+                "isDetached": {
                     "type": "boolean"
                 },
                 "name": {
                     "type": "string"
                 },
-                "worktreeName": {
-                    "type": "string"
-                },
-                "worktreeProjectName": {
+                "ref": {
                     "type": "string"
                 }
             }
         },
-        "worktree.RemoteBranchList": {
+        "WorkspaceLinks": {
             "type": "object",
             "required": [
-                "branches",
-                "remote"
+                "issue",
+                "pullRequest",
+                "repository"
             ],
             "properties": {
-                "branches": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/worktree.RemoteBranch"
-                    }
+                "issue": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/IssueReference"
+                        }
+                    ],
+                    "x-nullable": true
                 },
-                "remote": {
-                    "type": "string"
+                "pullRequest": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "repository": {
+                    "type": "string",
+                    "x-nullable": true
                 }
             }
         },
-        "worktree.Worktree": {
+        "WorkspaceList": {
+            "type": "object",
+            "required": [
+                "items"
+            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/WorkspaceSummary"
+                    }
+                }
+            }
+        },
+        "WorkspaceSummary": {
+            "type": "object",
+            "required": [
+                "activity",
+                "branch",
+                "id",
+                "links",
+                "name",
+                "remoteRepositoryId",
+                "repositoryId",
+                "worktree"
+            ],
+            "properties": {
+                "activity": {
+                    "$ref": "#/definitions/WorkspaceActivity"
+                },
+                "branch": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/WorkspaceBranch"
+                        }
+                    ],
+                    "x-nullable": true
+                },
+                "id": {
+                    "type": "string"
+                },
+                "links": {
+                    "$ref": "#/definitions/WorkspaceLinks"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "remoteRepositoryId": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "repositoryId": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "worktree": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/WorktreeReference"
+                        }
+                    ],
+                    "x-nullable": true
+                }
+            }
+        },
+        "Worktree": {
             "type": "object",
             "required": [
                 "branch",
-                "isBase",
-                "isCurrent",
+                "id",
+                "isMain",
                 "isRemovable",
                 "name",
-                "path",
-                "projectName"
+                "repositoryId",
+                "workspaceId"
             ],
             "properties": {
                 "branch": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Branch"
+                        }
+                    ],
+                    "x-nullable": true
+                },
+                "id": {
                     "type": "string"
                 },
                 "ignoredFileCopyWarnings": {
@@ -1303,10 +1966,7 @@
                         "type": "string"
                     }
                 },
-                "isBase": {
-                    "type": "boolean"
-                },
-                "isCurrent": {
+                "isMain": {
                     "type": "boolean"
                 },
                 "isRemovable": {
@@ -1315,11 +1975,44 @@
                 "name": {
                     "type": "string"
                 },
-                "path": {
+                "repositoryId": {
                     "type": "string"
                 },
-                "projectName": {
+                "workspaceId": {
                     "type": "string"
+                }
+            }
+        },
+        "WorktreeList": {
+            "type": "object",
+            "required": [
+                "items"
+            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Worktree"
+                    }
+                }
+            }
+        },
+        "WorktreeReference": {
+            "type": "object",
+            "required": [
+                "id",
+                "isMain",
+                "isRemovable"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "isMain": {
+                    "type": "boolean"
+                },
+                "isRemovable": {
+                    "type": "boolean"
                 }
             }
         }

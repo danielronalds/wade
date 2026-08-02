@@ -2,10 +2,10 @@ package gitrepositories
 
 type Repository struct {
 	ID                 string   `json:"id"`
-	RemoteRepositoryID *string  `json:"remoteRepositoryId"`
+	RemoteRepositoryID *string  `json:"remoteRepositoryId" extensions:"x-nullable"`
 	MainWorkspaceID    string   `json:"mainWorkspaceId"`
 	WorkspaceIDs       []string `json:"workspaceIds"`
-}
+} // @name Repository
 
 type Branch struct {
 	Ref        string

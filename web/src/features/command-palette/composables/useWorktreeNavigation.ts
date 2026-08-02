@@ -1,11 +1,10 @@
 import { useRouter } from 'vue-router';
-import { useProjects } from '@/features/projects/composables/useProjects';
+import { useWorkspaces } from '@/features/workspaces/composables/useWorkspaces';
 import { useSettingsStore } from '@/stores/useSettingsStore';
-import type { Worktree } from '@/types/worktree';
 
 export const useWorktreeNavigation = () => {
   const router = useRouter();
-  const { syncProjects } = useProjects();
+  const { syncWorkspaces } = useWorkspaces();
   const settingsStore = useSettingsStore();
 
   const reserveWorktreeTab = (): Window | undefined => {
@@ -28,10 +27,10 @@ export const useWorktreeNavigation = () => {
     }
   };
 
-  const openWorktree = async (worktree: Worktree, reservedTab?: Window) => {
-    await syncProjects();
+  const openWorktree = async (worktree: { workspaceId: string }, reservedTab?: Window) => {
+    await syncWorkspaces();
 
-    const route = router.resolve({ name: 'project', params: { projectName: worktree.projectName } });
+    const route = router.resolve({ name: 'workspace', params: { workspaceId: worktree.workspaceId } });
     if (reservedTab && !reservedTab.closed) {
       try {
         reservedTab.location.replace(new URL(route.href, window.location.href).toString());

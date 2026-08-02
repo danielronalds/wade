@@ -1,41 +1,48 @@
 package server
 
-// TODO: Review properly
-
 import (
 	"net/http"
 
 	"wade/internal/controllers"
 )
 
-func (s *Server) registerRoutes(controllers controllers.Controllers) {
-	s.Mux.HandleFunc("GET /ws", controllers.Terminals.Connect)
-	s.Mux.HandleFunc("POST /api/terminal/reload", controllers.Terminals.Reload)
-	s.Mux.HandleFunc("GET /api/sessions", controllers.Sessions.ListSessions)
-	s.Mux.HandleFunc("DELETE /api/sessions/{sessionName}", controllers.Sessions.CloseSession)
-	s.Mux.HandleFunc("POST /api/sessions/{projectName}/agent", controllers.Sessions.SendToAgent)
+func (s *Server) registerRoutes(controllerSet controllers.Controllers) {
+	s.Mux.HandleFunc("GET /api/v1/workspaces", controllerSet.Workspaces.List)
+	s.Mux.HandleFunc("POST /api/v1/workspaces", controllerSet.Workspaces.Materialise)
+	s.Mux.HandleFunc("GET /api/v1/workspaces/{workspaceId}", controllerSet.Workspaces.Get)
 
-	s.Mux.HandleFunc("GET /api/config", controllers.Config.GetConfig)
-	s.Mux.HandleFunc("POST /api/config", controllers.Config.UpdateConfig)
-	s.Mux.HandleFunc("POST /api/config/reload", controllers.Config.ReloadConfig)
+	s.Mux.HandleFunc("GET /api/v1/remote-repositories", controllerSet.RemoteRepositories.List)
+	s.Mux.HandleFunc("GET /api/v1/repositories/{repositoryId}", controllerSet.Repositories.Get)
+	s.Mux.HandleFunc("GET /api/v1/repositories/{repositoryId}/worktrees", controllerSet.Worktrees.List)
+	s.Mux.HandleFunc("POST /api/v1/repositories/{repositoryId}/worktrees", controllerSet.Worktrees.Create)
+	s.Mux.HandleFunc("DELETE /api/v1/repositories/{repositoryId}/worktrees/{worktreeId}", controllerSet.Worktrees.Delete)
+	s.Mux.HandleFunc("GET /api/v1/repositories/{repositoryId}/branches", controllerSet.Worktrees.ListBranches)
 
-	s.Mux.HandleFunc("GET /api/project", controllers.Projects.GetProjectDetails)
-	s.Mux.HandleFunc("GET /api/projects", controllers.Projects.ListProjects)
-	s.Mux.HandleFunc("GET /api/remote-projects", controllers.RemoteProjects.List)
-	s.Mux.HandleFunc("POST /api/remote-projects/clone", controllers.RemoteProjects.Clone)
+	s.Mux.HandleFunc("GET /api/v1/workspaces/{workspaceId}/terminals", controllerSet.Terminals.List)
+	s.Mux.HandleFunc("DELETE /api/v1/workspaces/{workspaceId}/terminals", controllerSet.Terminals.DeleteAll)
+	s.Mux.HandleFunc("PUT /api/v1/workspaces/{workspaceId}/terminals/{terminalId}", controllerSet.Terminals.Put)
+	s.Mux.HandleFunc("GET /api/v1/workspaces/{workspaceId}/terminals/{terminalId}", controllerSet.Terminals.Get)
+	s.Mux.HandleFunc("DELETE /api/v1/workspaces/{workspaceId}/terminals/{terminalId}", controllerSet.Terminals.Delete)
+	s.Mux.HandleFunc("POST /api/v1/workspaces/{workspaceId}/terminals/{terminalId}/input", controllerSet.Terminals.Input)
+	s.Mux.HandleFunc("GET /api/v1/workspaces/{workspaceId}/terminals/{terminalId}/socket", controllerSet.Terminals.Connect)
 
-	s.Mux.HandleFunc("GET /api/worktrees", controllers.Worktrees.ListWorktrees)
-	s.Mux.HandleFunc("POST /api/worktrees", controllers.Worktrees.CreateWorktree)
-	s.Mux.HandleFunc("DELETE /api/worktrees", controllers.Worktrees.RemoveWorktree)
-	s.Mux.HandleFunc("GET /api/worktrees/remote-branches", controllers.Worktrees.ListRemoteBranches)
+	s.Mux.HandleFunc("POST /api/v1/workspaces/{workspaceId}/review-snapshots", controllerSet.ReviewSnapshots.Create)
+	s.Mux.HandleFunc("GET /api/v1/review-snapshots/{snapshotId}", controllerSet.ReviewSnapshots.Get)
+	s.Mux.HandleFunc("GET /api/v1/review-snapshots/{snapshotId}/files/{fileId}/contents", controllerSet.ReviewSnapshots.GetFileContents)
+	s.Mux.HandleFunc("DELETE /api/v1/review-snapshots/{snapshotId}", controllerSet.ReviewSnapshots.Delete)
 
-	s.Mux.HandleFunc("GET /api/review", controllers.Review.GetReviewWindowData)
-	s.Mux.HandleFunc("POST /api/review/file", controllers.Review.GetReviewFileContents)
+	s.Mux.HandleFunc("GET /api/v1/settings", controllerSet.Settings.Get)
+	s.Mux.HandleFunc("PUT /api/v1/settings", controllerSet.Settings.Update)
+	s.Mux.HandleFunc("POST /api/v1/settings/reload", controllerSet.Settings.Reload)
 
-	s.Mux.HandleFunc("GET /api/openapi.json", controllers.Docs.OpenAPISpec)
-	s.Mux.HandleFunc("GET /api/docs/", controllers.Docs.OpenAPIDocs)
+	s.Mux.HandleFunc("GET /api/openapi.json", controllerSet.Docs.OpenAPISpec)
+	s.Mux.HandleFunc("GET /api/docs/", controllerSet.Docs.OpenAPIDocs)
+	s.Mux.HandleFunc("GET /api/", controllers.WriteAPINotFound)
+	s.Mux.HandleFunc("POST /api/", controllers.WriteAPINotFound)
+	s.Mux.HandleFunc("PUT /api/", controllers.WriteAPINotFound)
+	s.Mux.HandleFunc("DELETE /api/", controllers.WriteAPINotFound)
 
-	s.Mux.Handle("GET /static/", http.FileServer(http.FS(controllers.Page.StaticFiles())))
-	s.Mux.HandleFunc("GET /service-worker.js", controllers.Page.GetServiceWorker)
-	s.Mux.HandleFunc("GET /", controllers.Page.GetApplicationPage)
+	s.Mux.Handle("GET /static/", http.FileServer(http.FS(controllerSet.Page.StaticFiles())))
+	s.Mux.HandleFunc("GET /service-worker.js", controllerSet.Page.GetServiceWorker)
+	s.Mux.HandleFunc("GET /", controllerSet.Page.GetApplicationPage)
 }

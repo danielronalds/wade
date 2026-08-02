@@ -25,14 +25,6 @@ func TestShellCommandSetsShellEnvironment(t *testing.T) {
 	}
 }
 
-func TestShellCommandSetsWadeSessionEnvironment(t *testing.T) {
-	command := shellCommand("/bin/zsh", testWadeEnvironment(), "pi -c")
-
-	if !hasEnvironment(command.Env, "WADE_SESSION=wade") {
-		t.Fatalf("Env does not contain WADE_SESSION=wade: %#v", command.Env)
-	}
-}
-
 func TestShellCommandSetsWorkspaceAndTerminalEnvironment(t *testing.T) {
 	command := shellCommand("/bin/zsh", testWadeEnvironment(), "pi -c")
 
@@ -71,14 +63,6 @@ func TestInteractiveShellSetsShellEnvironment(t *testing.T) {
 	}
 }
 
-func TestInteractiveShellSetsWadeSessionEnvironment(t *testing.T) {
-	command := interactiveShell("/bin/zsh", testWadeEnvironment())
-
-	if !hasEnvironment(command.Env, "WADE_SESSION=wade") {
-		t.Fatalf("Env does not contain WADE_SESSION=wade: %#v", command.Env)
-	}
-}
-
 func TestInteractiveShellSetsWadeAddressEnvironment(t *testing.T) {
 	command := interactiveShell("/bin/zsh", testWadeEnvironment())
 
@@ -87,15 +71,12 @@ func TestInteractiveShellSetsWadeAddressEnvironment(t *testing.T) {
 	}
 }
 
-func TestShellEnvironmentReplacesInheritedWadeSession(t *testing.T) {
+func TestShellEnvironmentRemovesInheritedLegacyWadeSession(t *testing.T) {
 	t.Setenv("WADE_SESSION", "outer")
 
 	command := interactiveShell("/bin/zsh", testWadeEnvironment())
-	wadeSessions := environmentValues(command.Env, "WADE_SESSION")
-	want := []string{"wade"}
-
-	if !reflect.DeepEqual(wadeSessions, want) {
-		t.Fatalf("WADE_SESSION values = %#v, want %#v", wadeSessions, want)
+	if values := environmentValues(command.Env, "WADE_SESSION"); len(values) != 0 {
+		t.Fatalf("WADE_SESSION values = %#v, want none", values)
 	}
 }
 

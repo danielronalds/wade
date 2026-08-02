@@ -34,8 +34,8 @@ func copyIgnoredFiles(ctx context.Context, mainPath string, targetPath string, e
 	return warnings
 }
 
-func listIgnoredPaths(ctx context.Context, projectPath string, git gitRepository) ([]string, error) {
-	output, err := git.IgnoredPaths(ctx, projectPath)
+func listIgnoredPaths(ctx context.Context, repositoryPath string, git gitRepository) ([]string, error) {
+	output, err := git.IgnoredPaths(ctx, repositoryPath)
 	if err != nil {
 		return nil, fmt.Errorf("git ls-files: %w", err)
 	}

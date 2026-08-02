@@ -1,26 +1,23 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import {
-  closeProjectSession,
-  reloadConfig as requestReloadConfig
-} from '@/api/generated/wade';
+import { deleteWorkspaceTerminals } from '@/api/generated/wade';
 import { useFuzzyItems } from '@/composables/useFuzzyItems';
-import { useProjects } from '@/features/projects/composables/useProjects';
-import { useRecentProjects } from '@/features/projects/composables/useRecentProjects';
-import { useProjectDetailsStore } from '@/stores/useProjectDetailsStore';
-import { useSettingsStore } from '@/stores/useSettingsStore';
-import { isReviewInProgressState, useReviewSessionState } from '@/views/project/tabs/review/composables/useReviewSessionState';
-import { dispatchCancelReviewEvent } from '@/views/project/tabs/review/events/cancelReview';
-import { dispatchStartReviewEvent } from '@/views/project/tabs/review/events/startReview';
 import PaletteShell from '@/features/command-palette/components/PaletteShell.vue';
 import type { PaletteNotice, PaletteResult } from '@/features/command-palette/types';
+import { useRecentWorkspaces } from '@/features/workspaces/composables/useRecentWorkspaces';
+import { useWorkspaces } from '@/features/workspaces/composables/useWorkspaces';
+import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useWorkspaceDetailsStore } from '@/stores/useWorkspaceDetailsStore';
+import { isReviewInProgressState, useReviewState } from '@/views/workspace/tabs/review/composables/useReviewState';
+import { dispatchCancelReviewEvent } from '@/views/workspace/tabs/review/events/cancelReview';
+import { dispatchStartReviewEvent } from '@/views/workspace/tabs/review/events/startReview';
 
 const emit = defineEmits<{
   close: [restoreFocus?: boolean];
-  openProjectPicker: [];
-  openActiveSessionPicker: [];
-  openRemoteProjectPicker: [];
+  openWorkspacePicker: [];
+  openActiveWorkspacePicker: [];
+  openRemoteRepositoryPicker: [];
   openCreateWorktree: [];
   openRemoteWorktreePicker: [];
   openRemoveWorktree: [];
@@ -28,30 +25,33 @@ const emit = defineEmits<{
 
 const route = useRoute();
 const router = useRouter();
-const { syncProjects } = useProjects();
-const { removeUnavailableRecentProjects } = useRecentProjects();
-const projectDetailsStore = useProjectDetailsStore();
-const { loadSettings } = useSettingsStore();
+const { syncWorkspaces } = useWorkspaces();
+const { removeUnavailableRecentWorkspaces } = useRecentWorkspaces();
+const workspaceDetailsStore = useWorkspaceDetailsStore();
+const { reloadSettingsFromDisk } = useSettingsStore();
 
 const query = ref('');
-const isClosingSession = ref(false);
-const closeSessionError = ref('');
+const isClosingTerminals = ref(false);
+const closeTerminalsError = ref('');
 
-const currentProjectName = computed(() => route.name === 'project'
-  ? String(route.params.projectName ?? '')
+const currentWorkspaceId = computed(() => route.name === 'workspace'
+  ? String(route.params.workspaceId ?? '')
   : '');
-const projectDetails = computed(() => projectDetailsStore.getProjectDetails(currentProjectName.value));
-const isProjectDetailsLoading = computed(() => projectDetailsStore.isProjectDetailsLoading(currentProjectName.value));
-const isWaitingForProjectDetails = computed(() => isProjectDetailsLoading.value && !projectDetails.value);
-const currentReviewState = useReviewSessionState(currentProjectName);
+const workspaceDetails = computed(() => workspaceDetailsStore.getWorkspaceDetails(currentWorkspaceId.value));
+const isWorkspaceDetailsLoading = computed(() => (
+  workspaceDetailsStore.isWorkspaceDetailsLoading(currentWorkspaceId.value)
+));
+const isWaitingForWorkspaceDetails = computed(() => isWorkspaceDetailsLoading.value && !workspaceDetails.value);
+const currentReviewState = useReviewState(currentWorkspaceId);
 const isReviewInProgress = computed(() => isReviewInProgressState(currentReviewState.value));
+const hasRepository = computed(() => Boolean(workspaceDetails.value?.repositoryId));
 
-const closeSessionActionLabel = computed(() => {
-  if (currentProjectName.value === '') {
-    return 'No project open';
+const closeTerminalsActionLabel = computed(() => {
+  if (currentWorkspaceId.value === '') {
+    return 'No workspace open';
   }
 
-  if (isClosingSession.value) {
+  if (isClosingTerminals.value) {
     return 'Closing';
   }
 
@@ -59,11 +59,11 @@ const closeSessionActionLabel = computed(() => {
 });
 
 const unavailableCommandLabel = (fallback: string) => {
-  if (currentProjectName.value === '') {
-    return 'No project open';
+  if (currentWorkspaceId.value === '') {
+    return 'No workspace open';
   }
 
-  if (isWaitingForProjectDetails.value) {
+  if (isWaitingForWorkspaceDetails.value) {
     return 'Loading';
   }
 
@@ -89,69 +89,63 @@ const errorMessage = (error: unknown, fallback: string) => error instanceof Erro
 
 const updateQuery = (nextQuery: string) => {
   query.value = nextQuery;
-  closeSessionError.value = '';
+  closeTerminalsError.value = '';
 };
 
-const closeCurrentSession = async () => {
-  const projectName = currentProjectName.value;
-  if (projectName === '' || isClosingSession.value) {
+const closeCurrentWorkspaceTerminals = async () => {
+  const workspaceId = currentWorkspaceId.value;
+  if (workspaceId === '' || isClosingTerminals.value) {
     return;
   }
 
-  isClosingSession.value = true;
-  closeSessionError.value = '';
+  isClosingTerminals.value = true;
+  closeTerminalsError.value = '';
 
   try {
-    await closeProjectSession(projectName);
+    await deleteWorkspaceTerminals(workspaceId);
     closePaletteWithoutRestoringFocus();
     await router.push({ name: 'home' });
   } catch (error) {
-    closeSessionError.value = errorMessage(error, 'Session close failed');
+    closeTerminalsError.value = errorMessage(error, 'Terminal close failed');
   } finally {
-    isClosingSession.value = false;
+    isClosingTerminals.value = false;
   }
 };
 
 const startReview = () => {
-  if (currentProjectName.value === '') {
+  if (currentWorkspaceId.value === '') {
     return;
   }
 
   closePaletteWithoutRestoringFocus();
-  dispatchStartReviewEvent(currentProjectName.value);
+  dispatchStartReviewEvent(currentWorkspaceId.value);
 };
 
 const cancelReview = () => {
-  if (currentProjectName.value === '' || !isReviewInProgress.value) {
+  if (currentWorkspaceId.value === '' || !isReviewInProgress.value) {
     return;
   }
 
   closePaletteWithoutRestoringFocus();
-  dispatchCancelReviewEvent(currentProjectName.value);
+  dispatchCancelReviewEvent(currentWorkspaceId.value);
 };
 
 const openCreateWorktree = () => {
-  if (currentProjectName.value === '') {
-    return;
+  if (hasRepository.value) {
+    emit('openCreateWorktree');
   }
-
-  emit('openCreateWorktree');
 };
 
 const openRemoteWorktreePicker = () => {
-  if (currentProjectName.value === '') {
-    return;
+  if (hasRepository.value) {
+    emit('openRemoteWorktreePicker');
   }
-
-  emit('openRemoteWorktreePicker');
 };
 
 const openRemoveWorktree = () => {
-  if (currentProjectName.value === '') {
-    return;
+  if (hasRepository.value) {
+    emit('openRemoveWorktree');
   }
-
-  emit('openRemoveWorktree');
 };
 
 const openSettings = async () => {
@@ -164,19 +158,13 @@ const openSettings = async () => {
   await router.push({ name: 'settings' });
 };
 
-const reloadConfig = async () => {
+const reloadSettings = async () => {
   try {
-    await requestReloadConfig();
+    await reloadSettingsFromDisk();
 
-    try {
-      await loadSettings({ force: true });
-    } catch (settingsError) {
-      console.error(settingsError);
-    }
-
-    const availableProjects = await syncProjects();
-    if (availableProjects) {
-      removeUnavailableRecentProjects(availableProjects);
+    const availableWorkspaces = await syncWorkspaces();
+    if (availableWorkspaces) {
+      removeUnavailableRecentWorkspaces(availableWorkspaces);
     }
   } catch (error) {
     console.error(error);
@@ -213,63 +201,67 @@ const reviewCommand = computed<PaletteResult>(() => {
   return {
     id: 'start-review',
     label: 'Start Review',
-    actionLabel: currentProjectName.value === '' ? 'No project open' : 'Open review tab',
-    isDisabled: currentProjectName.value === '',
+    actionLabel: currentWorkspaceId.value === '' ? 'No workspace open' : 'Open review tab',
+    isDisabled: currentWorkspaceId.value === '',
     run: startReview
   };
 });
 
+const repositoryActionLabel = computed(() => unavailableCommandLabel(
+  hasRepository.value ? 'Select' : 'Not a Git workspace'
+));
+
 const commandDefinitions = computed<PaletteResult[]>(() => [
   {
-    id: 'open-project-picker',
-    label: 'Open Project Picker',
+    id: 'open-workspace-picker',
+    label: 'Open Workspace Picker',
     actionLabel: 'Open picker',
     isDisabled: false,
-    run: () => emit('openProjectPicker')
+    run: () => emit('openWorkspacePicker')
   },
   {
-    id: 'open-active-session-picker',
-    label: 'Open Active Session Picker',
+    id: 'open-active-workspace-picker',
+    label: 'Open Active Workspace Picker',
     actionLabel: 'Open picker',
     isDisabled: false,
-    run: () => emit('openActiveSessionPicker')
+    run: () => emit('openActiveWorkspacePicker')
   },
   {
-    id: 'clone-remote-project',
-    label: 'Clone Remote Project',
-    actionLabel: 'Pick repo',
+    id: 'clone-remote-repository',
+    label: 'Clone Remote Repository',
+    actionLabel: 'Pick repository',
     isDisabled: false,
-    run: () => emit('openRemoteProjectPicker')
+    run: () => emit('openRemoteRepositoryPicker')
   },
   reviewCommand.value,
   {
-    id: 'close-current-session',
-    label: 'Close Current Session',
-    actionLabel: closeSessionActionLabel.value,
-    isDisabled: currentProjectName.value === '' || isClosingSession.value,
+    id: 'close-workspace-terminals',
+    label: 'Close Workspace',
+    actionLabel: closeTerminalsActionLabel.value,
+    isDisabled: currentWorkspaceId.value === '' || isClosingTerminals.value,
     run: () => {
-      void closeCurrentSession();
+      void closeCurrentWorkspaceTerminals();
     }
   },
   {
     id: 'create-open-worktree',
     label: 'Create/Open Worktree',
-    actionLabel: currentProjectName.value === '' ? 'No project open' : 'Enter branch',
-    isDisabled: currentProjectName.value === '',
+    actionLabel: repositoryActionLabel.value,
+    isDisabled: !hasRepository.value,
     run: openCreateWorktree
   },
   {
     id: 'checkout-remote-worktree',
     label: 'Checkout Remote Branch as Worktree',
-    actionLabel: currentProjectName.value === '' ? 'No project open' : 'Pick branch',
-    isDisabled: currentProjectName.value === '',
+    actionLabel: repositoryActionLabel.value,
+    isDisabled: !hasRepository.value,
     run: openRemoteWorktreePicker
   },
   {
     id: 'remove-worktree',
     label: 'Remove Worktree',
-    actionLabel: currentProjectName.value === '' ? 'No project open' : 'Pick worktree',
-    isDisabled: currentProjectName.value === '',
+    actionLabel: repositoryActionLabel.value,
+    isDisabled: !hasRepository.value,
     run: openRemoveWorktree
   },
   {
@@ -282,34 +274,34 @@ const commandDefinitions = computed<PaletteResult[]>(() => [
     }
   },
   {
-    id: 'reload-config',
-    label: 'Reload Config',
-    actionLabel: 'Reload config',
+    id: 'reload-settings',
+    label: 'Reload Settings',
+    actionLabel: 'Reload settings',
     isDisabled: false,
     run: () => {
-      void reloadConfig();
+      void reloadSettings();
     }
   },
   createExternalCommand(
-    'open-linear-ticket',
-    'Open Linear Ticket',
-    'Open ticket',
-    unavailableCommandLabel('No ticket found'),
-    projectDetails.value?.linearTicketUrl ?? ''
+    'open-issue',
+    'Open Issue',
+    'Open issue',
+    unavailableCommandLabel('No issue found'),
+    workspaceDetails.value?.links.issue?.url ?? ''
   ),
   createExternalCommand(
     'open-pr',
     'Open PR',
     'Open PR',
     unavailableCommandLabel('No PR found'),
-    projectDetails.value?.pullRequestUrl ?? ''
+    workspaceDetails.value?.links.pullRequest ?? ''
   ),
   createExternalCommand(
     'open-github-page',
-    'Open Github Page',
+    'Open GitHub Page',
     'Open page',
     unavailableCommandLabel('No GitHub remote'),
-    projectDetails.value?.githubUrl ?? ''
+    workspaceDetails.value?.links.repository ?? ''
   )
 ]);
 
@@ -320,11 +312,11 @@ const { matchingItems: matchingCommands } = useFuzzyItems(
 );
 
 const paletteSummary = computed(() => {
-  if (currentProjectName.value === '') {
-    return 'No project open';
+  if (currentWorkspaceId.value === '') {
+    return 'No workspace open';
   }
 
-  return isWaitingForProjectDetails.value ? `Loading ${currentProjectName.value}` : currentProjectName.value;
+  return isWaitingForWorkspaceDetails.value ? `Loading ${currentWorkspaceId.value}` : currentWorkspaceId.value;
 });
 
 const paletteResults = computed<PaletteResult[]>(() => matchingCommands.value.map((match) => ({
@@ -332,14 +324,13 @@ const paletteResults = computed<PaletteResult[]>(() => matchingCommands.value.ma
   id: `command:${match.item.id}`
 })));
 
-const notice = computed<PaletteNotice | undefined>(() => closeSessionError.value === ''
+const notice = computed<PaletteNotice | undefined>(() => closeTerminalsError.value === ''
   ? undefined
   : {
     tone: 'error',
-    title: 'Session close failed',
-    messages: [closeSessionError.value]
+    title: 'Terminal close failed',
+    messages: [closeTerminalsError.value]
   });
-
 </script>
 
 <template>
