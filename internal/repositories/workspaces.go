@@ -62,6 +62,22 @@ func (s WorkspaceStore) Resolve(workspaceID string) (string, bool, error) {
 	return "", false, nil
 }
 
+// CanonicalPath returns the canonical path for the supplied workspace ID.
+func (s WorkspaceStore) CanonicalPath(workspaceID string) (string, bool, error) {
+	workspaces, err := s.discover()
+	if err != nil {
+		return "", false, err
+	}
+
+	for _, workspace := range workspaces {
+		if workspace.id == workspaceID {
+			return workspace.canonicalPath, true, nil
+		}
+	}
+
+	return "", false, nil
+}
+
 // Directories returns the configured workspace discovery directories.
 func (s WorkspaceStore) Directories() []string {
 	if s.state == nil {

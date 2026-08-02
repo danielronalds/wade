@@ -5,43 +5,17 @@ package worktrees
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 )
-
-type contextData struct {
-	mainPath    string
-	projectName string
-	worktrees   []porcelainWorktree
-}
 
 type porcelainWorktree struct {
 	path   string
 	branch string
 }
 
-func resolveContext(ctx context.Context, projectPath string, git gitRepository) (contextData, error) {
-	entries, err := listWorktreeEntries(ctx, projectPath, git)
-	if err != nil {
-		return contextData{}, err
-	}
-
-	if len(entries) == 0 {
-		return contextData{}, errors.New("could not determine main worktree path")
-	}
-
-	mainPath := entries[0].path
-	return contextData{
-		mainPath:    mainPath,
-		projectName: filepath.Base(mainPath),
-		worktrees:   entries,
-	}, nil
-}
-
-func listWorktreeEntries(ctx context.Context, projectPath string, git gitRepository) ([]porcelainWorktree, error) {
-	output, err := git.WorktreeListPorcelain(ctx, projectPath)
+func listWorktreeEntries(ctx context.Context, repositoryPath string, git gitRepository) ([]porcelainWorktree, error) {
+	output, err := git.WorktreeListPorcelain(ctx, repositoryPath)
 	if err != nil {
 		return nil, fmt.Errorf("listing worktrees: %w", err)
 	}
@@ -66,8 +40,7 @@ func listWorktreeEntries(ctx context.Context, projectPath string, git gitReposit
 		}
 
 		if branchRef, ok := strings.CutPrefix(line, "branch "); ok {
-			current.branch = strings.TrimPrefix(branchRef, "refs/heads/")
-			continue
+			current.branch = branchRef
 		}
 	}
 
@@ -76,43 +49,4 @@ func listWorktreeEntries(ctx context.Context, projectPath string, git gitReposit
 	}
 
 	return entries, nil
-}
-
-func buildWorktrees(data contextData, currentPath string) []Worktree {
-	worktrees := make([]Worktree, 0, len(data.worktrees))
-	prefix := data.projectName + "-"
-
-	for _, entry := range data.worktrees {
-		projectName := filepath.Base(entry.path)
-		name := projectName
-		isBase := samePath(entry.path, data.mainPath)
-		if isBase {
-			name = data.projectName
-		} else {
-			name = strings.TrimPrefix(projectName, prefix)
-		}
-
-		worktrees = append(worktrees, Worktree{
-			Name:        name,
-			ProjectName: projectName,
-			Path:        entry.path,
-			Branch:      entry.branch,
-			IsBase:      isBase,
-			IsCurrent:   samePath(entry.path, currentPath),
-			IsRemovable: !isBase,
-		})
-	}
-
-	return worktrees
-}
-
-func worktreesByBranch(worktrees []Worktree) map[string]Worktree {
-	result := map[string]Worktree{}
-	for _, worktree := range worktrees {
-		if worktree.Branch == "" {
-			continue
-		}
-		result[worktree.Branch] = worktree
-	}
-	return result
 }

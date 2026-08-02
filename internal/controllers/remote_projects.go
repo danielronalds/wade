@@ -5,23 +5,33 @@ package controllers
 import (
 	"context"
 	"net/http"
+	"path/filepath"
 
-	"wade/internal/services/remoteprojects"
+	"wade/internal/services/remoterepositories"
 	"wade/internal/services/workspaces"
 )
 
-type remoteProjectService interface {
-	List(ctx context.Context, localProjectNames []string) ([]remoteprojects.Project, error)
-	Clone(ctx context.Context, request remoteprojects.CloneRequest) (remoteprojects.ClonedProject, error)
+type remoteRepositoryService interface {
+	List(ctx context.Context) ([]remoterepositories.RemoteRepository, error)
+	Clone(ctx context.Context, request remoterepositories.CloneRequest) (workspaces.Workspace, error)
+	WorkspaceDirectories() []remoterepositories.WorkspaceDirectory
 }
 
 type RemoteProjects struct {
-	workspaces workspaces.Service
-	remote     remoteProjectService
+	remoteRepositories remoteRepositoryService
 }
 
+type legacyRemoteProject struct {
+	Name          string `json:"name"`
+	NameWithOwner string `json:"nameWithOwner"`
+	URL           string `json:"url"`
+	SSHURL        string `json:"sshUrl"`
+	IsLocal       bool   `json:"isLocal"`
+	LocalName     string `json:"localName"`
+} // @name remote.Project
+
 type remoteProjectsResponse struct {
-	Projects []remoteprojects.Project `json:"projects"`
+	Projects []legacyRemoteProject `json:"projects"`
 } // @name handlers.remoteProjectsResponse
 
 type cloneRemoteProjectRequest struct {
@@ -29,12 +39,17 @@ type cloneRemoteProjectRequest struct {
 	DirectoryIndex int    `json:"directoryIndex"`
 } // @name handlers.cloneRemoteProjectRequest
 
+type legacyClonedProject struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
+} // @name remote.ClonedProject
+
 type cloneRemoteProjectResponse struct {
-	Project remoteprojects.ClonedProject `json:"project"`
+	Project legacyClonedProject `json:"project"`
 } // @name handlers.cloneRemoteProjectResponse
 
-func NewRemoteProjects(workspaceService workspaces.Service, remote remoteProjectService) RemoteProjects {
-	return RemoteProjects{workspaces: workspaceService, remote: remote}
+func NewRemoteProjects(remoteRepositories remoteRepositoryService) RemoteProjects {
+	return RemoteProjects{remoteRepositories: remoteRepositories}
 }
 
 // @Summary List remote projects
@@ -46,16 +61,27 @@ func NewRemoteProjects(workspaceService workspaces.Service, remote remoteProject
 // @Failure 500 {object} errorResponse
 // @Router /api/remote-projects [get]
 func (h RemoteProjects) List(w http.ResponseWriter, r *http.Request) {
-	workspaceSummaries, err := h.workspaces.List()
-	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "unable to list local projects")
-		return
-	}
-
-	projects, err := h.remote.List(r.Context(), workspaceIDs(workspaceSummaries))
+	remoteRepositories, err := h.remoteRepositories.List(r.Context())
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
+	}
+
+	projects := make([]legacyRemoteProject, 0, len(remoteRepositories))
+	for _, repository := range remoteRepositories {
+		localName := ""
+		if len(repository.LocalWorkspaceIDs) > 0 {
+			localName = repository.LocalWorkspaceIDs[0]
+		}
+
+		projects = append(projects, legacyRemoteProject{
+			Name:          repository.Name,
+			NameWithOwner: repository.ID,
+			URL:           repository.WebURL,
+			SSHURL:        repository.CloneURL,
+			IsLocal:       len(repository.LocalWorkspaceIDs) > 0,
+			LocalName:     localName,
+		})
 	}
 
 	writeJSON(w, http.StatusOK, remoteProjectsResponse{Projects: projects})
@@ -78,31 +104,24 @@ func (h RemoteProjects) Clone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspaceSummaries, err := h.workspaces.List()
-	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "unable to list local projects")
+	workspaceDirectories := h.remoteRepositories.WorkspaceDirectories()
+	if request.DirectoryIndex < 0 || request.DirectoryIndex >= len(workspaceDirectories) {
+		writeJSONError(w, http.StatusBadRequest, "invalid project directory")
 		return
 	}
+	workspaceDirectory := workspaceDirectories[request.DirectoryIndex]
 
-	project, err := h.remote.Clone(r.Context(), remoteprojects.CloneRequest{
-		NameWithOwner:      request.NameWithOwner,
-		ProjectDirectories: h.workspaces.Directories(),
-		DirectoryIndex:     request.DirectoryIndex,
-		LocalProjectNames:  workspaceIDs(workspaceSummaries),
+	workspace, err := h.remoteRepositories.Clone(r.Context(), remoterepositories.CloneRequest{
+		RemoteRepositoryID: request.NameWithOwner,
+		WorkspaceDirectory: workspaceDirectory.Setting,
 	})
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, cloneRemoteProjectResponse{Project: project})
-}
-
-func workspaceIDs(workspaceSummaries []workspaces.WorkspaceSummary) []string {
-	ids := make([]string, 0, len(workspaceSummaries))
-	for _, workspace := range workspaceSummaries {
-		ids = append(ids, workspace.ID)
-	}
-
-	return ids
+	writeJSON(w, http.StatusOK, cloneRemoteProjectResponse{Project: legacyClonedProject{
+		Name: workspace.Name,
+		Path: filepath.Join(workspaceDirectory.Path, workspace.ID),
+	}})
 }

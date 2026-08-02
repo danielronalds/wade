@@ -4,26 +4,34 @@ package worktrees
 // TODO: Review properly
 
 type Worktree struct {
+	ID                      string   `json:"id"`
+	RepositoryID            string   `json:"repositoryId"`
+	WorkspaceID             string   `json:"workspaceId"`
 	Name                    string   `json:"name"`
-	ProjectName             string   `json:"projectName"`
-	Path                    string   `json:"path"`
-	Branch                  string   `json:"branch"`
-	IsBase                  bool     `json:"isBase"`
-	IsCurrent               bool     `json:"isCurrent"`
+	Branch                  *Branch  `json:"branch"`
+	IsMain                  bool     `json:"isMain"`
 	IsRemovable             bool     `json:"isRemovable"`
 	IgnoredFileCopyWarnings []string `json:"ignoredFileCopyWarnings,omitempty"`
-} // @name worktree.Worktree
 
-type RemoteBranchList struct {
-	Remote   string         `json:"remote"`
-	Branches []RemoteBranch `json:"branches"`
-} // @name worktree.RemoteBranchList
+	path               string
+	workspaceDirectory string
+}
 
-type RemoteBranch struct {
-	Name                string `json:"name"`
-	Branch              string `json:"branch"`
-	HasLocalBranch      bool   `json:"hasLocalBranch"`
-	IsCheckedOut        bool   `json:"isCheckedOut"`
-	WorktreeName        string `json:"worktreeName"`
-	WorktreeProjectName string `json:"worktreeProjectName"`
-} // @name worktree.RemoteBranch
+func (w Worktree) Path() string {
+	return w.path
+}
+
+type Branch struct {
+	Ref                   string  `json:"ref"`
+	Name                  string  `json:"name"`
+	Remote                *string `json:"remote"`
+	HasLocalBranch        bool    `json:"hasLocalBranch"`
+	CheckedOutWorkspaceID *string `json:"checkedOutWorkspaceId"`
+}
+
+type BranchKind string
+
+const (
+	BranchKindLocal  BranchKind = "local"
+	BranchKindRemote BranchKind = "remote"
+)

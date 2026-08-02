@@ -26,6 +26,32 @@ func TestResolveRuntimeShellUsesConfiguredShellOverEnvironment(t *testing.T) {
 	}
 }
 
+func TestLoadPreservesConfiguredProjectDirectoryStrings(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+	t.Setenv("SHELL", "/bin/sh")
+
+	path := filepath.Join(homeDir, ".config", "wade", "config.json")
+	settings := repositories.Settings{
+		ProjectDirectories: []string{"~/Code"},
+		Agents:             []repositories.Agent{{Name: "Custom", Command: "custom-agent", Default: true}},
+	}
+	writeSettings(t, path, settings)
+
+	configuration, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+
+	if len(configuration.ProjectDirectorySettings) != 1 || configuration.ProjectDirectorySettings[0] != "~/Code" {
+		t.Fatalf("ProjectDirectorySettings = %#v, want [~/Code]", configuration.ProjectDirectorySettings)
+	}
+	wantResolvedPath := filepath.Join(homeDir, "Code")
+	if len(configuration.ProjectDirs) != 1 || configuration.ProjectDirs[0] != wantResolvedPath {
+		t.Fatalf("ProjectDirs = %#v, want [%s]", configuration.ProjectDirs, wantResolvedPath)
+	}
+}
+
 func TestLoadUsesConfiguredShellOverEnvironment(t *testing.T) {
 	homeDir := t.TempDir()
 	shell := writeExecutable(t, homeDir, "custom-shell")

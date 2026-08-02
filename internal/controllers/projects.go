@@ -71,13 +71,22 @@ func (h Projects) GetProjectDetails(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} errorResponse
 // @Router /api/projects [get]
 func (h Projects) ListProjects(w http.ResponseWriter, r *http.Request) {
-	workspaceSummaries, err := h.workspaces.List()
+	workspaceSummaries, err := h.workspaces.List(r.Context())
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "unable to list projects")
 		return
 	}
 
 	writeJSON(w, http.StatusOK, projectsResponse{Projects: workspaceIDs(workspaceSummaries)})
+}
+
+func workspaceIDs(workspaceSummaries []workspaces.WorkspaceSummary) []string {
+	ids := make([]string, 0, len(workspaceSummaries))
+	for _, workspace := range workspaceSummaries {
+		ids = append(ids, workspace.ID)
+	}
+
+	return ids
 }
 
 func referencedString(reference *string) string {

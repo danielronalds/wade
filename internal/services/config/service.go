@@ -24,6 +24,7 @@ const (
 type Config struct {
 	Address                            string
 	ProjectDirs                        []string
+	ProjectDirectorySettings           []string
 	Shell                              string
 	Agents                             []repositories.Agent
 	CopyIgnoredFilesOnWorktreeCreation bool
@@ -67,6 +68,7 @@ func Load() (Config, error) {
 	return Config{
 		Address:                            envOrDefault(addressEnv, defaultAddress(devMode)),
 		ProjectDirs:                        projectDirs,
+		ProjectDirectorySettings:           append([]string(nil), settings.ProjectDirectories...),
 		Shell:                              shell,
 		Agents:                             agents,
 		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,

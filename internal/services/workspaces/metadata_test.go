@@ -51,10 +51,6 @@ func TestRepositoryURL(t *testing.T) {
 			repositoryID: "danielronalds/wade",
 			want:         "https://github.com/danielronalds/wade",
 		},
-		"enterprise repository": {
-			repositoryID: "git.example.com/signinsolutions/wade",
-			want:         "https://git.example.com/signinsolutions/wade",
-		},
 		"empty repository": {
 			repositoryID: "",
 			want:         "",
@@ -66,43 +62,6 @@ func TestRepositoryURL(t *testing.T) {
 			got := repositoryURL(test.repositoryID)
 			if got != test.want {
 				t.Fatalf("repositoryURL() = %q, want %q", got, test.want)
-			}
-		})
-	}
-}
-
-func TestParseGitHubRepositoryID(t *testing.T) {
-	tests := map[string]struct {
-		remoteURL string
-		want      string
-	}{
-		"github ssh": {
-			remoteURL: "git@github.com:danielronalds/wade.git",
-			want:      "danielronalds/wade",
-		},
-		"github https": {
-			remoteURL: "https://github.com/danielronalds/wade.git",
-			want:      "danielronalds/wade",
-		},
-		"github ssh url": {
-			remoteURL: "ssh://git@github.com/danielronalds/wade.git",
-			want:      "danielronalds/wade",
-		},
-		"enterprise ssh": {
-			remoteURL: "git@git.example.com:signinsolutions/wade.git",
-			want:      "git.example.com/signinsolutions/wade",
-		},
-		"unsupported remote": {
-			remoteURL: "file:///tmp/wade",
-			want:      "",
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			got := parseGitHubRepositoryID(test.remoteURL)
-			if got != test.want {
-				t.Fatalf("parseGitHubRepositoryID() = %q, want %q", got, test.want)
 			}
 		})
 	}

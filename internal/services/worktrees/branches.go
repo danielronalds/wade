@@ -59,14 +59,25 @@ func listRemoteBranches(ctx context.Context, projectPath string, remote string, 
 	return branches, nil
 }
 
-func listLocalBranches(ctx context.Context, projectPath string, git gitRepository) (map[string]bool, error) {
+func listLocalBranchNames(ctx context.Context, projectPath string, git gitRepository) ([]string, error) {
 	output, err := git.LocalBranches(ctx, projectPath)
 	if err != nil {
 		return nil, fmt.Errorf("listing local branches: %w", err)
 	}
 
+	branches := parseLines(output)
+	slices.Sort(branches)
+	return branches, nil
+}
+
+func listLocalBranches(ctx context.Context, projectPath string, git gitRepository) (map[string]bool, error) {
+	branchNames, err := listLocalBranchNames(ctx, projectPath, git)
+	if err != nil {
+		return nil, err
+	}
+
 	branches := map[string]bool{}
-	for _, branch := range parseLines(output) {
+	for _, branch := range branchNames {
 		branches[branch] = true
 	}
 	return branches, nil
