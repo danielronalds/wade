@@ -49,6 +49,20 @@ func TestCreateReturnsRepositoryScopedWorktree(t *testing.T) {
 	}
 }
 
+func TestRemoteBranchesReturnsEmptyForRepositoryWithoutRemote(t *testing.T) {
+	ctx := context.Background()
+	projectPath := initGitRepository(t)
+	service, repository := newTestService(t, ctx, projectPath, nil)
+
+	branches, err := service.Branches(ctx, repository, BranchKindRemote)
+	if err != nil {
+		t.Fatalf("Branches() error = %v, want nil", err)
+	}
+	if len(branches) != 0 {
+		t.Fatalf("Branches() = %#v, want empty", branches)
+	}
+}
+
 func TestRepositoryScopedRemoteBranchCanCreateWorktree(t *testing.T) {
 	ctx := context.Background()
 	projectPath := initGitRepository(t)
