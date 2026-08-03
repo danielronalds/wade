@@ -196,7 +196,7 @@ func (s Service) Branches(ctx context.Context, repository gitrepositories.Contex
 		return nil, err
 	}
 	if !found {
-		return nil, errors.New("no git remote configured")
+		return []Branch{}, nil
 	}
 	if err := fetchRemote(ctx, repositoryPath, remote, s.git); err != nil {
 		return nil, err
