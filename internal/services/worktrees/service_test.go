@@ -17,11 +17,14 @@ import (
 )
 
 type terminalServiceStub struct {
-	closedDirectory string
+	closedDirectory         string
+	expectedDirectory       string
+	closedExpectedDirectory bool
 }
 
 func (s *terminalServiceStub) CloseTerminalsForDirectory(directory string) int {
 	s.closedDirectory = directory
+	s.closedExpectedDirectory = samePath(directory, s.expectedDirectory)
 	return 1
 }
 
@@ -150,6 +153,7 @@ func TestRemoveClosesTerminalsAndDeletesLocalBranch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create() error = %v, want nil", err)
 	}
+	terminals.expectedDirectory = created.Path()
 
 	removed, err := service.Remove(ctx, repository, created.ID)
 	if err != nil {
@@ -158,8 +162,8 @@ func TestRemoveClosesTerminalsAndDeletesLocalBranch(t *testing.T) {
 	if removed.ID != created.ID {
 		t.Fatalf("Remove() ID = %q, want %q", removed.ID, created.ID)
 	}
-	if terminals.closedDirectory != created.Path() {
-		t.Fatalf("closed terminal directory = %q, want %q", terminals.closedDirectory, created.Path())
+	if !terminals.closedExpectedDirectory {
+		t.Fatalf("closed terminal directory = %q, want same path as %q", terminals.closedDirectory, created.Path())
 	}
 	if output := gitOutputForTest(t, projectPath, "branch", "--list", branchName); output != "" {
 		t.Fatalf("local branch exists after Remove() = %q, want empty", output)
