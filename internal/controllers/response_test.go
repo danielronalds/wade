@@ -40,6 +40,11 @@ func TestWriteServiceErrorProblems(t *testing.T) {
 			wantStatus: http.StatusConflict,
 			wantCode:   "worktree_not_removable",
 		},
+		"invalid branch reference": {
+			err:        worktrees.InvalidBranchReferenceError{BranchRef: "refs/heads/invalid..branch"},
+			wantStatus: http.StatusUnprocessableEntity,
+			wantCode:   "invalid_branch_reference",
+		},
 		"invalid terminal": {
 			err:        terminals.InvalidTerminalIDError{TerminalID: "unknown"},
 			wantStatus: http.StatusUnprocessableEntity,

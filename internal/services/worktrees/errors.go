@@ -2,6 +2,14 @@ package worktrees
 
 import "fmt"
 
+type InvalidBranchReferenceError struct {
+	BranchRef string
+}
+
+func (e InvalidBranchReferenceError) Error() string {
+	return fmt.Sprintf("invalid branch reference %q", e.BranchRef)
+}
+
 type InvalidWorktreeIDError struct {
 	WorktreeID string
 }
