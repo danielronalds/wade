@@ -94,6 +94,37 @@ func TestRepositoryScopedRemoteBranchCanCreateWorktree(t *testing.T) {
 	}
 }
 
+func TestCreateRejectsInvalidBranchReferences(t *testing.T) {
+	ctx := context.Background()
+	projectPath := initGitRepository(t)
+	remotePath := filepath.Join(t.TempDir(), "origin.git")
+	runGit(t, filepath.Dir(remotePath), "init", "--bare", remotePath)
+	runGit(t, projectPath, "remote", "add", "origin", remotePath)
+
+	service, repository := newTestService(t, ctx, projectPath, nil)
+	tests := map[string]string{
+		"invalid branch name":       "refs/heads/feature..invalid",
+		"malformed remote ref":      "refs/remotes/origin",
+		"missing remote":            "refs/remotes/upstream/feature/example",
+		"missing remote branch":     "refs/remotes/origin/feature/missing",
+		"unsupported ref namespace": "refs/tags/release",
+	}
+
+	for name, branchRef := range tests {
+		t.Run(name, func(t *testing.T) {
+			_, err := service.Create(ctx, repository, branchRef)
+
+			var invalidBranchReference InvalidBranchReferenceError
+			if !errors.As(err, &invalidBranchReference) {
+				t.Fatalf("Create() error = %v, want InvalidBranchReferenceError", err)
+			}
+			if invalidBranchReference.BranchRef != branchRef {
+				t.Fatalf("InvalidBranchReferenceError.BranchRef = %q, want %q", invalidBranchReference.BranchRef, branchRef)
+			}
+		})
+	}
+}
+
 func TestRemoveClosesTerminalsAndDeletesLocalBranch(t *testing.T) {
 	ctx := context.Background()
 	projectPath := initGitRepository(t)

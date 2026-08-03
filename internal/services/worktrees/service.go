@@ -228,7 +228,7 @@ func (s Service) Branches(ctx context.Context, repository gitrepositories.Contex
 func (s Service) Create(ctx context.Context, repository gitrepositories.Context, requestedBranchRef string) (Worktree, error) {
 	branchRef := strings.TrimSpace(requestedBranchRef)
 	if branchRef == "" {
-		return Worktree{}, errors.New("branch reference is required")
+		return Worktree{}, InvalidBranchReferenceError{BranchRef: branchRef}
 	}
 
 	repositoryPath := repository.MainWorktreePath()
@@ -241,11 +241,15 @@ func (s Service) Create(ctx context.Context, repository gitrepositories.Context,
 	if remoteRef, found := strings.CutPrefix(branchRef, "refs/remotes/"); found {
 		requestedRemote, localBranch, found = strings.Cut(remoteRef, "/")
 		if !found || requestedRemote == "" || localBranch == "" {
-			return Worktree{}, fmt.Errorf("invalid remote branch reference %q", branchRef)
+			return Worktree{}, InvalidBranchReferenceError{BranchRef: branchRef}
 		}
 		isExplicitRemoteBranch = true
 		hasRemote = true
 	} else {
+		if strings.HasPrefix(branchRef, "refs/") && !isExplicitLocalBranch {
+			return Worktree{}, InvalidBranchReferenceError{BranchRef: branchRef}
+		}
+
 		preferredRemote, found, err := preferredRemote(ctx, repositoryPath, s.git)
 		if err != nil {
 			return Worktree{}, err
@@ -255,6 +259,28 @@ func (s Service) Create(ctx context.Context, repository gitrepositories.Context,
 		if hasRemote && strings.HasPrefix(branchRef, preferredRemote+"/") {
 			localBranch = strings.TrimPrefix(branchRef, preferredRemote+"/")
 			isExplicitRemoteBranch = true
+		}
+	}
+
+	if err := validateBranchName(ctx, repositoryPath, localBranch, s.git); err != nil {
+		return Worktree{}, InvalidBranchReferenceError{BranchRef: branchRef}
+	}
+
+	if isExplicitRemoteBranch {
+		output, err := s.git.Remotes(ctx, repositoryPath)
+		if err != nil {
+			return Worktree{}, fmt.Errorf("listing remotes: %w", err)
+		}
+
+		remoteExists := false
+		for _, remote := range parseLines(output) {
+			if remote == requestedRemote {
+				remoteExists = true
+				break
+			}
+		}
+		if !remoteExists {
+			return Worktree{}, InvalidBranchReferenceError{BranchRef: branchRef}
 		}
 	}
 
@@ -271,10 +297,6 @@ func (s Service) Create(ctx context.Context, repository gitrepositories.Context,
 		for _, branch := range branches {
 			remoteBranches[branch] = true
 		}
-	}
-
-	if err := validateBranchName(ctx, repositoryPath, localBranch, s.git); err != nil {
-		return Worktree{}, err
 	}
 
 	worktrees, err := s.List(ctx, repository)
@@ -306,7 +328,7 @@ func (s Service) Create(ctx context.Context, repository gitrepositories.Context,
 			return Worktree{}, fmt.Errorf("checking out remote worktree: %w", err)
 		}
 	} else if isExplicitRemoteBranch {
-		return Worktree{}, fmt.Errorf("remote branch %q not found", branchRef)
+		return Worktree{}, InvalidBranchReferenceError{BranchRef: branchRef}
 	} else {
 		if err := s.git.AddNewBranchWorktree(ctx, repositoryPath, localBranch, targetPath); err != nil {
 			return Worktree{}, fmt.Errorf("creating local branch worktree: %w", err)

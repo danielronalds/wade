@@ -48,76 +48,60 @@ func writeProblem(w http.ResponseWriter, statusCode int, code string, title stri
 }
 
 func writeServiceError(w http.ResponseWriter, err error, fallbackDetail string) {
-	var invalidSettings config.InvalidSettingsError
-	var invalidWorkspaceID workspaces.InvalidWorkspaceIDError
-	var workspaceNotFound workspaces.WorkspaceNotFoundError
-	var gitWorkspaceNotFound gitrepositories.WorkspaceNotFoundError
-	var invalidRepositoryID gitrepositories.InvalidRepositoryIDError
-	var repositoryNotFound gitrepositories.RepositoryNotFoundError
-	var repositoryIDConflict gitrepositories.RepositoryIDConflictError
-	var invalidRemoteRepositoryID remoterepositories.InvalidRemoteRepositoryIDError
-	var workspaceDirectoryNotConfigured remoterepositories.WorkspaceDirectoryNotConfiguredError
-	var workspaceAlreadyExists remoterepositories.WorkspaceAlreadyExistsError
-	var invalidWorktreeID worktrees.InvalidWorktreeIDError
-	var worktreeNotFound worktrees.WorktreeNotFoundError
-	var worktreeNotRemovable worktrees.WorktreeNotRemovableError
-	var invalidTerminalID terminals.InvalidTerminalIDError
-	var agentNotConfigured terminals.AgentNotConfiguredError
-	var terminalNotFound terminals.TerminalNotFoundError
-	var terminalInputRequired terminals.TerminalInputRequiredError
-	var invalidInputMode terminals.InvalidInputModeError
-	var workspaceNotGitRepository review.WorkspaceNotGitRepositoryError
-	var snapshotNotFound review.SnapshotNotFoundError
-	var snapshotFileNotFound review.SnapshotFileNotFoundError
-	var invalidReviewScope review.InvalidScopeError
-
 	switch {
-	case errors.As(err, &workspaceNotFound), errors.As(err, &gitWorkspaceNotFound):
+	case matchesError[workspaces.WorkspaceNotFoundError](err),
+		matchesError[gitrepositories.WorkspaceNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "workspace_not_found", "Workspace not found", err.Error())
-	case errors.As(err, &repositoryNotFound):
+	case matchesError[gitrepositories.RepositoryNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "repository_not_found", "Repository not found", err.Error())
-	case errors.As(err, &worktreeNotFound):
+	case matchesError[worktrees.WorktreeNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "worktree_not_found", "Worktree not found", err.Error())
-	case errors.As(err, &terminalNotFound):
+	case matchesError[terminals.TerminalNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "terminal_not_found", "Terminal not found", err.Error())
-	case errors.As(err, &snapshotNotFound):
+	case matchesError[review.SnapshotNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "review_snapshot_not_found", "Review snapshot not found", err.Error())
-	case errors.As(err, &snapshotFileNotFound):
+	case matchesError[review.SnapshotFileNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "review_snapshot_file_not_found", "Review snapshot file not found", err.Error())
-	case errors.As(err, &repositoryIDConflict):
+	case matchesError[gitrepositories.RepositoryIDConflictError](err):
 		writeProblem(w, http.StatusConflict, "repository_id_conflict", "Repository ID conflict", err.Error())
-	case errors.As(err, &workspaceAlreadyExists):
+	case matchesError[remoterepositories.WorkspaceAlreadyExistsError](err):
 		writeProblem(w, http.StatusConflict, "workspace_already_exists", "Workspace already exists", err.Error())
-	case errors.As(err, &worktreeNotRemovable):
+	case matchesError[worktrees.WorktreeNotRemovableError](err):
 		writeProblem(w, http.StatusConflict, "worktree_not_removable", "Worktree cannot be removed", err.Error())
-	case errors.As(err, &invalidSettings):
+	case matchesError[config.InvalidSettingsError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_settings", "Invalid settings", err.Error())
-	case errors.As(err, &invalidWorkspaceID):
+	case matchesError[workspaces.InvalidWorkspaceIDError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_workspace_id", "Invalid workspace ID", err.Error())
-	case errors.As(err, &invalidRepositoryID):
+	case matchesError[gitrepositories.InvalidRepositoryIDError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_repository_id", "Invalid repository ID", err.Error())
-	case errors.As(err, &invalidRemoteRepositoryID):
+	case matchesError[remoterepositories.InvalidRemoteRepositoryIDError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_remote_repository_id", "Invalid remote repository ID", err.Error())
-	case errors.As(err, &workspaceDirectoryNotConfigured):
+	case matchesError[remoterepositories.WorkspaceDirectoryNotConfiguredError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "workspace_directory_not_configured", "Workspace directory is not configured", err.Error())
-	case errors.As(err, &invalidWorktreeID):
+	case matchesError[worktrees.InvalidBranchReferenceError](err):
+		writeProblem(w, http.StatusUnprocessableEntity, "invalid_branch_reference", "Invalid branch reference", err.Error())
+	case matchesError[worktrees.InvalidWorktreeIDError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_worktree_id", "Invalid worktree ID", err.Error())
-	case errors.As(err, &invalidTerminalID):
+	case matchesError[terminals.InvalidTerminalIDError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_terminal_id", "Invalid terminal ID", err.Error())
-	case errors.As(err, &agentNotConfigured):
+	case matchesError[terminals.AgentNotConfiguredError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "agent_not_configured", "Agent is not configured", err.Error())
-	case errors.As(err, &terminalInputRequired):
+	case matchesError[terminals.TerminalInputRequiredError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "terminal_input_required", "Terminal input is required", err.Error())
-	case errors.As(err, &invalidInputMode):
+	case matchesError[terminals.InvalidInputModeError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_terminal_input_mode", "Invalid terminal input mode", err.Error())
-	case errors.As(err, &workspaceNotGitRepository):
+	case matchesError[review.WorkspaceNotGitRepositoryError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "workspace_not_git_repository", "Workspace is not a Git repository", err.Error())
-	case errors.As(err, &invalidReviewScope):
+	case matchesError[review.InvalidScopeError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_review_scope", "Invalid review scope", err.Error())
 	default:
 		log.Printf("request failed: %v", err)
 		writeProblem(w, http.StatusInternalServerError, "internal_error", "Internal server error", fallbackDetail)
 	}
+}
+
+func matchesError[T error](err error) bool {
+	return errors.As(err, new(T))
 }
 
 func decodeJSONBody(r *http.Request, target any) error {
