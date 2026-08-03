@@ -13,9 +13,9 @@ The backend is a Go HTTP server bound to localhost. It creates PTYs with
 The frontend lives in `web/src`, uses Vue 3 and TypeScript, and is bundled with
 esbuild into `internal/web/.dist`. Avoid CDN JavaScript for the local shell page.
 
-`mise run dev` serves WADE at `editor-dev.localhost:8090`. A directly built
-binary uses `editor.localhost:8765` by default. Override either with
-`WADE_ADDR`.
+`mise run dev` serves WADE at `editor-dev.localhost:8090`. `WADE_DEV` takes
+precedence over an inherited `WADE_ADDR`. A directly built binary uses
+`editor.localhost:8765` by default and can be overridden with `WADE_ADDR`.
 
 ## Running
 

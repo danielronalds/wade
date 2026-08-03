@@ -33,18 +33,19 @@ mise run dev
 
 Open <http://editor-dev.localhost:8090>.
 
-`mise run dev` sets `WADE_ADDR=editor-dev.localhost:8090` and starts Air. Air
-sets `WADE_DEV=1` for the running binary. A directly built binary started with
-`wade server` uses <http://editor.localhost:8765> by default.
+`mise run dev` starts Air, which runs the binary with `WADE_DEV=1`. Development
+mode uses <http://editor-dev.localhost:8090>, taking precedence over an inherited
+`WADE_ADDR`. A directly built binary started with `wade server` uses
+<http://editor.localhost:8765> by default.
 
 Running `wade` with no command prints the help menu. Use `wade server` to start
 the web server, or `wade config` to open `~/.config/wade/config.json` in your
 editor.
 
-To use a different address:
+To use a different address for a normal server:
 
 ```sh
-WADE_ADDR=127.0.0.1:8090 mise run dev
+WADE_ADDR=127.0.0.1:8765 wade server
 ```
 
 ## Workspaces

@@ -13,7 +13,6 @@ run = "npm --prefix web install"
 [tasks.dev]
 description = "Runs the project with live reload"
 depends = ["install"]
-env = { WADE_ADDR = "editor-dev.localhost:8090" }
 run = "air"
 
 [tasks.build]
