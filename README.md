@@ -39,8 +39,10 @@ mode uses <http://editor-dev.localhost:8090>, taking precedence over an inherite
 <http://editor.localhost:8765> by default.
 
 Running `wade` with no command prints the help menu. Use `wade server` to start
-the web server, or `wade config` to open `~/.config/wade/config.json` in your
-editor.
+the web server in the background, or `wade config` to open
+`~/.config/wade/config.json` in your editor. WADE prints the background process
+ID and writes server output to `~/.local/state/wade/server.log`. Use
+`wade server --foreground` to keep the server attached to the terminal.
 
 To use a different address for a normal server:
 
@@ -135,7 +137,9 @@ JSON, TOML, Markdown or font files change.
 mise run build
 ```
 
-This writes the binary to `.tmp/wade`. Start the server with `.tmp/wade server`.
+This writes the binary to `.tmp/wade`. Start the background server with
+`.tmp/wade server`, or use `.tmp/wade server --foreground` to keep it attached
+to the terminal.
 
 ## Test
 

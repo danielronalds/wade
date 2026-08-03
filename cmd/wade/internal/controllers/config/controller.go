@@ -1,20 +1,20 @@
-package controllers
+package config
 
 import (
 	"os"
 	"os/exec"
 
-	"wade/internal/services/config"
+	configservice "wade/internal/services/config"
 )
 
-type ConfigController struct{}
+type Controller struct{}
 
-func NewConfigController() ConfigController {
-	return ConfigController{}
+func NewController() Controller {
+	return Controller{}
 }
 
-func (c ConfigController) HandleArgs(args []string) error {
-	configPath, err := config.EnsureFile()
+func (c Controller) HandleArgs(args []string) error {
+	configPath, err := configservice.EnsureFile()
 	if err != nil {
 		return err
 	}

@@ -3,6 +3,10 @@ package controllers
 import (
 	"fmt"
 	"io"
+
+	"wade/cmd/wade/internal/controllers/config"
+	"wade/cmd/wade/internal/controllers/help"
+	"wade/cmd/wade/internal/controllers/server"
 )
 
 type Controller interface {
@@ -15,9 +19,9 @@ type Router struct {
 
 func NewRouter(stdout io.Writer) Router {
 	return Router{controllers: map[string]Controller{
-		"config": NewConfigController(),
-		"help":   NewHelpController(stdout),
-		"server": NewServerController(),
+		"config": config.NewController(),
+		"help":   help.NewController(stdout),
+		"server": server.NewController(stdout),
 	}}
 }
 
