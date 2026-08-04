@@ -5,6 +5,7 @@ import { deleteWorkspaceTerminals } from '@/api/generated/wade';
 import { useFuzzyItems } from '@/composables/useFuzzyItems';
 import PaletteShell from '@/features/command-palette/components/PaletteShell.vue';
 import type { PaletteNotice, PaletteResult } from '@/features/command-palette/types';
+import { useActiveWorkspaces } from '@/features/workspaces/composables/useActiveWorkspaces';
 import { useRecentWorkspaces } from '@/features/workspaces/composables/useRecentWorkspaces';
 import { useWorkspaces } from '@/features/workspaces/composables/useWorkspaces';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 
 const route = useRoute();
 const router = useRouter();
+const { syncActiveWorkspaces } = useActiveWorkspaces();
 const { syncWorkspaces } = useWorkspaces();
 const { removeUnavailableRecentWorkspaces } = useRecentWorkspaces();
 const workspaceDetailsStore = useWorkspaceDetailsStore();
@@ -103,6 +105,7 @@ const closeCurrentWorkspaceTerminals = async () => {
 
   try {
     await deleteWorkspaceTerminals(workspaceId);
+    void syncActiveWorkspaces();
     closePaletteWithoutRestoringFocus();
     await router.push({ name: 'home' });
   } catch (error) {

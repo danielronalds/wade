@@ -1,20 +1,14 @@
-import { createSharedComposable } from '@vueuse/core';
-import { computed, readonly, ref } from 'vue';
+import { createSharedComposable, useStorage } from '@vueuse/core';
+import { readonly, ref } from 'vue';
 import { listWorkspaces, type WorkspaceSummary } from '@/api/generated/wade';
 
-const normaliseActiveWorkspaces = (workspaces: WorkspaceSummary[]): WorkspaceSummary[] => (
-  [...workspaces].sort((firstWorkspace, secondWorkspace) => (
-    firstWorkspace.name.localeCompare(secondWorkspace.name)
-    || firstWorkspace.id.localeCompare(secondWorkspace.id)
-  ))
-);
+const activeWorkspacesStorageKey = 'wade:active-workspaces';
 
 export const useActiveWorkspaces = createSharedComposable(() => {
-  const storedActiveWorkspaces = ref<WorkspaceSummary[]>([]);
+  const storedActiveWorkspaces = useStorage<WorkspaceSummary[]>(activeWorkspacesStorageKey, [], localStorage);
+  const activeWorkspaces = readonly(storedActiveWorkspaces);
   const isSyncing = ref(false);
   const error = ref('');
-
-  const activeWorkspaces = computed(() => normaliseActiveWorkspaces(storedActiveWorkspaces.value));
 
   let syncRequest: Promise<WorkspaceSummary[] | undefined> | undefined;
 
@@ -29,9 +23,10 @@ export const useActiveWorkspaces = createSharedComposable(() => {
     syncRequest = (async () => {
       try {
         const { items } = await listWorkspaces({ activity: 'active' });
-        storedActiveWorkspaces.value = normaliseActiveWorkspaces(items);
+        const nextActiveWorkspaces = sortActiveWorkspaces(items);
+        storedActiveWorkspaces.value = nextActiveWorkspaces;
 
-        return activeWorkspaces.value;
+        return nextActiveWorkspaces;
       } catch (requestError) {
         error.value = requestError instanceof Error ? requestError.message : 'Active workspace request failed';
         return undefined;
@@ -45,9 +40,16 @@ export const useActiveWorkspaces = createSharedComposable(() => {
   };
 
   return {
-    activeWorkspaces: readonly(activeWorkspaces),
+    activeWorkspaces,
     error: readonly(error),
     isSyncing: readonly(isSyncing),
     syncActiveWorkspaces
   };
 });
+
+const sortActiveWorkspaces = (workspaces: WorkspaceSummary[]): WorkspaceSummary[] => (
+  [...workspaces].sort((firstWorkspace, secondWorkspace) => (
+    firstWorkspace.name.localeCompare(secondWorkspace.name)
+    || firstWorkspace.id.localeCompare(secondWorkspace.id)
+  ))
+);
