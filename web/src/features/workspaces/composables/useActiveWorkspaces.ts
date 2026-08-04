@@ -1,16 +1,50 @@
-import { createSharedComposable } from '@vueuse/core';
+import { createSharedComposable, useStorage } from '@vueuse/core';
 import { computed, readonly, ref } from 'vue';
 import { listWorkspaces, type WorkspaceSummary } from '@/api/generated/wade';
 
-const normaliseActiveWorkspaces = (workspaces: WorkspaceSummary[]): WorkspaceSummary[] => (
-  [...workspaces].sort((firstWorkspace, secondWorkspace) => (
+const activeWorkspacesStorageKey = 'wade:active-workspaces';
+
+const normaliseActiveWorkspaces = (workspaces: unknown): WorkspaceSummary[] => {
+  if (!Array.isArray(workspaces)) {
+    return [];
+  }
+
+  const workspacesById = new Map<string, WorkspaceSummary>();
+  for (const workspace of workspaces) {
+    if (!workspace || typeof workspace !== 'object') {
+      continue;
+    }
+
+    const candidate = workspace as Partial<WorkspaceSummary>;
+    if (typeof candidate.id === 'string' && candidate.id.length > 0 && typeof candidate.name === 'string') {
+      workspacesById.set(candidate.id, candidate as WorkspaceSummary);
+    }
+  }
+
+  return Array.from(workspacesById.values()).sort((firstWorkspace, secondWorkspace) => (
     firstWorkspace.name.localeCompare(secondWorkspace.name)
     || firstWorkspace.id.localeCompare(secondWorkspace.id)
-  ))
-);
+  ));
+};
+
+const activeWorkspacesSerializer = {
+  read: (value: string): WorkspaceSummary[] => {
+    try {
+      return normaliseActiveWorkspaces(JSON.parse(value));
+    } catch {
+      return [];
+    }
+  },
+  write: (workspaces: WorkspaceSummary[]): string => JSON.stringify(normaliseActiveWorkspaces(workspaces))
+};
 
 export const useActiveWorkspaces = createSharedComposable(() => {
-  const storedActiveWorkspaces = ref<WorkspaceSummary[]>([]);
+  const storedActiveWorkspaces = useStorage<WorkspaceSummary[]>(
+    activeWorkspacesStorageKey,
+    [],
+    localStorage,
+    { serializer: activeWorkspacesSerializer }
+  );
   const isSyncing = ref(false);
   const error = ref('');
 
