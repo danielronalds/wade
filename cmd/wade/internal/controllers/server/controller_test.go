@@ -21,6 +21,10 @@ func TestControllerStartsBackgroundProcess(t *testing.T) {
 	}
 
 	executable := writeServerExecutable(t, temporaryDirectory, `#!/bin/sh
+if [ "$WADE_INTERNAL_SERVER_READY_FD" != "3" ]; then
+  printf '{"error":"unexpected readiness file descriptor"}\n' >&3
+  exit 1
+fi
 printf '%s' "$$" > "$WADE_TEST_PID_PATH"
 printf '{"address":"test.localhost:1234","pid":%s}\n' "$$" >&3
 exec sleep 30

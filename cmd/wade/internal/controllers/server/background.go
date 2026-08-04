@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,8 +13,10 @@ import (
 )
 
 const (
-	serverReadyFileEnv   = "WADE_INTERNAL_SERVER_READY_FD"
-	serverStartupTimeout = 10 * time.Second
+	// ExtraFiles[0] becomes descriptor 3 after stdin, stdout, and stderr.
+	serverReadyFileDescriptor = 3
+	serverReadyFileEnv        = "WADE_INTERNAL_SERVER_READY_FD"
+	serverStartupTimeout      = 10 * time.Second
 )
 
 type backgroundServer struct {
@@ -130,24 +131,27 @@ func backgroundServerEnvironment() []string {
 		}
 		environment = append(environment, environmentVariable)
 	}
-	return append(environment, readyFileEnvironmentPrefix+"3")
+	return append(environment, readyFileEnvironmentPrefix+strconv.Itoa(serverReadyFileDescriptor))
 }
 
+// newServerStartupReporter consumes the pipe descriptor used by a background
+// parent to wait for startup success or failure. It clears the internal
+// environment variable so terminals spawned by the server do not inherit it.
 func newServerStartupReporter() (*serverStartupReporter, error) {
-	readyFileDescriptor := os.Getenv(serverReadyFileEnv)
-	if readyFileDescriptor == "" {
+	readyFileDescriptor, found := os.LookupEnv(serverReadyFileEnv)
+	if !found {
 		return nil, nil
 	}
-
-	fileDescriptor, err := strconv.ParseUint(readyFileDescriptor, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("parsing server readiness file descriptor: %w", err)
+	if err := os.Unsetenv(serverReadyFileEnv); err != nil {
+		return nil, fmt.Errorf("clearing server readiness file descriptor: %w", err)
 	}
 
-	readyFile := os.NewFile(uintptr(fileDescriptor), "wade-server-ready")
-	if readyFile == nil {
-		return nil, errors.New("opening server readiness file descriptor")
+	expectedFileDescriptor := strconv.Itoa(serverReadyFileDescriptor)
+	if readyFileDescriptor != expectedFileDescriptor {
+		return nil, fmt.Errorf("invalid server readiness file descriptor: %s", readyFileDescriptor)
 	}
+
+	readyFile := os.NewFile(serverReadyFileDescriptor, "wade-server-ready")
 	return &serverStartupReporter{file: readyFile}, nil
 }
 
