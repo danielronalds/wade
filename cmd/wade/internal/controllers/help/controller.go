@@ -13,9 +13,9 @@ func NewController(stdout io.Writer) Controller {
 	return Controller{stdout: stdout}
 }
 
-func (c Controller) HandleArgs(args []string) error {
+func (c Controller) HandleArgs(args []string) (int, error) {
 	_, err := fmt.Fprint(c.stdout, helpText())
-	return err
+	return 0, err
 }
 
 func helpText() string {
@@ -25,6 +25,8 @@ WADE is a local-first browser workspace for agentic coding sessions.
 
 Commands
   server    Start the WADE web server in the background
+  status    Show the background server status
+  stop      Stop the background server
   config    Open the WADE config in your editor
   help      Show this menu
 

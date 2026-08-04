@@ -9,8 +9,13 @@ import (
 	"wade/cmd/wade/internal/controllers/server"
 )
 
+const (
+	configCommand = "config"
+	helpCommand   = "help"
+)
+
 type Controller interface {
-	HandleArgs(args []string) error
+	HandleArgs(args []string) (int, error)
 }
 
 type Router struct {
@@ -18,22 +23,26 @@ type Router struct {
 }
 
 func NewRouter(stdout io.Writer) Router {
+	serverController := server.NewController(stdout)
+
 	return Router{controllers: map[string]Controller{
-		"config": config.NewController(),
-		"help":   help.NewController(stdout),
-		"server": server.NewController(stdout),
+		configCommand:        config.NewController(),
+		helpCommand:          help.NewController(stdout),
+		server.ServerCommand: serverController,
+		server.StatusCommand: serverController,
+		server.StopCommand:   serverController,
 	}}
 }
 
-func (r Router) HandleArgs(args []string) error {
-	command := "help"
+func (r Router) HandleArgs(args []string) (int, error) {
+	command := helpCommand
 	if len(args) > 0 {
 		command = args[0]
 	}
 
 	controller, ok := r.controllers[command]
 	if !ok {
-		return fmt.Errorf("unknown command: %s", command)
+		return 0, fmt.Errorf("unknown command: %s", command)
 	}
 
 	return controller.HandleArgs(args)

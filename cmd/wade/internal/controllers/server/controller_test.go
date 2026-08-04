@@ -2,132 +2,198 @@ package server
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
 	"strings"
-	"syscall"
 	"testing"
+
+	"wade/internal/daemon"
 )
 
-func TestControllerStartsBackgroundProcess(t *testing.T) {
-	temporaryDirectory := t.TempDir()
-	homeDirectory := filepath.Join(temporaryDirectory, "home")
-	stateDirectory := filepath.Join(temporaryDirectory, "state")
-	pidPath := filepath.Join(temporaryDirectory, "server.pid")
-	if err := os.MkdirAll(homeDirectory, 0o755); err != nil {
-		t.Fatalf("MkdirAll() error = %v, want nil", err)
+type daemonStub struct {
+	startStatus daemon.Status
+	status      daemon.Status
+	startError  error
+	statusError error
+	stopError   error
+}
+
+func (s daemonStub) Acquire(string) (*daemon.ControlServer, error) {
+	return nil, errors.New("unexpected Acquire() call")
+}
+
+func (s daemonStub) Start() (daemon.Status, error) {
+	return s.startStatus, s.startError
+}
+
+func (s daemonStub) Status() (daemon.Status, error) {
+	return s.status, s.statusError
+}
+
+func (s daemonStub) Stop() error {
+	return s.stopError
+}
+
+func TestControllerStartsBackgroundDaemon(t *testing.T) {
+	status := daemon.Status{
+		PID:     12345,
+		Address: "test.localhost:1234",
+		LogPath: "/tmp/wade/server.log",
 	}
-
-	executable := writeServerExecutable(t, temporaryDirectory, `#!/bin/sh
-if [ "$WADE_INTERNAL_SERVER_READY_FD" != "3" ]; then
-  printf '{"error":"unexpected readiness file descriptor"}\n' >&3
-  exit 1
-fi
-printf '%s' "$$" > "$WADE_TEST_PID_PATH"
-printf '{"address":"test.localhost:1234","pid":%s}\n' "$$" >&3
-exec sleep 30
-`)
-	t.Setenv("HOME", homeDirectory)
-	t.Setenv("XDG_STATE_HOME", stateDirectory)
-	t.Setenv("WADE_TEST_PID_PATH", pidPath)
-	t.Setenv(serverReadyFileEnv, "99")
-
 	var output bytes.Buffer
-	controller := Controller{
-		stdout: &output,
-		executablePath: func() (string, error) {
-			return executable, nil
-		},
-	}
+	controller := Controller{stdout: &output, daemon: daemonStub{startStatus: status}}
 
-	if err := controller.HandleArgs([]string{"server"}); err != nil {
+	exitCode, err := controller.HandleArgs([]string{"server"})
+	if err != nil {
 		t.Fatalf("HandleArgs() error = %v, want nil", err)
 	}
-
-	pidContents, err := os.ReadFile(pidPath)
-	if err != nil {
-		t.Fatalf("ReadFile(%q) error = %v, want nil", pidPath, err)
-	}
-	pid, err := strconv.Atoi(string(pidContents))
-	if err != nil {
-		t.Fatalf("Atoi(%q) error = %v, want nil", pidContents, err)
-	}
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		t.Fatalf("FindProcess(%d) error = %v, want nil", pid, err)
-	}
-	t.Cleanup(func() {
-		_ = process.Signal(syscall.SIGTERM)
-	})
-	if err := process.Signal(syscall.Signal(0)); err != nil {
-		t.Fatalf("background process is not running: %v", err)
+	if exitCode != 0 {
+		t.Fatalf("HandleArgs() exit code = %d, want 0", exitCode)
 	}
 
-	logPath := filepath.Join(stateDirectory, "wade", "server.log")
-	wantOutput := fmt.Sprintf(
-		"WADE server listening on test.localhost:1234\nPID: %d\nLog: %s\n",
-		pid,
-		logPath,
-	)
-	if output.String() != wantOutput {
-		t.Fatalf("output = %q, want %q", output.String(), wantOutput)
-	}
-	if _, err := os.Stat(logPath); err != nil {
-		t.Fatalf("Stat(%q) error = %v, want nil", logPath, err)
+	want := "WADE server listening on test.localhost:1234\nPID: 12345\nLog: /tmp/wade/server.log\n"
+	if output.String() != want {
+		t.Fatalf("output = %q, want %q", output.String(), want)
 	}
 }
 
-func TestControllerReportsBackgroundStartupFailure(t *testing.T) {
-	temporaryDirectory := t.TempDir()
-	homeDirectory := filepath.Join(temporaryDirectory, "home")
-	stateDirectory := filepath.Join(temporaryDirectory, "state")
-	if err := os.MkdirAll(homeDirectory, 0o755); err != nil {
-		t.Fatalf("MkdirAll() error = %v, want nil", err)
+func TestControllerReportsExistingDaemon(t *testing.T) {
+	status := daemon.Status{PID: 12345, Address: "test.localhost:1234", LogPath: "/tmp/server.log"}
+	var output bytes.Buffer
+	controller := Controller{
+		stdout: &output,
+		daemon: daemonStub{startError: daemon.AlreadyRunningError{Status: status}},
 	}
 
-	executable := writeServerExecutable(t, temporaryDirectory, `#!/bin/sh
-printf '{"error":"address is already in use"}\n' >&3
-exec sleep 30
-`)
-	t.Setenv("HOME", homeDirectory)
-	t.Setenv("XDG_STATE_HOME", stateDirectory)
+	exitCode, err := controller.HandleArgs([]string{"server"})
+	if err != nil {
+		t.Fatalf("HandleArgs() error = %v, want nil", err)
+	}
+	if exitCode != 0 {
+		t.Fatalf("HandleArgs() exit code = %d, want 0", exitCode)
+	}
 
+	want := "WADE is already running\nPID: 12345\nAddress: test.localhost:1234\n"
+	if output.String() != want {
+		t.Fatalf("output = %q, want %q", output.String(), want)
+	}
+}
+
+func TestControllerReportsRunningStatus(t *testing.T) {
+	status := daemon.Status{
+		PID:     12345,
+		Address: "test.localhost:1234",
+		LogPath: "/tmp/wade/server.log",
+	}
+	var output bytes.Buffer
+	controller := Controller{stdout: &output, daemon: daemonStub{status: status}}
+
+	exitCode, err := controller.HandleArgs([]string{"status"})
+	if err != nil {
+		t.Fatalf("HandleArgs() error = %v, want nil", err)
+	}
+	if exitCode != 0 {
+		t.Fatalf("HandleArgs() exit code = %d, want 0", exitCode)
+	}
+
+	want := "WADE is running\nPID: 12345\nAddress: test.localhost:1234\nLog: /tmp/wade/server.log\n"
+	if output.String() != want {
+		t.Fatalf("output = %q, want %q", output.String(), want)
+	}
+}
+
+func TestControllerReturnsNonZeroStatusWhenStopped(t *testing.T) {
+	var output bytes.Buffer
+	controller := Controller{
+		stdout: &output,
+		daemon: daemonStub{statusError: daemon.NotRunningError{}},
+	}
+
+	exitCode, err := controller.HandleArgs([]string{"status"})
+	if err != nil {
+		t.Fatalf("HandleArgs() error = %v, want nil", err)
+	}
+	if exitCode != 1 {
+		t.Fatalf("HandleArgs() exit code = %d, want 1", exitCode)
+	}
+	if output.String() != "WADE is not running\n" {
+		t.Fatalf("output = %q, want stopped output", output.String())
+	}
+}
+
+func TestControllerStopsDaemon(t *testing.T) {
+	var output bytes.Buffer
+	controller := Controller{stdout: &output, daemon: daemonStub{}}
+
+	exitCode, err := controller.HandleArgs([]string{"stop"})
+	if err != nil {
+		t.Fatalf("HandleArgs() error = %v, want nil", err)
+	}
+	if exitCode != 0 || output.String() != "WADE stopped\n" {
+		t.Fatalf("HandleArgs() = (%d, %q), want successful stop", exitCode, output.String())
+	}
+}
+
+func TestControllerStopIsIdempotent(t *testing.T) {
+	var output bytes.Buffer
+	controller := Controller{
+		stdout: &output,
+		daemon: daemonStub{stopError: daemon.NotRunningError{}},
+	}
+
+	exitCode, err := controller.HandleArgs([]string{"stop"})
+	if err != nil {
+		t.Fatalf("HandleArgs() error = %v, want nil", err)
+	}
+	if exitCode != 0 || output.String() != "WADE is not running\n" {
+		t.Fatalf("HandleArgs() = (%d, %q), want idempotent stop", exitCode, output.String())
+	}
+}
+
+func TestControllerReturnsDaemonErrors(t *testing.T) {
+	wantError := errors.New("control failure")
 	controller := Controller{
 		stdout: &bytes.Buffer{},
-		executablePath: func() (string, error) {
-			return executable, nil
-		},
+		daemon: daemonStub{statusError: wantError},
 	}
 
-	err := controller.HandleArgs([]string{"server"})
-	if err == nil || !strings.Contains(err.Error(), "failed to start WADE server: address is already in use") {
-		t.Fatalf("HandleArgs() error = %v, want startup failure", err)
+	_, err := controller.HandleArgs([]string{"status"})
+	if !errors.Is(err, wantError) {
+		t.Fatalf("HandleArgs() error = %v, want %v", err, wantError)
 	}
 }
 
 func TestControllerRejectsUnexpectedArguments(t *testing.T) {
-	controller := Controller{
-		stdout: &bytes.Buffer{},
-		executablePath: func() (string, error) {
-			t.Fatal("executablePath() called for invalid arguments")
-			return "", nil
-		},
+	tests := []struct {
+		args      []string
+		wantError string
+	}{
+		{args: []string{"server", "unexpected"}, wantError: "usage: wade server [--foreground]"},
+		{args: []string{"status", "unexpected"}, wantError: "usage: wade status"},
+		{args: []string{"stop", "unexpected"}, wantError: "usage: wade stop"},
 	}
 
-	err := controller.HandleArgs([]string{"server", "unexpected"})
-	if err == nil || err.Error() != "usage: wade server [--foreground]" {
-		t.Fatalf("HandleArgs() error = %v, want usage error", err)
+	for _, test := range tests {
+		t.Run(strings.Join(test.args, "_"), func(t *testing.T) {
+			controller := Controller{stdout: &bytes.Buffer{}, daemon: daemonStub{}}
+
+			_, err := controller.HandleArgs(test.args)
+			if err == nil || err.Error() != test.wantError {
+				t.Fatalf("HandleArgs() error = %v, want %q", err, test.wantError)
+			}
+		})
 	}
 }
 
-func writeServerExecutable(t *testing.T, directory string, contents string) string {
-	t.Helper()
-
-	path := filepath.Join(directory, "wade-test-server")
-	if err := os.WriteFile(path, []byte(contents), 0o755); err != nil {
-		t.Fatalf("WriteFile() error = %v, want nil", err)
+func TestControllerReturnsStartupFailure(t *testing.T) {
+	wantError := daemon.StartupError{Message: "address is already in use", LogPath: "/tmp/server.log"}
+	controller := Controller{
+		stdout: &bytes.Buffer{},
+		daemon: daemonStub{startError: wantError},
 	}
-	return path
+
+	_, err := controller.HandleArgs([]string{"server"})
+	if err == nil || !strings.Contains(err.Error(), fmt.Sprint(wantError)) {
+		t.Fatalf("HandleArgs() error = %v, want startup failure", err)
+	}
 }

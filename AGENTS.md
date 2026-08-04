@@ -17,6 +17,12 @@ esbuild into `internal/web/.dist`. Avoid CDN JavaScript for the local shell page
 precedence over an inherited `WADE_ADDR`. A directly built binary uses
 `editor.localhost:8765` by default and can be overridden with `WADE_ADDR`.
 
+`wade server` manages one background daemon through
+`${XDG_STATE_HOME:-~/.local/state}/wade/server.sock` and writes output to
+`server.log` in the same directory. Use `wade status` to inspect the daemon and
+`wade stop` to stop it gracefully. `wade server --foreground` remains unmanaged
+for Air, development, and smoke tests.
+
 ## Running
 
 ```sh
@@ -252,6 +258,7 @@ Run:
 mise run test
 ```
 
-For a smoke test, run the app on a temporary port, curl the static files, then
-kill the process. Check that no stale `go run .` or `wade` processes remain on
-test ports.
+For a lifecycle smoke test, use an isolated `XDG_STATE_HOME` and temporary port,
+then run `wade server`, `wade status`, `wade stop`, and `wade status`. Confirm the
+final status exits with status `1`, foreground mode does not create a socket, and
+no stale `go run .` or `wade` processes remain on test ports.

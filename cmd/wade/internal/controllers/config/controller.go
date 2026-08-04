@@ -13,10 +13,10 @@ func NewController() Controller {
 	return Controller{}
 }
 
-func (c Controller) HandleArgs(args []string) error {
+func (c Controller) HandleArgs(args []string) (int, error) {
 	configPath, err := configservice.EnsureFile()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	cmd := exec.Command(getEditor(), configPath)
@@ -24,7 +24,7 @@ func (c Controller) HandleArgs(args []string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	return cmd.Run()
+	return 0, cmd.Run()
 }
 
 func getEditor() string {

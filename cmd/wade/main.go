@@ -16,8 +16,12 @@ import (
 // @produce json
 func main() {
 	router := controllers.NewRouter(os.Stdout)
-	if err := router.HandleArgs(os.Args[1:]); err != nil {
+	exitCode, err := router.HandleArgs(os.Args[1:])
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
+	}
+	if exitCode != 0 {
+		os.Exit(exitCode)
 	}
 }
