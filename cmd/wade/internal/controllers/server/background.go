@@ -64,11 +64,11 @@ func (s *backgroundServer) waitForStartup() (serverStartup, string, error) {
 
 func (s *backgroundServer) handleStartupResult(result serverStartupResult) (serverStartup, string, error) {
 	if result.err != nil {
-		_ = s.command.Wait()
+		s.terminate()
 		return serverStartup{}, "", fmt.Errorf("WADE server exited before starting: %w; see %s", result.err, s.logPath)
 	}
 	if result.startup.Error != "" {
-		_ = s.command.Wait()
+		s.terminate()
 		return serverStartup{}, "", fmt.Errorf("failed to start WADE server: %s; see %s", result.startup.Error, s.logPath)
 	}
 	if result.startup.PID <= 0 || result.startup.Address == "" {

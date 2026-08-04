@@ -89,7 +89,7 @@ func TestControllerReportsBackgroundStartupFailure(t *testing.T) {
 
 	executable := writeServerExecutable(t, temporaryDirectory, `#!/bin/sh
 printf '{"error":"address is already in use"}\n' >&3
-exit 1
+exec sleep 30
 `)
 	t.Setenv("HOME", homeDirectory)
 	t.Setenv("XDG_STATE_HOME", stateDirectory)
