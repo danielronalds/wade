@@ -4,6 +4,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { deleteWorkspaceTerminal, putWorkspaceTerminal } from '@/api/generated/wade';
+import { useActiveWorkspaces } from '@/features/workspaces/composables/useActiveWorkspaces';
 import { useRecentWorkspaces } from '@/features/workspaces/composables/useRecentWorkspaces';
 import { WadeHTTPError } from '@/api/httpClient';
 import { createTerminalWebSocket } from '@/features/terminal-session/createTerminalWebSocket';
@@ -126,6 +127,7 @@ export const useTerminalSession = ({
   isSelectedAgent,
   onTerminalEnd
 }: TerminalSessionOptions) => {
+  const { syncActiveWorkspaces } = useActiveWorkspaces();
   const { recordRecentWorkspace } = useRecentWorkspaces();
   const isConnected = ref(false);
   const connectionStatusText = ref('Disconnected');
@@ -333,6 +335,7 @@ export const useTerminalSession = ({
       }
 
       recordRecentWorkspace(workspaceId);
+      void syncActiveWorkspaces();
       setConnectionStatus(true, 'Connected');
       fitAndResize();
       sendAgentActivation();
