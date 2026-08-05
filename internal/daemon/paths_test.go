@@ -31,6 +31,25 @@ func TestResolvePathsUsesDefaultStateDirectory(t *testing.T) {
 	}
 }
 
+func TestResolvePathsIgnoresRelativeXDGStateHome(t *testing.T) {
+	homeDirectory := t.TempDir()
+	t.Setenv("HOME", homeDirectory)
+	t.Setenv("XDG_STATE_HOME", "relative-state")
+
+	paths, err := ResolvePaths()
+	if err != nil {
+		t.Fatalf("ResolvePaths() error = %v, want nil", err)
+	}
+
+	want := filepath.Join(homeDirectory, ".local", "state", "wade")
+	if paths.StateDirectory != want {
+		t.Fatalf("StateDirectory = %q, want %q", paths.StateDirectory, want)
+	}
+	if _, err := os.Stat(paths.StateDirectory); !os.IsNotExist(err) {
+		t.Fatalf("ResolvePaths() created state directory, Stat() error = %v", err)
+	}
+}
+
 func TestResolvePathsUsesXDGStateHome(t *testing.T) {
 	stateRoot := t.TempDir()
 	t.Setenv("XDG_STATE_HOME", stateRoot)

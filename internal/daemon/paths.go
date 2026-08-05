@@ -14,7 +14,7 @@ type Paths struct {
 
 func ResolvePaths() (Paths, error) {
 	stateRoot := os.Getenv("XDG_STATE_HOME")
-	if stateRoot == "" {
+	if !filepath.IsAbs(stateRoot) {
 		homeDirectory, err := os.UserHomeDir()
 		if err != nil {
 			return Paths{}, fmt.Errorf("finding home directory: %w", err)
