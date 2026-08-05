@@ -168,7 +168,7 @@ func TestConcurrentAcquireCreatesOneOwner(t *testing.T) {
 func TestManagerStartReportsExistingDaemon(t *testing.T) {
 	manager, server := startReadyControlServer(t)
 
-	_, err := manager.Start()
+	_, err := manager.Start(testDaemonArgument)
 	var alreadyRunningError AlreadyRunningError
 	if !errors.As(err, &alreadyRunningError) {
 		t.Fatalf("Start() error = %v, want AlreadyRunningError", err)

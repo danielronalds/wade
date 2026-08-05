@@ -30,7 +30,7 @@ const (
 
 type daemonLifecycle interface {
 	Acquire(address string) (*daemon.ControlServer, error)
-	Start() (daemon.Status, error)
+	Start(foregroundCommand ...string) (daemon.Status, error)
 	Status() (daemon.Status, error)
 	Stop() error
 }
@@ -69,7 +69,7 @@ func (c Controller) handleServer(args []string) (int, error) {
 		return 0, fmt.Errorf("usage: wade server [%s]", foregroundFlag)
 	}
 
-	status, err := c.daemon.Start()
+	status, err := c.daemon.Start(ServerCommand, foregroundFlag)
 	var alreadyRunningError daemon.AlreadyRunningError
 	if errors.As(err, &alreadyRunningError) {
 		_, writeError := fmt.Fprintf(

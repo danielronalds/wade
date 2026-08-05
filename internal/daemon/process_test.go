@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const testDaemonArgument = "test-daemon"
+
 func TestManagerStartsDetachedProcessAndWaitsForReadiness(t *testing.T) {
 	temporaryDirectory := shortStateRoot(t)
 	homeDirectory := filepath.Join(temporaryDirectory, "home")
@@ -27,6 +29,10 @@ if [ "$WADE_INTERNAL_SERVER_READY_FD" != "3" ]; then
   printf '{"error":"unexpected readiness file descriptor"}\n' >&3
   exit 1
 fi
+if [ "$1" != "test-daemon" ]; then
+  printf '{"error":"unexpected daemon argument"}\n' >&3
+  exit 1
+fi
 printf '%s' "$$" > "$WADE_TEST_PID_PATH"
 printf '{"status":{"address":"test.localhost:1234","pid":%s,"logPath":"%s/wade/server.log"}}\n' "$$" "$XDG_STATE_HOME" >&3
 exec sleep 30
@@ -38,7 +44,7 @@ exec sleep 30
 
 	manager := NewManager()
 	manager.executablePath = func() (string, error) { return executable, nil }
-	status, err := manager.Start()
+	status, err := manager.Start(testDaemonArgument)
 	if err != nil {
 		t.Fatalf("Start() error = %v, want nil", err)
 	}
@@ -85,7 +91,7 @@ exec sleep 30
 
 	manager := NewManager()
 	manager.executablePath = func() (string, error) { return executable, nil }
-	_, err := manager.Start()
+	_, err := manager.Start(testDaemonArgument)
 	var startupError StartupError
 	if !errors.As(err, &startupError) || !strings.Contains(err.Error(), "address is already in use") {
 		t.Fatalf("Start() error = %v, want startup failure", err)
@@ -106,7 +112,7 @@ func TestManagerTimesOutBackgroundStartup(t *testing.T) {
 	manager := NewManager()
 	manager.executablePath = func() (string, error) { return executable, nil }
 	manager.startupTimeout = 50 * time.Millisecond
-	_, err := manager.Start()
+	_, err := manager.Start(testDaemonArgument)
 	var startupError StartupError
 	if !errors.As(err, &startupError) || !strings.Contains(err.Error(), "timed out") {
 		t.Fatalf("Start() error = %v, want startup timeout", err)

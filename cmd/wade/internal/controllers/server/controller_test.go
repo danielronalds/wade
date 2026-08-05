@@ -11,18 +11,22 @@ import (
 )
 
 type daemonStub struct {
-	startStatus daemon.Status
-	status      daemon.Status
-	startError  error
-	statusError error
-	stopError   error
+	startStatus       daemon.Status
+	status            daemon.Status
+	foregroundCommand *[]string
+	startError        error
+	statusError       error
+	stopError         error
 }
 
 func (s daemonStub) Acquire(string) (*daemon.ControlServer, error) {
 	return nil, errors.New("unexpected Acquire() call")
 }
 
-func (s daemonStub) Start() (daemon.Status, error) {
+func (s daemonStub) Start(foregroundCommand ...string) (daemon.Status, error) {
+	if s.foregroundCommand != nil {
+		*s.foregroundCommand = append([]string(nil), foregroundCommand...)
+	}
 	return s.startStatus, s.startError
 }
 
@@ -41,7 +45,11 @@ func TestControllerStartsBackgroundDaemon(t *testing.T) {
 		LogPath: "/tmp/wade/server.log",
 	}
 	var output bytes.Buffer
-	controller := Controller{stdout: &output, daemon: daemonStub{startStatus: status}}
+	var foregroundCommand []string
+	controller := Controller{
+		stdout: &output,
+		daemon: daemonStub{startStatus: status, foregroundCommand: &foregroundCommand},
+	}
 
 	exitCode, err := controller.HandleArgs([]string{"server"})
 	if err != nil {
@@ -49,6 +57,9 @@ func TestControllerStartsBackgroundDaemon(t *testing.T) {
 	}
 	if exitCode != 0 {
 		t.Fatalf("HandleArgs() exit code = %d, want 0", exitCode)
+	}
+	if len(foregroundCommand) != 2 || foregroundCommand[0] != ServerCommand || foregroundCommand[1] != foregroundFlag {
+		t.Fatalf("Start() foreground command = %#v, want server foreground command", foregroundCommand)
 	}
 
 	want := "WADE server listening on test.localhost:1234\nPID: 12345\nLog: /tmp/wade/server.log\n"

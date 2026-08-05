@@ -13,9 +13,6 @@ import (
 )
 
 const (
-	serverCommand  = "server"
-	foregroundFlag = "--foreground"
-
 	// ExtraFiles[0] becomes descriptor 3 after stdin, stdout, and stderr.
 	serverReadyFileDescriptor = 3
 	serverReadyFileEnv        = "WADE_INTERNAL_SERVER_READY_FD"
@@ -32,7 +29,11 @@ type StartupReporter struct {
 	file *os.File
 }
 
-func (m *Manager) Start() (Status, error) {
+func (m *Manager) Start(foregroundCommand ...string) (Status, error) {
+	if len(foregroundCommand) == 0 {
+		return Status{}, errors.New("foreground command is required")
+	}
+
 	status, err := m.Status()
 	if err == nil {
 		return Status{}, AlreadyRunningError{Status: status}
@@ -42,7 +43,7 @@ func (m *Manager) Start() (Status, error) {
 		return Status{}, err
 	}
 
-	process, err := m.startBackgroundProcess()
+	process, err := m.startBackgroundProcess(foregroundCommand)
 	if err != nil {
 		return Status{}, err
 	}
@@ -101,7 +102,7 @@ func (r *StartupReporter) report(message startupMessage) error {
 	return nil
 }
 
-func (m *Manager) startBackgroundProcess() (*backgroundProcess, error) {
+func (m *Manager) startBackgroundProcess(foregroundCommand []string) (*backgroundProcess, error) {
 	executable, err := m.executablePath()
 	if err != nil {
 		return nil, fmt.Errorf("finding WADE executable: %w", err)
@@ -126,7 +127,7 @@ func (m *Manager) startBackgroundProcess() (*backgroundProcess, error) {
 		return nil, fmt.Errorf("creating server readiness pipe: %w", err)
 	}
 
-	command := backgroundCommand(executable, homeDirectory, logFile, readyWriter)
+	command := backgroundCommand(executable, foregroundCommand, homeDirectory, logFile, readyWriter)
 	if err := command.Start(); err != nil {
 		_ = readyReader.Close()
 		_ = readyWriter.Close()
@@ -209,8 +210,14 @@ func (p *backgroundProcess) terminate() {
 	_ = p.command.Wait()
 }
 
-func backgroundCommand(executable string, homeDirectory string, logFile *os.File, readyWriter *os.File) *exec.Cmd {
-	command := exec.Command(executable, serverCommand, foregroundFlag)
+func backgroundCommand(
+	executable string,
+	foregroundCommand []string,
+	homeDirectory string,
+	logFile *os.File,
+	readyWriter *os.File,
+) *exec.Cmd {
+	command := exec.Command(executable, foregroundCommand...)
 	command.Dir = homeDirectory
 	command.Stdout = logFile
 	command.Stderr = logFile
