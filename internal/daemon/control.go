@@ -54,56 +54,38 @@ func (m *Manager) Acquire(address string) (*ControlServer, error) {
 	for range maxSocketBindAttempts {
 		listener, listenError := net.ListenUnix("unix", &net.UnixAddr{Name: paths.SocketPath, Net: "unix"})
 		lastListenError = listenError
-		if listenError == nil {
-			listener.SetUnlinkOnClose(false)
-
-			socketInfo, err := os.Lstat(paths.SocketPath)
-			if err != nil {
-				_ = listener.Close()
-				return nil, fmt.Errorf("inspecting WADE control socket: %w", err)
+		if listenError != nil {
+			if err := m.prepareControlSocketRetry(paths.SocketPath); err != nil {
+				return nil, err
 			}
-			if err := os.Chmod(paths.SocketPath, 0o600); err != nil {
-				_ = listener.Close()
-				_ = removeSocketIfSame(paths.SocketPath, socketInfo)
-				return nil, fmt.Errorf("securing WADE control socket: %w", err)
-			}
-
-			server := &ControlServer{
-				listener:     listener,
-				status:       status,
-				socketInfo:   socketInfo,
-				socketPath:   paths.SocketPath,
-				acceptDone:   make(chan struct{}),
-				closed:       make(chan struct{}),
-				ready:        make(chan struct{}),
-				stopRequests: make(chan struct{}),
-			}
-			go server.serve(m.controlTimeout)
-			return server, nil
+			continue
 		}
 
-		socketInfo, statError := os.Lstat(paths.SocketPath)
-		if statError != nil {
-			if os.IsNotExist(statError) {
-				continue
-			}
-			return nil, fmt.Errorf("inspecting WADE control socket after bind failure: %w", statError)
+		listener.SetUnlinkOnClose(false)
+
+		socketInfo, err := os.Lstat(paths.SocketPath)
+		if err != nil {
+			_ = listener.Close()
+			return nil, fmt.Errorf("inspecting WADE control socket: %w", err)
 		}
-		if socketInfo.Mode()&os.ModeSocket == 0 {
-			return nil, fmt.Errorf("WADE control socket path is not a socket: %s", paths.SocketPath)
+		if err := os.Chmod(paths.SocketPath, 0o600); err != nil {
+			_ = listener.Close()
+			_ = removeSocketIfSame(paths.SocketPath, socketInfo)
+			return nil, fmt.Errorf("securing WADE control socket: %w", err)
 		}
 
-		existingStatus, statusError := m.request(paths.SocketPath, controlCommandStatus)
-		if statusError == nil {
-			return nil, AlreadyRunningError{Status: existingStatus}
+		server := &ControlServer{
+			listener:     listener,
+			status:       status,
+			socketInfo:   socketInfo,
+			socketPath:   paths.SocketPath,
+			acceptDone:   make(chan struct{}),
+			closed:       make(chan struct{}),
+			ready:        make(chan struct{}),
+			stopRequests: make(chan struct{}),
 		}
-		var notRunningError NotRunningError
-		if !errors.As(statusError, &notRunningError) {
-			return nil, statusError
-		}
-		if err := removeSocketIfSame(paths.SocketPath, socketInfo); err != nil {
-			return nil, err
-		}
+		go server.serve(m.controlTimeout)
+		return server, nil
 	}
 
 	return nil, fmt.Errorf("acquiring WADE control socket after %d attempts: %w", maxSocketBindAttempts, lastListenError)
@@ -138,6 +120,29 @@ func (s *ControlServer) Close() error {
 		return nil
 	}
 	return closeError
+}
+
+func (m *Manager) prepareControlSocketRetry(socketPath string) error {
+	socketInfo, err := os.Lstat(socketPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("inspecting WADE control socket after bind failure: %w", err)
+	}
+	if socketInfo.Mode()&os.ModeSocket == 0 {
+		return fmt.Errorf("WADE control socket path is not a socket: %s", socketPath)
+	}
+
+	existingStatus, err := m.request(socketPath, controlCommandStatus)
+	if err == nil {
+		return AlreadyRunningError{Status: existingStatus}
+	}
+	var notRunningError NotRunningError
+	if !errors.As(err, &notRunningError) {
+		return err
+	}
+	return removeSocketIfSame(socketPath, socketInfo)
 }
 
 func (s *ControlServer) serve(timeout time.Duration) {
