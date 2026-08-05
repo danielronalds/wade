@@ -100,11 +100,41 @@ func TestLoadUsesEnvironmentShellWhenShellSettingIsEmpty(t *testing.T) {
 	}
 }
 
+func TestResolveAddressGivesDevelopmentModePrecedence(t *testing.T) {
+	tests := map[string]struct {
+		devMode string
+		address string
+		want    string
+	}{
+		"development ignores inherited address": {
+			devMode: "1",
+			address: "editor.localhost:8765",
+			want:    "editor-dev.localhost:8090",
+		},
+		"runtime uses configured address": {
+			address: "custom.localhost:9000",
+			want:    "custom.localhost:9000",
+		},
+		"runtime uses default address": {
+			want: "editor.localhost:8765",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := resolveAddress(test.devMode, test.address); got != test.want {
+				t.Fatalf("resolveAddress(%q, %q) = %q, want %q", test.devMode, test.address, got, test.want)
+			}
+		})
+	}
+}
+
 func TestLoadUsesAddressEnvironmentOverride(t *testing.T) {
 	homeDir := t.TempDir()
 	t.Setenv("HOME", homeDir)
 	t.Setenv("SHELL", "/bin/sh")
 	t.Setenv(addressEnv, "custom.localhost:9000")
+	t.Setenv(devModeEnv, "")
 
 	path := filepath.Join(homeDir, ".config", "wade", "config.json")
 	settings := repositories.Settings{

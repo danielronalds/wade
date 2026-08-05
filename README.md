@@ -33,18 +33,28 @@ mise run dev
 
 Open <http://editor-dev.localhost:8090>.
 
-`mise run dev` sets `WADE_ADDR=editor-dev.localhost:8090` and starts Air. Air
-sets `WADE_DEV=1` for the running binary. A directly built binary started with
-`wade server` uses <http://editor.localhost:8765> by default.
+`mise run dev` starts Air, which runs the binary with `WADE_DEV=1`. Development
+mode uses <http://editor-dev.localhost:8090>, taking precedence over an inherited
+`WADE_ADDR`. A directly built binary started with `wade server` uses
+<http://editor.localhost:8765> by default.
 
 Running `wade` with no command prints the help menu. Use `wade server` to start
-the web server, or `wade config` to open `~/.config/wade/config.json` in your
-editor.
+the web server in the background, `wade status` to inspect it, and `wade stop`
+to stop it gracefully. Repeating `wade server` reports the existing managed
+daemon instead of starting another one. Use `wade config` to open
+`~/.config/wade/config.json` in your editor.
 
-To use a different address:
+WADE writes background server output to
+`${XDG_STATE_HOME:-~/.local/state}/wade/server.log` and uses
+`${XDG_STATE_HOME:-~/.local/state}/wade/server.sock` for daemon lifecycle
+management. Use `wade server --foreground` to keep the server attached to the
+terminal. Foreground servers are intentionally unmanaged, so they do not appear
+in `wade status` and are not affected by `wade stop`.
+
+To use a different address for a normal server:
 
 ```sh
-WADE_ADDR=127.0.0.1:8090 mise run dev
+WADE_ADDR=127.0.0.1:8765 wade server
 ```
 
 ## Workspaces
@@ -134,7 +144,10 @@ JSON, TOML, Markdown or font files change.
 mise run build
 ```
 
-This writes the binary to `.tmp/wade`. Start the server with `.tmp/wade server`.
+This writes the binary to `.tmp/wade`. Start the background server with
+`.tmp/wade server`, inspect it with `.tmp/wade status`, and stop it with
+`.tmp/wade stop`. Use `.tmp/wade server --foreground` to keep an unmanaged
+server attached to the terminal.
 
 ## Test
 
@@ -142,9 +155,11 @@ This writes the binary to `.tmp/wade`. Start the server with `.tmp/wade server`.
 mise run test
 ```
 
-For a smoke test, run the app on a temporary port, curl the static files, then
-kill the process. Check that no stale `go run .` or `wade` processes remain on
-test ports.
+For a lifecycle smoke test, use an isolated `XDG_STATE_HOME` and temporary port,
+then run `wade server`, `wade status`, `wade stop`, and `wade status`. The final
+status command should exit with status `1`. Also verify foreground mode does not
+create a control socket and check that no stale `go run .` or `wade` processes
+remain on test ports.
 
 ## Build process
 

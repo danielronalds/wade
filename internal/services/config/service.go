@@ -13,11 +13,12 @@ import (
 )
 
 const (
-	addressEnv  = "WADE_ADDR"
-	devModeEnv  = "WADE_DEV"
-	defaultPort = "8765"
-	devHost     = "editor-dev.localhost"
-	runHost     = "editor.localhost"
+	addressEnv     = "WADE_ADDR"
+	devModeEnv     = "WADE_DEV"
+	defaultDevPort = "8090"
+	defaultRunPort = "8765"
+	devHost        = "editor-dev.localhost"
+	runHost        = "editor.localhost"
 )
 
 // Config is the resolved runtime configuration used by the server.
@@ -70,7 +71,7 @@ func resolveRuntimeConfig(settings Settings) (Config, error) {
 	devMode := os.Getenv(devModeEnv)
 
 	return Config{
-		Address:                            envOrDefault(addressEnv, defaultAddress(devMode)),
+		Address:                            resolveAddress(devMode, os.Getenv(addressEnv)),
 		WorkspaceDirs:                      workspaceDirs,
 		WorkspaceDirectorySettings:         append([]string(nil), settings.WorkspaceDirectories...),
 		Shell:                              shell,
@@ -80,13 +81,16 @@ func resolveRuntimeConfig(settings Settings) (Config, error) {
 	}, nil
 }
 
-// defaultAddress chooses the local host used for dev or normal runs.
-func defaultAddress(devMode string) string {
+// resolveAddress gives development mode precedence over an inherited runtime address.
+func resolveAddress(devMode string, address string) string {
 	if isEnabled(devMode) {
-		return net.JoinHostPort(devHost, defaultPort)
+		return net.JoinHostPort(devHost, defaultDevPort)
+	}
+	if address != "" {
+		return address
 	}
 
-	return net.JoinHostPort(runHost, defaultPort)
+	return net.JoinHostPort(runHost, defaultRunPort)
 }
 
 // isEnabled treats common disabled strings as false and anything else as true.
@@ -106,14 +110,4 @@ func resolveRuntimeShell(configuredShell string, environmentShell string) (strin
 	}
 
 	return repositories.ResolveConfiguredShell(configuredShell)
-}
-
-// envOrDefault returns an environment value when present, otherwise fallback.
-func envOrDefault(name string, fallback string) string {
-	value := os.Getenv(name)
-	if value == "" {
-		return fallback
-	}
-
-	return value
 }

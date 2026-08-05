@@ -13,9 +13,15 @@ The backend is a Go HTTP server bound to localhost. It creates PTYs with
 The frontend lives in `web/src`, uses Vue 3 and TypeScript, and is bundled with
 esbuild into `internal/web/.dist`. Avoid CDN JavaScript for the local shell page.
 
-`mise run dev` serves WADE at `editor-dev.localhost:8090`. A directly built
-binary uses `editor.localhost:8765` by default. Override either with
-`WADE_ADDR`.
+`mise run dev` serves WADE at `editor-dev.localhost:8090`. `WADE_DEV` takes
+precedence over an inherited `WADE_ADDR`. A directly built binary uses
+`editor.localhost:8765` by default and can be overridden with `WADE_ADDR`.
+
+`wade server` manages one background daemon through
+`${XDG_STATE_HOME:-~/.local/state}/wade/server.sock` and writes output to
+`server.log` in the same directory. Use `wade status` to inspect the daemon and
+`wade stop` to stop it gracefully. `wade server --foreground` remains unmanaged
+for Air, development, and smoke tests.
 
 ## Running
 
@@ -124,6 +130,9 @@ Use a Controllers, Services, Repositories structure for the Go backend.
 
 - `internal/app`: Composition root. Wires repositories, services, controllers,
   and shutdown behaviour.
+- `internal/daemon`: Managed background process runtime. Owns detached startup,
+  readiness reporting, state paths, and Unix control-socket lifecycle. It does
+  not construct the HTTP application or own CLI presentation.
 - `internal/server`: HTTP server runtime. Owns the mux, route registration,
   origin checks, and server lifecycle.
 - `internal/controllers`: One package with separate files per controller.
@@ -137,6 +146,9 @@ Use a Controllers, Services, Repositories structure for the Go backend.
 
 Dependency direction rules:
 
+- The command-line server controller may depend on `internal/daemon`.
+- `internal/daemon` must remain independent of controllers, services, and
+  repositories.
 - Controllers may depend on services.
 - Services may depend on repository interfaces.
 - Repository interfaces should live in the service package that consumes them.
@@ -240,6 +252,9 @@ web/src/
 
 ## Coding standards
 
+Document public exported Go APIs with concise doc comments that explain their
+contracts or non-obvious behaviour.
+
 When declaring several local variables together, group related variables and
 separate unrelated groups with an empty line. This keeps setup and wiring blocks
 easy to scan as they grow.
@@ -252,6 +267,7 @@ Run:
 mise run test
 ```
 
-For a smoke test, run the app on a temporary port, curl the static files, then
-kill the process. Check that no stale `go run .` or `wade` processes remain on
-test ports.
+For a lifecycle smoke test, use an isolated `XDG_STATE_HOME` and temporary port,
+then run `wade server`, `wade status`, `wade stop`, and `wade status`. Confirm the
+final status exits with status `1`, foreground mode does not create a socket, and
+no stale `go run .` or `wade` processes remain on test ports.
