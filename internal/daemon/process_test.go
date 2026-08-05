@@ -160,6 +160,28 @@ func TestConsumeStartupReporterClearsEnvironment(t *testing.T) {
 	}
 }
 
+func TestStartupReporterIsConsumedAfterReportFailure(t *testing.T) {
+	readyReader, readyWriter, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("Pipe() error = %v, want nil", err)
+	}
+	if err := readyReader.Close(); err != nil {
+		t.Fatalf("reader Close() error = %v, want nil", err)
+	}
+	t.Cleanup(func() { _ = readyWriter.Close() })
+
+	reporter := &StartupReporter{file: readyWriter}
+	err = reporter.ReportReady(Status{PID: 12345, Address: "test.localhost:1234", LogPath: "/tmp/server.log"})
+	if err == nil {
+		t.Fatal("ReportReady() error = nil, want closed pipe error")
+	}
+	if reporter.file != nil {
+		t.Fatal("ReportReady() retained readiness file after failure")
+	}
+
+	reporter.Close(errors.New("startup failed"))
+}
+
 func TestBackgroundEnvironmentReplacesReadinessDescriptor(t *testing.T) {
 	t.Setenv(serverReadyFileEnv, "99")
 

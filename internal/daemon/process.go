@@ -94,12 +94,11 @@ func (r *StartupReporter) report(message startupMessage) error {
 	if r == nil || r.file == nil {
 		return fmt.Errorf("server readiness has already been reported")
 	}
-	if err := json.NewEncoder(r.file).Encode(message); err != nil {
-		return err
-	}
+
+	err := json.NewEncoder(r.file).Encode(message)
 	_ = r.file.Close()
 	r.file = nil
-	return nil
+	return err
 }
 
 func (m *Manager) startBackgroundProcess(foregroundCommand []string) (*backgroundProcess, error) {
