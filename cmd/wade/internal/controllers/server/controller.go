@@ -96,7 +96,7 @@ func (c Controller) handleServer(args []string) (int, error) {
 
 func (c Controller) handleStatus(args []string) (int, error) {
 	if len(args) != 1 {
-		return 0, fmt.Errorf("usage: wade status")
+		return 0, errors.New("usage: wade status")
 	}
 
 	status, err := c.daemon.Status()
@@ -121,7 +121,7 @@ func (c Controller) handleStatus(args []string) (int, error) {
 
 func (c Controller) handleStop(args []string) (int, error) {
 	if len(args) != 1 {
-		return 0, fmt.Errorf("usage: wade stop")
+		return 0, errors.New("usage: wade stop")
 	}
 
 	err := c.daemon.Stop()

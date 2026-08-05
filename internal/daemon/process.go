@@ -66,7 +66,7 @@ func ConsumeStartupReporter() (*StartupReporter, error) {
 
 	readyFile := os.NewFile(serverReadyFileDescriptor, "wade-server-ready")
 	if readyFile == nil {
-		return nil, fmt.Errorf("opening server readiness file descriptor")
+		return nil, errors.New("opening server readiness file descriptor")
 	}
 	return &StartupReporter{file: readyFile}, nil
 }
@@ -92,7 +92,7 @@ func (r *StartupReporter) Close(runError error) {
 
 func (r *StartupReporter) report(message startupMessage) error {
 	if r == nil || r.file == nil {
-		return fmt.Errorf("server readiness has already been reported")
+		return errors.New("server readiness has already been reported")
 	}
 
 	err := json.NewEncoder(r.file).Encode(message)

@@ -2,7 +2,6 @@ package daemon
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"syscall"
 	"time"
@@ -79,13 +78,13 @@ func (m *Manager) Stop() error {
 
 func validateStatus(status Status) error {
 	if status.PID <= 0 {
-		return fmt.Errorf("PID must be positive")
+		return errors.New("PID must be positive")
 	}
 	if status.Address == "" {
-		return fmt.Errorf("address is required")
+		return errors.New("address is required")
 	}
 	if status.LogPath == "" {
-		return fmt.Errorf("log path is required")
+		return errors.New("log path is required")
 	}
 	return nil
 }
