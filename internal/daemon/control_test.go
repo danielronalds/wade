@@ -411,6 +411,7 @@ func startReadyControlServer(t *testing.T) (*Manager, *ControlServer) {
 func shortStateRoot(t *testing.T) string {
 	t.Helper()
 
+	// Use /tmp directly to stay within the Unix socket path limit on macOS.
 	stateRoot, err := os.MkdirTemp("/tmp", "wade-state-")
 	if err != nil {
 		t.Fatalf("MkdirTemp() error = %v, want nil", err)

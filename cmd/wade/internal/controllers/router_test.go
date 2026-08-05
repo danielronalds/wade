@@ -19,6 +19,7 @@ func TestRouterRoutesDaemonLifecycleCommands(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.command, func(t *testing.T) {
+			// Use /tmp directly to stay within the Unix socket path limit on macOS.
 			stateRoot, err := os.MkdirTemp("/tmp", "wade-router-")
 			if err != nil {
 				t.Fatalf("MkdirTemp() error = %v, want nil", err)
