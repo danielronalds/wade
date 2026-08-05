@@ -195,10 +195,10 @@ func (c Controller) runServer(reporter *daemon.StartupReporter) error {
 		}
 	}
 
-	return serveServer(configuration.Address, listener, application, controlServer)
+	return serveUntilStopped(configuration.Address, listener, application, controlServer)
 }
 
-func serveServer(
+func serveUntilStopped(
 	address string,
 	listener net.Listener,
 	application *app.Application,
