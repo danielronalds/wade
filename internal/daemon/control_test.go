@@ -67,32 +67,56 @@ func TestAcquireRemovesStaleSocket(t *testing.T) {
 	}
 }
 
-func TestAcquireWaitsForInitialisingDaemon(t *testing.T) {
+func TestControlServerWaitsForReadiness(t *testing.T) {
 	t.Setenv("XDG_STATE_HOME", shortStateRoot(t))
 	manager := NewManager()
 	manager.controlTimeout = time.Second
 
 	server, err := manager.Acquire("test.localhost:1234")
 	if err != nil {
-		t.Fatalf("first Acquire() error = %v, want nil", err)
+		t.Fatalf("Acquire() error = %v, want nil", err)
 	}
 	t.Cleanup(func() { _ = server.Close() })
 
-	result := make(chan error, 1)
-	go func() {
-		_, err := manager.Acquire("other.localhost:5678")
-		result <- err
-	}()
-	time.Sleep(25 * time.Millisecond)
+	paths, err := ResolvePaths()
+	if err != nil {
+		t.Fatalf("ResolvePaths() error = %v, want nil", err)
+	}
+	connection, err := net.Dial("unix", paths.SocketPath)
+	if err != nil {
+		t.Fatalf("Dial() error = %v, want nil", err)
+	}
+	defer connection.Close()
+	if err := json.NewEncoder(connection).Encode(controlRequest{Command: controlCommandStatus}); err != nil {
+		t.Fatalf("Encode() error = %v, want nil", err)
+	}
+
+	if err := connection.SetReadDeadline(time.Now().Add(25 * time.Millisecond)); err != nil {
+		t.Fatalf("SetReadDeadline() error = %v, want nil", err)
+	}
+	_, err = connection.Read(make([]byte, 1))
+	var networkError net.Error
+	if !errors.As(err, &networkError) || !networkError.Timeout() {
+		t.Fatalf("Read() error = %v, want timeout before readiness", err)
+	}
+
+	if err := connection.SetReadDeadline(time.Time{}); err != nil {
+		t.Fatalf("clearing read deadline error = %v, want nil", err)
+	}
 	server.MarkReady()
 
-	err = <-result
-	var alreadyRunningError AlreadyRunningError
-	if !errors.As(err, &alreadyRunningError) {
-		t.Fatalf("second Acquire() error = %v, want AlreadyRunningError", err)
+	var response controlResponse
+	if err := json.NewDecoder(connection).Decode(&response); err != nil {
+		t.Fatalf("Decode() error = %v, want nil", err)
 	}
-	if alreadyRunningError.Status != server.Status() {
-		t.Fatalf("existing status = %#v, want %#v", alreadyRunningError.Status, server.Status())
+	want := controlResponse{
+		Status:  controlStatusRunning,
+		PID:     server.Status().PID,
+		Address: server.Status().Address,
+		LogPath: server.Status().LogPath,
+	}
+	if response != want {
+		t.Fatalf("response = %#v, want %#v", response, want)
 	}
 }
 
