@@ -130,6 +130,9 @@ Use a Controllers, Services, Repositories structure for the Go backend.
 
 - `internal/app`: Composition root. Wires repositories, services, controllers,
   and shutdown behaviour.
+- `internal/daemon`: Managed background process runtime. Owns detached startup,
+  readiness reporting, state paths, and Unix control-socket lifecycle. It does
+  not construct the HTTP application or own CLI presentation.
 - `internal/server`: HTTP server runtime. Owns the mux, route registration,
   origin checks, and server lifecycle.
 - `internal/controllers`: One package with separate files per controller.
@@ -143,6 +146,9 @@ Use a Controllers, Services, Repositories structure for the Go backend.
 
 Dependency direction rules:
 
+- The command-line server controller may depend on `internal/daemon`.
+- `internal/daemon` must remain independent of controllers, services, and
+  repositories.
 - Controllers may depend on services.
 - Services may depend on repository interfaces.
 - Repository interfaces should live in the service package that consumes them.
