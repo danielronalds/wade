@@ -7,6 +7,7 @@ const (
 	controlCommandStop   controlCommand = "stop"
 )
 
+// Status identifies a running managed daemon and its local resources.
 type Status struct {
 	PID     int    `json:"pid"`
 	Address string `json:"address"`

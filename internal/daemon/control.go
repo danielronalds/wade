@@ -20,6 +20,7 @@ const (
 	maxSocketBindAttempts   = 3
 )
 
+// ControlServer owns the managed daemon's local lifecycle socket.
 type ControlServer struct {
 	listener   *net.UnixListener
 	status     Status
@@ -36,6 +37,7 @@ type ControlServer struct {
 	waitGroup    sync.WaitGroup
 }
 
+// Acquire claims daemon ownership or reports the daemon that already owns it.
 func (m *Manager) Acquire(address string) (*ControlServer, error) {
 	paths, err := ResolvePaths()
 	if err != nil {
@@ -91,20 +93,24 @@ func (m *Manager) Acquire(address string) (*ControlServer, error) {
 	return nil, fmt.Errorf("acquiring WADE control socket after %d attempts: %w", maxSocketBindAttempts, lastListenError)
 }
 
+// MarkReady allows control requests to observe the running daemon.
 func (s *ControlServer) MarkReady() {
 	s.readyOnce.Do(func() {
 		close(s.ready)
 	})
 }
 
+// Status returns the identity and paths advertised by the managed daemon.
 func (s *ControlServer) Status() Status {
 	return s.status
 }
 
+// StopRequests is closed when a client requests graceful daemon shutdown.
 func (s *ControlServer) StopRequests() <-chan struct{} {
 	return s.stopRequests
 }
 
+// Close stops control handling and removes the socket if it is still owned.
 func (s *ControlServer) Close() error {
 	var closeError error
 	s.closeOnce.Do(func() {

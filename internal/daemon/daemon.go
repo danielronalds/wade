@@ -13,6 +13,7 @@ const (
 	defaultStartupTimeout  = 10 * time.Second
 )
 
+// Manager coordinates the lifecycle of the single managed background daemon.
 type Manager struct {
 	executablePath  func() (string, error)
 	controlTimeout  time.Duration
@@ -21,6 +22,7 @@ type Manager struct {
 	pollInterval    time.Duration
 }
 
+// NewManager creates a daemon manager with the standard lifecycle timeouts.
 func NewManager() *Manager {
 	return &Manager{
 		executablePath:  os.Executable,
@@ -31,6 +33,7 @@ func NewManager() *Manager {
 	}
 }
 
+// Status queries the managed daemon through its control socket.
 func (m *Manager) Status() (Status, error) {
 	paths, err := ResolvePaths()
 	if err != nil {
@@ -40,6 +43,7 @@ func (m *Manager) Status() (Status, error) {
 	return m.request(paths.SocketPath, controlCommandStatus)
 }
 
+// Stop requests graceful shutdown and waits for the managed daemon to exit.
 func (m *Manager) Stop() error {
 	paths, err := ResolvePaths()
 	if err != nil {

@@ -25,10 +25,12 @@ type backgroundProcess struct {
 	timeout     time.Duration
 }
 
+// StartupReporter sends one readiness result to the process that started the daemon.
 type StartupReporter struct {
 	file *os.File
 }
 
+// Start launches the foreground command as a detached managed daemon.
 func (m *Manager) Start(foregroundCommand ...string) (Status, error) {
 	if len(foregroundCommand) == 0 {
 		return Status{}, errors.New("foreground command is required")
@@ -50,6 +52,7 @@ func (m *Manager) Start(foregroundCommand ...string) (Status, error) {
 	return process.waitForStartup()
 }
 
+// ConsumeStartupReporter claims and clears the inherited readiness descriptor.
 func ConsumeStartupReporter() (*StartupReporter, error) {
 	readyFileDescriptor, found := os.LookupEnv(serverReadyFileEnv)
 	if !found {
@@ -71,14 +74,17 @@ func ConsumeStartupReporter() (*StartupReporter, error) {
 	return &StartupReporter{file: readyFile}, nil
 }
 
+// ReportReady reports that the managed daemon is accepting requests.
 func (r *StartupReporter) ReportReady(status Status) error {
 	return r.report(startupMessage{Status: &status})
 }
 
+// ReportAlreadyRunning reports that another daemon owns the control socket.
 func (r *StartupReporter) ReportAlreadyRunning(status Status) error {
 	return r.report(startupMessage{Status: &status, AlreadyRunning: true})
 }
 
+// Close reports an unreported startup failure and releases the descriptor.
 func (r *StartupReporter) Close(runError error) {
 	if r == nil || r.file == nil {
 		return

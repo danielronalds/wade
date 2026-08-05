@@ -252,6 +252,9 @@ web/src/
 
 ## Coding standards
 
+Document public exported Go APIs with concise doc comments that explain their
+contracts or non-obvious behaviour.
+
 When declaring several local variables together, group related variables and
 separate unrelated groups with an empty line. This keeps setup and wiring blocks
 easy to scan as they grow.

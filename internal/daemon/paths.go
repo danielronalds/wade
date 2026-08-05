@@ -6,12 +6,14 @@ import (
 	"path/filepath"
 )
 
+// Paths contains the state directory and files used by the managed daemon.
 type Paths struct {
 	StateDirectory string
 	LogPath        string
 	SocketPath     string
 }
 
+// ResolvePaths resolves daemon state paths according to XDG state conventions.
 func ResolvePaths() (Paths, error) {
 	stateRoot := os.Getenv("XDG_STATE_HOME")
 	if !filepath.IsAbs(stateRoot) {
