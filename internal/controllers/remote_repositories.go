@@ -1,26 +1,24 @@
 package controllers
 
 import (
-	"context"
 	"net/http"
 
-	"wade/internal/services/remoterepositories"
+	"wade/internal/models/remoterepositories"
 )
 
-type remoteRepositoryService interface {
-	List(ctx context.Context) ([]remoterepositories.RemoteRepository, error)
-}
-
+// RemoteRepositories composes provider repositories with local workspace IDs.
 type RemoteRepositories struct {
-	remoteRepositories remoteRepositoryService
+	remoteRepositories RemoteRepositoriesModel
+	repositories       RepositoriesModel
 }
 
 type RemoteRepositoryList struct {
 	Items []remoterepositories.RemoteRepository `json:"items"`
 } // @name RemoteRepositoryList
 
-func NewRemoteRepositories(remoteRepositories remoteRepositoryService) RemoteRepositories {
-	return RemoteRepositories{remoteRepositories: remoteRepositories}
+// NewRemoteRepositories constructs the RemoteRepositories controller.
+func NewRemoteRepositories(remoteRepositories RemoteRepositoriesModel, repositories RepositoriesModel) RemoteRepositories {
+	return RemoteRepositories{remoteRepositories: remoteRepositories, repositories: repositories}
 }
 
 // @Summary List remote repositories
@@ -33,8 +31,25 @@ func NewRemoteRepositories(remoteRepositories remoteRepositoryService) RemoteRep
 func (h RemoteRepositories) List(w http.ResponseWriter, r *http.Request) {
 	remoteRepositories, err := h.remoteRepositories.List(r.Context())
 	if err != nil {
-		writeServiceError(w, err, "Unable to list remote repositories.")
+		writeModelError(w, err, "Unable to list remote repositories.")
 		return
+	}
+
+	remoteRepositoryIDs := make([]string, 0, len(remoteRepositories))
+	for _, repository := range remoteRepositories {
+		remoteRepositoryIDs = append(remoteRepositoryIDs, repository.ID)
+	}
+	workspaceIDs, err := h.repositories.WorkspaceIDsByRemoteRepository(r.Context(), remoteRepositoryIDs)
+	if err != nil {
+		writeModelError(w, err, "Unable to map local workspaces to remote repositories.")
+		return
+	}
+	for index := range remoteRepositories {
+		ids := workspaceIDs[remoteRepositories[index].ID]
+		if ids == nil {
+			ids = []string{}
+		}
+		remoteRepositories[index].LocalWorkspaceIDs = append([]string(nil), ids...)
 	}
 
 	writeJSON(w, http.StatusOK, RemoteRepositoryList{Items: remoteRepositories})

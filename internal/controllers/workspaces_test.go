@@ -1,114 +1,85 @@
 package controllers
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
-	"wade/internal/services/remoterepositories"
-	"wade/internal/services/workspaces"
+	"wade/internal/models/repositories"
+	"wade/internal/models/workspaces"
 )
 
-type workspaceServiceStub struct {
-	items       []workspaces.WorkspaceSummary
-	activeItems []workspaces.WorkspaceSummary
-}
-
-func (s workspaceServiceStub) List(context.Context) ([]workspaces.WorkspaceSummary, error) {
-	return s.items, nil
-}
-
-func (s workspaceServiceStub) ListActive(context.Context) ([]workspaces.WorkspaceSummary, error) {
-	return s.activeItems, nil
-}
-
-func (workspaceServiceStub) Get(context.Context, string) (workspaces.Workspace, error) {
-	return workspaces.Workspace{}, nil
-}
-
-type workspaceMaterialiserStub struct {
-	workspace workspaces.Workspace
-	request   *remoterepositories.CloneRequest
-}
-
-func (s workspaceMaterialiserStub) Clone(_ context.Context, request remoterepositories.CloneRequest) (workspaces.Workspace, error) {
-	*s.request = request
-	return s.workspace, nil
-}
-
-func TestListWorkspacesFiltersUsingV1QueryParameters(t *testing.T) {
-	repositoryID := "wade"
+func TestListWorkspacesUsesTargetedActiveLoadingAndFilters(t *testing.T) {
 	remoteRepositoryID := "example/wade"
-	handler := NewWorkspaces(workspaceServiceStub{activeItems: []workspaces.WorkspaceSummary{
-		{
-			ID:                 "wade",
-			RepositoryID:       &repositoryID,
-			RemoteRepositoryID: &remoteRepositoryID,
-			Activity:           workspaces.WorkspaceActivity{ActiveTerminalCount: 1},
+	workspaceModel := &fakeWorkspacesModel{listByIDItems: []workspaces.WorkspaceSummary{{ID: "wade", Name: "wade"}, {ID: "notes", Name: "notes"}}}
+	repositoryModel := &fakeRepositoriesModel{targetedContexts: map[string]repositories.WorkspaceContext{
+		"wade": {
+			WorkspaceID: "wade",
+			Repository: repositories.Repository{
+				ID:                 "wade",
+				RemoteRepositoryID: &remoteRepositoryID,
+			},
 		},
-		{ID: "notes"},
-	}}, nil)
-	request := httptest.NewRequest(
-		http.MethodGet,
-		"/api/v1/workspaces?activity=active&repositoryId=wade&remoteRepositoryId=example%2Fwade",
-		nil,
-	)
+	}}
+	terminalModel := &fakeTerminalsModel{
+		activeWorkspaceIDs: []string{"wade", "notes"},
+		activeCounts:       map[string]int{"wade": 1},
+	}
+	handler := NewWorkspaces(workspaceModel, repositoryModel, terminalModel)
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/workspaces?activity=active&repositoryId=wade&remoteRepositoryId=example%2Fwade", nil)
 	response := httptest.NewRecorder()
 
 	handler.List(response, request)
 
 	if response.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
+		t.Fatalf("status = %d", response.Code)
 	}
 	var body WorkspaceList
 	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
-		t.Fatalf("decoding response: %v", err)
+		t.Fatal(err)
 	}
 	if len(body.Items) != 1 || body.Items[0].ID != "wade" {
-		t.Fatalf("items = %#v, want only wade", body.Items)
+		t.Fatalf("items = %#v", body.Items)
+	}
+	if !reflect.DeepEqual(repositoryModel.targetedWorkspaceIDCall, []string{"wade", "notes"}) {
+		t.Fatalf("targeted context IDs = %#v", repositoryModel.targetedWorkspaceIDCall)
 	}
 }
 
 func TestMaterialiseWorkspaceReturnsCreatedResourceAndLocation(t *testing.T) {
-	var cloneRequest remoterepositories.CloneRequest
-	handler := NewWorkspaces(workspaceServiceStub{}, workspaceMaterialiserStub{
-		workspace: workspaces.Workspace{ID: "wade", Name: "wade"},
-		request:   &cloneRequest,
-	})
-	request := httptest.NewRequest(
-		http.MethodPost,
-		"/api/v1/workspaces",
-		strings.NewReader(`{"remoteRepositoryId":"example/wade","workspaceDirectory":"~/Personal"}`),
+	var materialiseRequest workspaces.MaterialiseRequest
+	handler := NewWorkspaces(
+		&fakeWorkspacesModel{materialised: workspaces.Workspace{ID: "wade", Name: "wade"}, materialiseRequest: &materialiseRequest},
+		&fakeRepositoriesModel{},
+		&fakeTerminalsModel{activeCounts: map[string]int{}},
 	)
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/workspaces", strings.NewReader(`{"remoteRepositoryId":"example/wade","workspaceDirectory":"~/Personal"}`))
 	response := httptest.NewRecorder()
 
 	handler.Materialise(response, request)
 
 	if response.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d", response.Code, http.StatusCreated)
+		t.Fatalf("status = %d", response.Code)
 	}
 	if location := response.Header().Get("Location"); location != "/api/v1/workspaces/wade" {
-		t.Fatalf("Location = %q, want /api/v1/workspaces/wade", location)
+		t.Fatalf("Location = %q", location)
 	}
-	if cloneRequest.RemoteRepositoryID != "example/wade" || cloneRequest.WorkspaceDirectory != "~/Personal" {
-		t.Fatalf("clone request = %#v", cloneRequest)
+	if materialiseRequest.RemoteRepositoryID != "example/wade" || materialiseRequest.WorkspaceDirectory != "~/Personal" {
+		t.Fatalf("request = %#v", materialiseRequest)
 	}
 }
 
 func TestMaterialiseWorkspaceRejectsMalformedJSON(t *testing.T) {
-	handler := NewWorkspaces(workspaceServiceStub{}, nil)
+	handler := NewWorkspaces(&fakeWorkspacesModel{}, &fakeRepositoriesModel{}, &fakeTerminalsModel{})
 	request := httptest.NewRequest(http.MethodPost, "/api/v1/workspaces", strings.NewReader(`{`))
 	response := httptest.NewRecorder()
 
 	handler.Materialise(response, request)
 
-	if response.Code != http.StatusBadRequest {
-		t.Fatalf("status = %d, want %d", response.Code, http.StatusBadRequest)
-	}
-	if contentType := response.Header().Get("Content-Type"); contentType != "application/problem+json" {
-		t.Fatalf("Content-Type = %q, want application/problem+json", contentType)
+	if response.Code != http.StatusBadRequest || response.Header().Get("Content-Type") != "application/problem+json" {
+		t.Fatalf("status/content type = %d/%q", response.Code, response.Header().Get("Content-Type"))
 	}
 }

@@ -5,15 +5,16 @@ import (
 	"errors"
 	"testing"
 
-	"wade/internal/repositories"
+	"wade/internal/infrastructure/filesystem"
+	"wade/internal/infrastructure/git"
 )
 
 type reviewWorkspaceRepositoryStub struct {
 	path string
 }
 
-func (s reviewWorkspaceRepositoryStub) Path(string) (string, error) {
-	return s.path, nil
+func (s reviewWorkspaceRepositoryStub) Resolve(string) (string, bool, error) {
+	return s.path, true, nil
 }
 
 func TestSnapshotLifecycle(t *testing.T) {
@@ -28,9 +29,9 @@ func TestSnapshotLifecycle(t *testing.T) {
 
 	service := NewService(
 		reviewWorkspaceRepositoryStub{path: repoRoot},
-		repositories.NewGitRepository(),
+		git.NewClient(),
 		nil,
-		repositories.NewFileRepository(),
+		filesystem.NewFileSystem(),
 	)
 
 	snapshot, err := service.CreateSnapshot(context.Background(), "wade")
@@ -85,13 +86,13 @@ func TestSnapshotRegistryIsEphemeralAcrossServiceRestart(t *testing.T) {
 	runGitCommand(t, repoRoot, "commit", "-m", "initial")
 
 	workspaceRepository := reviewWorkspaceRepositoryStub{path: repoRoot}
-	service := NewService(workspaceRepository, repositories.NewGitRepository(), nil, repositories.NewFileRepository())
+	service := NewService(workspaceRepository, git.NewClient(), nil, filesystem.NewFileSystem())
 	snapshot, err := service.CreateSnapshot(context.Background(), "wade")
 	if err != nil {
 		t.Fatalf("CreateSnapshot() error = %v, want nil", err)
 	}
 
-	restartedService := NewService(workspaceRepository, repositories.NewGitRepository(), nil, repositories.NewFileRepository())
+	restartedService := NewService(workspaceRepository, git.NewClient(), nil, filesystem.NewFileSystem())
 	_, err = restartedService.GetSnapshot(snapshot.ID)
 	var notFoundError SnapshotNotFoundError
 	if !errors.As(err, &notFoundError) {

@@ -8,13 +8,12 @@ import (
 	"net/http"
 	"strings"
 
+	"wade/internal/models/remoterepositories"
+	"wade/internal/models/repositories"
+	"wade/internal/models/terminals"
+	"wade/internal/models/workspaces"
 	"wade/internal/services/config"
-	"wade/internal/services/gitrepositories"
-	"wade/internal/services/remoterepositories"
 	"wade/internal/services/review"
-	"wade/internal/services/terminals"
-	"wade/internal/services/workspaces"
-	"wade/internal/services/worktrees"
 )
 
 type Problem struct {
@@ -47,14 +46,16 @@ func writeProblem(w http.ResponseWriter, statusCode int, code string, title stri
 	})
 }
 
-func writeServiceError(w http.ResponseWriter, err error, fallbackDetail string) {
+func writeModelError(w http.ResponseWriter, err error, fallbackDetail string) {
 	switch {
 	case matchesError[workspaces.WorkspaceNotFoundError](err),
-		matchesError[gitrepositories.WorkspaceNotFoundError](err):
+		matchesError[repositories.WorkspaceNotFoundError](err),
+		matchesError[terminals.WorkspaceNotFoundError](err),
+		matchesError[review.WorkspaceNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "workspace_not_found", "Workspace not found", err.Error())
-	case matchesError[gitrepositories.RepositoryNotFoundError](err):
+	case matchesError[repositories.RepositoryNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "repository_not_found", "Repository not found", err.Error())
-	case matchesError[worktrees.WorktreeNotFoundError](err):
+	case matchesError[repositories.WorktreeNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "worktree_not_found", "Worktree not found", err.Error())
 	case matchesError[terminals.TerminalNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "terminal_not_found", "Terminal not found", err.Error())
@@ -62,25 +63,25 @@ func writeServiceError(w http.ResponseWriter, err error, fallbackDetail string) 
 		writeProblem(w, http.StatusNotFound, "review_snapshot_not_found", "Review snapshot not found", err.Error())
 	case matchesError[review.SnapshotFileNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "review_snapshot_file_not_found", "Review snapshot file not found", err.Error())
-	case matchesError[gitrepositories.RepositoryIDConflictError](err):
+	case matchesError[repositories.RepositoryIDConflictError](err):
 		writeProblem(w, http.StatusConflict, "repository_id_conflict", "Repository ID conflict", err.Error())
-	case matchesError[remoterepositories.WorkspaceAlreadyExistsError](err):
+	case matchesError[workspaces.WorkspaceAlreadyExistsError](err):
 		writeProblem(w, http.StatusConflict, "workspace_already_exists", "Workspace already exists", err.Error())
-	case matchesError[worktrees.WorktreeNotRemovableError](err):
+	case matchesError[repositories.WorktreeNotRemovableError](err):
 		writeProblem(w, http.StatusConflict, "worktree_not_removable", "Worktree cannot be removed", err.Error())
 	case matchesError[config.InvalidSettingsError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_settings", "Invalid settings", err.Error())
-	case matchesError[workspaces.InvalidWorkspaceIDError](err):
+	case matchesError[workspaces.InvalidWorkspaceIDError](err), matchesError[repositories.InvalidWorkspaceIDError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_workspace_id", "Invalid workspace ID", err.Error())
-	case matchesError[gitrepositories.InvalidRepositoryIDError](err):
+	case matchesError[repositories.InvalidRepositoryIDError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_repository_id", "Invalid repository ID", err.Error())
-	case matchesError[remoterepositories.InvalidRemoteRepositoryIDError](err):
+	case matchesError[workspaces.InvalidRemoteRepositoryIDError](err), matchesError[remoterepositories.InvalidRemoteRepositoryIDError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_remote_repository_id", "Invalid remote repository ID", err.Error())
-	case matchesError[remoterepositories.WorkspaceDirectoryNotConfiguredError](err):
+	case matchesError[workspaces.WorkspaceDirectoryNotConfiguredError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "workspace_directory_not_configured", "Workspace directory is not configured", err.Error())
-	case matchesError[worktrees.InvalidBranchReferenceError](err):
+	case matchesError[repositories.InvalidBranchReferenceError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_branch_reference", "Invalid branch reference", err.Error())
-	case matchesError[worktrees.InvalidWorktreeIDError](err):
+	case matchesError[repositories.InvalidWorktreeIDError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_worktree_id", "Invalid worktree ID", err.Error())
 	case matchesError[terminals.InvalidTerminalIDError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_terminal_id", "Invalid terminal ID", err.Error())

@@ -1,64 +1,63 @@
 package app
 
-// TODO: Review properly
-
 import (
 	"io/fs"
 	"net/http"
 
 	"wade/internal/controllers"
-	"wade/internal/repositories"
+	"wade/internal/infrastructure/filesystem"
+	"wade/internal/infrastructure/git"
+	"wade/internal/infrastructure/github"
+	"wade/internal/infrastructure/linear"
+	"wade/internal/infrastructure/pty"
+	"wade/internal/models/remoterepositories"
+	"wade/internal/models/repositories"
+	"wade/internal/models/terminals"
+	"wade/internal/models/workspaces"
+	settingsrepositories "wade/internal/repositories"
 	"wade/internal/server"
 	"wade/internal/services/config"
-	"wade/internal/services/gitrepositories"
-	"wade/internal/services/remoterepositories"
 	"wade/internal/services/review"
-	"wade/internal/services/terminals"
-	"wade/internal/services/workspacequeries"
-	"wade/internal/services/workspaces"
-	"wade/internal/services/worktrees"
 )
 
+// Application owns the HTTP handler and application-scoped runtime resources.
 type Application struct {
 	Mux       *http.ServeMux
-	terminals *terminals.Service
+	terminals *terminals.Model
 }
 
+// New constructs the HTTP application from resolved runtime configuration.
 func New(configuration config.Config, staticFiles fs.FS) *Application {
-	workspaceRepository := repositories.NewWorkspaceStore(configuration.WorkspaceDirs)
-	gitRepository := repositories.NewGitRepository()
-	gitHubRepository := repositories.NewGitHubRepository(repositories.RunCommand)
-	fileRepository := repositories.NewFileRepository()
+	files := filesystem.NewFileSystem()
+	discovery := filesystem.NewWorkspaceDiscovery(configuration.WorkspaceDirs)
+	gitClient := git.NewClient()
+	githubClient := github.NewClient(github.RunCommand)
+	linearClient := linear.NewClient("signinsolutions")
+	ptyClient := pty.NewClient()
 
-	localRepositoryService := gitrepositories.NewService(workspaceRepository, gitRepository)
-	workspaceService := workspaces.NewService(workspaceRepository, localRepositoryService, gitHubRepository)
-	reviewService := review.NewService(workspaceService, gitRepository, gitHubRepository, fileRepository)
-	terminalService := terminals.NewService(workspaceService, configuration.Shell, configuration.Address, terminalAgents(configuration.Agents))
-	workspaceQueryService := workspacequeries.NewService(workspaceService, terminalService)
-	worktreeService := worktrees.NewService(configuration, gitRepository, fileRepository, workspaceRepository, terminalService)
-	remoteRepositoryService := remoterepositories.NewService(
-		gitHubRepository,
-		fileRepository,
-		localRepositoryService,
-		workspaceRepository,
-		workspaceService,
-		remoteWorkspaceDirectories(configuration),
-	)
+	workspaceModel := workspaces.New(files, discovery, githubClient, linearClient, workspaceConfiguration(configuration))
+	repositoryModel := repositories.New(discovery, gitClient, files, repositoryConfiguration(configuration))
+	remoteRepositoryModel := remoterepositories.New(githubClient)
+	terminalModel := terminals.New(discovery, ptyClient, terminals.Configuration{
+		Shell:         configuration.Shell,
+		ServerAddress: configuration.Address,
+		Agents:        terminalAgents(configuration.Agents),
+	})
+	reviewService := review.NewService(discovery, gitClient, githubClient, files)
 
 	runtimeApplier := runtimeConfigApplier{
-		workspaces:         workspaceService,
-		remoteRepositories: remoteRepositoryService,
-		terminals:          terminalService,
-		worktrees:          worktreeService,
+		workspaces:   workspaceModel,
+		repositories: repositoryModel,
+		terminals:    terminalModel,
 	}
-	settingsService := config.NewService(repositories.NewSettingsRepository(), runtimeApplier)
+	settingsService := config.NewService(settingsrepositories.NewSettingsRepository(), runtimeApplier)
 
 	controllerSet := controllers.Controllers{
-		Workspaces:         controllers.NewWorkspaces(workspaceQueryService, remoteRepositoryService),
-		Repositories:       controllers.NewRepositories(localRepositoryService),
-		RemoteRepositories: controllers.NewRemoteRepositories(remoteRepositoryService),
-		Worktrees:          controllers.NewWorktrees(localRepositoryService, worktreeService),
-		Terminals:          controllers.NewTerminals(terminalService, server.AllowSameOrigin),
+		Workspaces:         controllers.NewWorkspaces(workspaceModel, repositoryModel, terminalModel),
+		Repositories:       controllers.NewRepositories(repositoryModel),
+		RemoteRepositories: controllers.NewRemoteRepositories(remoteRepositoryModel, repositoryModel),
+		Worktrees:          controllers.NewWorktrees(repositoryModel, terminalModel),
+		Terminals:          controllers.NewTerminals(terminalModel, server.AllowSameOrigin),
 		ReviewSnapshots:    controllers.NewReviewSnapshots(reviewService),
 		Settings:           controllers.NewSettings(settingsService),
 		Docs:               controllers.NewDocs(),
@@ -66,11 +65,12 @@ func New(configuration config.Config, staticFiles fs.FS) *Application {
 	}
 
 	httpServer := server.New(controllerSet)
-	return &Application{Mux: httpServer.Mux, terminals: terminalService}
+	return &Application{Mux: httpServer.Mux, terminals: terminalModel}
 }
 
-func (a *Application) Close() {
-	a.terminals.Close()
+// Close releases all application-scoped runtime resources.
+func (application *Application) Close() {
+	application.terminals.Close()
 }
 
 func terminalAgents(agents []config.Agent) []terminals.Agent {

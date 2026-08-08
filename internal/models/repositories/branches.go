@@ -1,0 +1,96 @@
+// NOTE: Vibecoded and not suppppppper reviewed
+package repositories
+
+// TODO: Review properly
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"slices"
+	"strings"
+)
+
+func preferredRemote(ctx context.Context, repositoryPath string, git Git) (string, bool, error) {
+	output, err := git.Remotes(ctx, repositoryPath)
+	if err != nil {
+		return "", false, fmt.Errorf("listing remotes: %w", err)
+	}
+
+	remotes := output
+	if len(remotes) == 0 {
+		return "", false, nil
+	}
+
+	if slices.Contains(remotes, "origin") {
+		return "origin", true, nil
+	}
+
+	if len(remotes) == 1 {
+		return remotes[0], true, nil
+	}
+
+	return "", false, errors.New("multiple git remotes found and none is origin")
+}
+
+func fetchRemote(ctx context.Context, repositoryPath string, remote string, git Git) error {
+	if err := git.FetchRemote(ctx, repositoryPath, remote); err != nil {
+		return fmt.Errorf("fetching remote %q: %w", remote, err)
+	}
+	return nil
+}
+
+func listRemoteBranches(ctx context.Context, repositoryPath string, remote string, git Git) ([]string, error) {
+	output, err := git.RemoteBranches(ctx, repositoryPath)
+	if err != nil {
+		return nil, fmt.Errorf("listing remote branches: %w", err)
+	}
+
+	prefix := remote + "/"
+	branches := make([]string, 0)
+	for _, line := range output {
+		if !strings.HasPrefix(line, prefix) || line == remote+"/HEAD" || strings.HasSuffix(line, "/HEAD") {
+			continue
+		}
+		branches = append(branches, strings.TrimPrefix(line, prefix))
+	}
+
+	slices.Sort(branches)
+	return branches, nil
+}
+
+func listLocalBranchNames(ctx context.Context, repositoryPath string, git Git) ([]string, error) {
+	output, err := git.LocalBranches(ctx, repositoryPath)
+	if err != nil {
+		return nil, fmt.Errorf("listing local branches: %w", err)
+	}
+
+	branches := output
+	slices.Sort(branches)
+	return branches, nil
+}
+
+func listLocalBranches(ctx context.Context, repositoryPath string, git Git) (map[string]bool, error) {
+	branchNames, err := listLocalBranchNames(ctx, repositoryPath, git)
+	if err != nil {
+		return nil, err
+	}
+
+	branches := map[string]bool{}
+	for _, branch := range branchNames {
+		branches[branch] = true
+	}
+	return branches, nil
+}
+
+func validateBranchName(ctx context.Context, repositoryPath string, branch string, git Git) error {
+	if branch == "" {
+		return errors.New("branch is required")
+	}
+
+	if err := git.ValidateBranchName(ctx, repositoryPath, branch); err != nil {
+		return fmt.Errorf("invalid branch %q", branch)
+	}
+
+	return nil
+}

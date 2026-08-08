@@ -6,33 +6,24 @@ import (
 	"net/http"
 	"net/url"
 
-	"wade/internal/services/terminals"
-	"wade/internal/services/workspaces"
+	"wade/internal/models/terminals"
 
 	"github.com/gorilla/websocket"
 )
 
+// Terminals serves detached resources and coordinates live terminal sessions.
 type Terminals struct {
-	terminals *terminals.Service
+	terminals TerminalsModel
 	upgrader  websocket.Upgrader
 }
 
 type TerminalList struct {
-	Items []*terminals.Terminal `json:"items"`
+	Items []terminals.Terminal `json:"items"`
 } // @name TerminalList
 
-type TerminalInputRequest struct {
-	Text string              `json:"text"`
-	Mode terminals.InputMode `json:"mode"`
-} // @name TerminalInputRequest
-
-func NewTerminals(terminalService *terminals.Service, checkOrigin func(r *http.Request) bool) Terminals {
-	return Terminals{
-		terminals: terminalService,
-		upgrader: websocket.Upgrader{
-			CheckOrigin: checkOrigin,
-		},
-	}
+// NewTerminals constructs the Terminals controller.
+func NewTerminals(terminalModel TerminalsModel, checkOrigin func(r *http.Request) bool) Terminals {
+	return Terminals{terminals: terminalModel, upgrader: websocket.Upgrader{CheckOrigin: checkOrigin}}
 }
 
 // @Summary List workspace terminals
@@ -46,12 +37,11 @@ func NewTerminals(terminalService *terminals.Service, checkOrigin func(r *http.R
 // @Failure 500 {object} Problem
 // @Router /api/v1/workspaces/{workspaceId}/terminals [get]
 func (h Terminals) List(w http.ResponseWriter, r *http.Request) {
-	workspaceTerminals, err := h.terminals.List(r.PathValue("workspaceId"))
+	workspaceTerminals, err := h.terminals.List(r.Context(), r.PathValue("workspaceId"))
 	if err != nil {
-		writeServiceError(w, err, "Unable to list workspace terminals.")
+		writeModelError(w, err, "Unable to list workspace terminals.")
 		return
 	}
-
 	writeJSON(w, http.StatusOK, TerminalList{Items: workspaceTerminals})
 }
 
@@ -65,13 +55,10 @@ func (h Terminals) List(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} Problem
 // @Router /api/v1/workspaces/{workspaceId}/terminals [delete]
 func (h Terminals) DeleteAll(w http.ResponseWriter, r *http.Request) {
-	workspaceID := r.PathValue("workspaceId")
-	if _, err := h.terminals.List(workspaceID); err != nil {
-		writeServiceError(w, err, "Unable to close workspace terminals.")
+	if _, err := h.terminals.DeleteAll(r.Context(), r.PathValue("workspaceId")); err != nil {
+		writeModelError(w, err, "Unable to close workspace terminals.")
 		return
 	}
-
-	h.terminals.DeleteAll(workspaceID)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -90,9 +77,9 @@ func (h Terminals) DeleteAll(w http.ResponseWriter, r *http.Request) {
 // @Router /api/v1/workspaces/{workspaceId}/terminals/{terminalId} [put]
 func (h Terminals) Put(w http.ResponseWriter, r *http.Request) {
 	workspaceID := r.PathValue("workspaceId")
-	terminal, created, err := h.terminals.Put(workspaceID, r.PathValue("terminalId"))
+	terminal, created, err := h.terminals.Put(r.Context(), workspaceID, r.PathValue("terminalId"))
 	if err != nil {
-		writeServiceError(w, err, "Unable to start the terminal.")
+		writeModelError(w, err, "Unable to start the terminal.")
 		return
 	}
 
@@ -116,12 +103,11 @@ func (h Terminals) Put(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} Problem
 // @Router /api/v1/workspaces/{workspaceId}/terminals/{terminalId} [get]
 func (h Terminals) Get(w http.ResponseWriter, r *http.Request) {
-	terminal, err := h.terminals.Get(r.PathValue("workspaceId"), r.PathValue("terminalId"))
+	terminal, err := h.terminals.Get(r.Context(), r.PathValue("workspaceId"), r.PathValue("terminalId"))
 	if err != nil {
-		writeServiceError(w, err, "Unable to load the terminal.")
+		writeModelError(w, err, "Unable to load the terminal.")
 		return
 	}
-
 	writeJSON(w, http.StatusOK, terminal)
 }
 
@@ -136,11 +122,10 @@ func (h Terminals) Get(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} Problem
 // @Router /api/v1/workspaces/{workspaceId}/terminals/{terminalId} [delete]
 func (h Terminals) Delete(w http.ResponseWriter, r *http.Request) {
-	if err := h.terminals.Delete(r.PathValue("workspaceId"), r.PathValue("terminalId")); err != nil {
-		writeServiceError(w, err, "Unable to close the terminal.")
+	if err := h.terminals.Delete(r.Context(), r.PathValue("workspaceId"), r.PathValue("terminalId")); err != nil {
+		writeModelError(w, err, "Unable to close the terminal.")
 		return
 	}
-
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -150,7 +135,7 @@ func (h Terminals) Delete(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Param workspaceId path string true "Workspace ID"
 // @Param terminalId path string true "Terminal ID"
-// @Param request body TerminalInputRequest true "Terminal input"
+// @Param request body terminals.Input true "Terminal input"
 // @Success 204 "No Content"
 // @Failure 400 {object} Problem
 // @Failure 404 {object} Problem
@@ -158,17 +143,17 @@ func (h Terminals) Delete(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} Problem
 // @Router /api/v1/workspaces/{workspaceId}/terminals/{terminalId}/input [post]
 func (h Terminals) Input(w http.ResponseWriter, r *http.Request) {
-	var request TerminalInputRequest
-	if err := decodeJSONBody(r, &request); err != nil {
+	var input terminals.Input
+	if err := decodeJSONBody(r, &input); err != nil {
 		writeProblem(w, http.StatusBadRequest, "malformed_json", "Malformed JSON", "The request body must contain valid terminal input.")
 		return
 	}
-
-	if err := h.terminals.Input(r.PathValue("workspaceId"), r.PathValue("terminalId"), request.Text, request.Mode); err != nil {
-		writeServiceError(w, err, "Unable to send terminal input.")
+	input.WorkspaceID = r.PathValue("workspaceId")
+	input.TerminalID = r.PathValue("terminalId")
+	if err := h.terminals.Input(r.Context(), input); err != nil {
+		writeModelError(w, err, "Unable to send terminal input.")
 		return
 	}
-
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -184,11 +169,12 @@ func (h Terminals) Input(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Connection failed"
 // @Router /api/v1/workspaces/{workspaceId}/terminals/{terminalId}/socket [get]
 func (h Terminals) Connect(w http.ResponseWriter, r *http.Request) {
-	terminal, err := h.terminals.Get(r.PathValue("workspaceId"), r.PathValue("terminalId"))
+	session, err := h.terminals.Connect(r.Context(), r.PathValue("workspaceId"), r.PathValue("terminalId"))
 	if err != nil {
 		writeSocketError(w, err)
 		return
 	}
+	defer session.Close()
 
 	connection, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -197,21 +183,15 @@ func (h Terminals) Connect(w http.ResponseWriter, r *http.Request) {
 	}
 	defer connection.Close()
 
-	client := terminal.Attach()
-	defer client.Close()
-
 	done := make(chan struct{}, 2)
-
 	go func() {
-		streamTerminalToWebSocket(connection, client)
+		streamTerminalToWebSocket(connection, session)
 		done <- struct{}{}
 	}()
-
 	go func() {
-		streamWebSocketToTerminal(connection, terminal)
+		streamWebSocketToTerminal(connection, session)
 		done <- struct{}{}
 	}()
-
 	<-done
 }
 
@@ -220,8 +200,8 @@ const (
 	terminalReplayEndMessage   = `{"type":"replayEnd"}`
 )
 
-func streamTerminalToWebSocket(connection *websocket.Conn, client *terminals.Client) {
-	for output := range client.Output() {
+func streamTerminalToWebSocket(connection *websocket.Conn, session *terminals.TerminalSession) {
+	for output := range session.Output() {
 		if err := writeTerminalOutput(connection, output); err != nil {
 			return
 		}
@@ -239,24 +219,23 @@ func writeTerminalOutput(connection *websocket.Conn, output terminals.ClientOutp
 	}
 }
 
-func streamWebSocketToTerminal(connection *websocket.Conn, terminal *terminals.Terminal) {
+func streamWebSocketToTerminal(connection *websocket.Conn, session *terminals.TerminalSession) {
 	for {
 		messageType, data, err := connection.ReadMessage()
 		if err != nil {
 			return
 		}
-
 		switch messageType {
 		case websocket.BinaryMessage:
-			_, _ = terminal.Write(data)
+			_, _ = session.Write(data)
 		case websocket.TextMessage:
-			terminal.ApplyControlMessage(data)
+			session.ApplyControlMessage(data)
 		}
 	}
 }
 
 func writeSocketError(w http.ResponseWriter, err error) {
-	var workspaceNotFound workspaces.WorkspaceNotFoundError
+	var workspaceNotFound terminals.WorkspaceNotFoundError
 	var terminalNotFound terminals.TerminalNotFoundError
 	var invalidTerminalID terminals.InvalidTerminalIDError
 	var agentNotConfigured terminals.AgentNotConfiguredError

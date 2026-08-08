@@ -1,21 +1,14 @@
 package controllers
 
-import (
-	"context"
-	"net/http"
+import "net/http"
 
-	"wade/internal/services/gitrepositories"
-)
-
-type localRepositoryService interface {
-	Resolve(ctx context.Context, repositoryID string) (gitrepositories.Context, error)
-}
-
+// Repositories serves local repository resources.
 type Repositories struct {
-	repositories localRepositoryService
+	repositories RepositoriesModel
 }
 
-func NewRepositories(repositories localRepositoryService) Repositories {
+// NewRepositories constructs the Repositories controller.
+func NewRepositories(repositories RepositoriesModel) Repositories {
 	return Repositories{repositories: repositories}
 }
 
@@ -24,18 +17,17 @@ func NewRepositories(repositories localRepositoryService) Repositories {
 // @Tags Repositories
 // @Produce json
 // @Param repositoryId path string true "Repository ID"
-// @Success 200 {object} gitrepositories.Repository
+// @Success 200 {object} repositories.Repository
 // @Failure 404 {object} Problem
 // @Failure 409 {object} Problem
 // @Failure 422 {object} Problem
 // @Failure 500 {object} Problem
 // @Router /api/v1/repositories/{repositoryId} [get]
 func (h Repositories) Get(w http.ResponseWriter, r *http.Request) {
-	repository, err := h.repositories.Resolve(r.Context(), r.PathValue("repositoryId"))
+	repository, err := h.repositories.Get(r.Context(), r.PathValue("repositoryId"))
 	if err != nil {
-		writeServiceError(w, err, "Unable to load the repository.")
+		writeModelError(w, err, "Unable to load the repository.")
 		return
 	}
-
-	writeJSON(w, http.StatusOK, repository.Repository)
+	writeJSON(w, http.StatusOK, repository)
 }

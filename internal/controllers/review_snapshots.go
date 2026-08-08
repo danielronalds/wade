@@ -29,7 +29,7 @@ func NewReviewSnapshots(reviewService *review.Service) ReviewSnapshots {
 func (h ReviewSnapshots) Create(w http.ResponseWriter, r *http.Request) {
 	snapshot, err := h.review.CreateSnapshot(r.Context(), r.PathValue("workspaceId"))
 	if err != nil {
-		writeServiceError(w, err, "Unable to create the review snapshot.")
+		writeModelError(w, err, "Unable to create the review snapshot.")
 		return
 	}
 
@@ -49,7 +49,7 @@ func (h ReviewSnapshots) Create(w http.ResponseWriter, r *http.Request) {
 func (h ReviewSnapshots) Get(w http.ResponseWriter, r *http.Request) {
 	snapshot, err := h.review.GetSnapshot(r.PathValue("snapshotId"))
 	if err != nil {
-		writeServiceError(w, err, "Unable to load the review snapshot.")
+		writeModelError(w, err, "Unable to load the review snapshot.")
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h ReviewSnapshots) Get(w http.ResponseWriter, r *http.Request) {
 func (h ReviewSnapshots) GetFileContents(w http.ResponseWriter, r *http.Request) {
 	scope := review.Scope(r.URL.Query().Get("scope"))
 	if !review.IsValidScope(scope) {
-		writeServiceError(w, review.InvalidScopeError{Scope: scope}, "Unable to load review file contents.")
+		writeModelError(w, review.InvalidScopeError{Scope: scope}, "Unable to load review file contents.")
 		return
 	}
 
@@ -82,7 +82,7 @@ func (h ReviewSnapshots) GetFileContents(w http.ResponseWriter, r *http.Request)
 		scope,
 	)
 	if err != nil {
-		writeServiceError(w, err, "Unable to load review file contents.")
+		writeModelError(w, err, "Unable to load review file contents.")
 		return
 	}
 
@@ -99,7 +99,7 @@ func (h ReviewSnapshots) GetFileContents(w http.ResponseWriter, r *http.Request)
 // @Router /api/v1/review-snapshots/{snapshotId} [delete]
 func (h ReviewSnapshots) Delete(w http.ResponseWriter, r *http.Request) {
 	if err := h.review.DeleteSnapshot(r.PathValue("snapshotId")); err != nil {
-		writeServiceError(w, err, "Unable to delete the review snapshot.")
+		writeModelError(w, err, "Unable to delete the review snapshot.")
 		return
 	}
 

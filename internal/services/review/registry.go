@@ -27,9 +27,12 @@ func NewService(
 }
 
 func (s *Service) CreateSnapshot(ctx context.Context, workspaceID string) (ReviewSnapshot, error) {
-	workspacePath, err := s.workspaces.Path(workspaceID)
+	workspacePath, found, err := s.workspaces.Resolve(workspaceID)
 	if err != nil {
 		return ReviewSnapshot{}, err
+	}
+	if !found {
+		return ReviewSnapshot{}, WorkspaceNotFoundError{WorkspaceID: workspaceID}
 	}
 
 	window, err := s.BuildWindowData(ctx, workspacePath)

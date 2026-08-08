@@ -6,15 +6,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"wade/internal/services/gitrepositories"
-	"wade/internal/services/remoterepositories"
+	"wade/internal/models/repositories"
+	"wade/internal/models/terminals"
+	"wade/internal/models/workspaces"
 	"wade/internal/services/review"
-	"wade/internal/services/terminals"
-	"wade/internal/services/workspaces"
-	"wade/internal/services/worktrees"
 )
 
-func TestWriteServiceErrorProblems(t *testing.T) {
+func TestWriteModelErrorProblems(t *testing.T) {
 	tests := map[string]struct {
 		err        error
 		wantStatus int
@@ -26,22 +24,22 @@ func TestWriteServiceErrorProblems(t *testing.T) {
 			wantCode:   "workspace_not_found",
 		},
 		"repository conflict": {
-			err:        gitrepositories.RepositoryIDConflictError{RepositoryID: "wade"},
+			err:        repositories.RepositoryIDConflictError{RepositoryID: "wade"},
 			wantStatus: http.StatusConflict,
 			wantCode:   "repository_id_conflict",
 		},
 		"workspace exists": {
-			err:        remoterepositories.WorkspaceAlreadyExistsError{WorkspaceID: "wade"},
+			err:        workspaces.WorkspaceAlreadyExistsError{WorkspaceID: "wade"},
 			wantStatus: http.StatusConflict,
 			wantCode:   "workspace_already_exists",
 		},
 		"worktree not removable": {
-			err:        worktrees.WorktreeNotRemovableError{WorktreeID: "wade"},
+			err:        repositories.WorktreeNotRemovableError{WorktreeID: "wade"},
 			wantStatus: http.StatusConflict,
 			wantCode:   "worktree_not_removable",
 		},
 		"invalid branch reference": {
-			err:        worktrees.InvalidBranchReferenceError{BranchRef: "refs/heads/invalid..branch"},
+			err:        repositories.InvalidBranchReferenceError{BranchRef: "refs/heads/invalid..branch"},
 			wantStatus: http.StatusUnprocessableEntity,
 			wantCode:   "invalid_branch_reference",
 		},
@@ -60,7 +58,7 @@ func TestWriteServiceErrorProblems(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			response := httptest.NewRecorder()
-			writeServiceError(response, test.err, "Unexpected failure.")
+			writeModelError(response, test.err, "Unexpected failure.")
 
 			if response.Code != test.wantStatus {
 				t.Fatalf("status = %d, want %d", response.Code, test.wantStatus)

@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
+	"wade/internal/infrastructure/pty"
 	"wade/internal/repositories"
-	"wade/internal/services/terminals"
 )
 
 const (
@@ -106,7 +106,7 @@ func isEnabled(value string) bool {
 func resolveRuntimeShell(configuredShell string, environmentShell string) (string, error) {
 	configuredShell = strings.TrimSpace(configuredShell)
 	if configuredShell == "" {
-		return terminals.ResolveShell(environmentShell), nil
+		return pty.ResolveShell(environmentShell), nil
 	}
 
 	return repositories.ResolveConfiguredShell(configuredShell)

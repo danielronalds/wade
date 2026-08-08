@@ -46,7 +46,7 @@ func NewSettings(settings settingsService) Settings {
 func (h Settings) Get(w http.ResponseWriter, _ *http.Request) {
 	settings, err := h.settings.Get()
 	if err != nil {
-		writeServiceError(w, err, "Unable to load settings.")
+		writeModelError(w, err, "Unable to load settings.")
 		return
 	}
 
@@ -90,7 +90,7 @@ func (h Settings) Update(w http.ResponseWriter, r *http.Request) {
 		ThemeAccentColor:                   request.ThemeAccentColor,
 	})
 	if err != nil {
-		writeServiceError(w, err, "Unable to update settings.")
+		writeModelError(w, err, "Unable to update settings.")
 		return
 	}
 
@@ -108,7 +108,7 @@ func (h Settings) Update(w http.ResponseWriter, r *http.Request) {
 func (h Settings) Reload(w http.ResponseWriter, _ *http.Request) {
 	settings, err := h.settings.Reload()
 	if err != nil {
-		writeServiceError(w, err, "Unable to reload settings.")
+		writeModelError(w, err, "Unable to reload settings.")
 		return
 	}
 

@@ -13,12 +13,12 @@ that it reflects the established API domain.
 
 | Slice | Status | Execution document |
 | --- | --- | --- |
-| Local development core | Planned | [`01-local-development-core.md`](01-local-development-core.md) |
+| Local development core | Complete | [`01-local-development-core.md`](01-local-development-core.md) |
 | Review snapshots | Planned | [`02-review-snapshots.md`](02-review-snapshots.md) |
 | Settings and bootstrap | Planned | [`03-settings-and-bootstrap.md`](03-settings-and-bootstrap.md) |
 | Final cleanup | Planned | [`04-final-cleanup.md`](04-final-cleanup.md) |
 
-Current phase: architecture planning.
+Current phase: Slice 1 complete; Review snapshots planned.
 
 ## Session handoff protocol
 
@@ -443,6 +443,7 @@ Example:
 ```text
 internal/models/repositories/
   model.go
+  interfaces.go
   repositories.go
   workspace_contexts.go
   worktrees.go
@@ -453,7 +454,11 @@ internal/models/repositories/
 ```
 
 Within every file, exported functions and methods appear above private functions
-and methods. Do not create empty or unnecessary convention files.
+and methods. Each Model package keeps its cohesive infrastructure interfaces in
+`interfaces.go`, and its Model type, constructor, configuration, lifecycle, and
+primary implementation in `model.go`. Use an import alias only when the declared
+package name would otherwise collide. Do not create empty or unnecessary
+convention files.
 
 ## External compatibility requirements
 

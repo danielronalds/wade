@@ -11,7 +11,9 @@ import (
 	"reflect"
 	"testing"
 
-	"wade/internal/repositories"
+	"wade/internal/infrastructure/filesystem"
+	"wade/internal/infrastructure/git"
+	"wade/internal/infrastructure/github"
 )
 
 func TestParseNameStatusZ(t *testing.T) {
@@ -182,7 +184,7 @@ func TestWindowDataExcludesClosedPullRequest(t *testing.T) {
 }
 
 func newTestService() Service {
-	return *NewService(nil, repositories.NewGitRepository(), repositories.NewGitHubRepository(repositories.RunCommand), repositories.NewFileRepository())
+	return *NewService(nil, git.NewClient(), github.NewClient(github.RunCommand), filesystem.NewFileSystem())
 }
 
 func requireGit(t *testing.T) {

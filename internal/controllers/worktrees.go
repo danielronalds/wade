@@ -1,41 +1,30 @@
 package controllers
 
 import (
-	"context"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"wade/internal/services/gitrepositories"
-	"wade/internal/services/worktrees"
+	"wade/internal/models/repositories"
 )
 
-type worktreeService interface {
-	List(ctx context.Context, repository gitrepositories.Context) ([]worktrees.Worktree, error)
-	Create(ctx context.Context, repository gitrepositories.Context, branchRef string) (worktrees.Worktree, error)
-	Remove(ctx context.Context, repository gitrepositories.Context, worktreeID string) (worktrees.Worktree, error)
-	Branches(ctx context.Context, repository gitrepositories.Context, kind worktrees.BranchKind) ([]worktrees.Branch, error)
-}
-
+// Worktrees serves worktrees and branches owned by Repositories.
 type Worktrees struct {
-	repositories localRepositoryService
-	worktrees    worktreeService
+	repositories RepositoriesModel
+	terminals    TerminalsModel
 }
 
 type WorktreeList struct {
-	Items []worktrees.Worktree `json:"items"`
+	Items []repositories.Worktree `json:"items"`
 } // @name WorktreeList
 
 type BranchList struct {
-	Items []worktrees.Branch `json:"items"`
+	Items []repositories.Branch `json:"items"`
 } // @name BranchList
 
-type CreateWorktreeRequest struct {
-	BranchRef string `json:"branchRef"`
-} // @name CreateWorktreeRequest
-
-func NewWorktrees(repositoryService localRepositoryService, worktreeService worktreeService) Worktrees {
-	return Worktrees{repositories: repositoryService, worktrees: worktreeService}
+// NewWorktrees constructs the Worktrees controller.
+func NewWorktrees(repositories RepositoriesModel, terminals TerminalsModel) Worktrees {
+	return Worktrees{repositories: repositories, terminals: terminals}
 }
 
 // @Summary List repository worktrees
@@ -50,18 +39,12 @@ func NewWorktrees(repositoryService localRepositoryService, worktreeService work
 // @Failure 500 {object} Problem
 // @Router /api/v1/repositories/{repositoryId}/worktrees [get]
 func (h Worktrees) List(w http.ResponseWriter, r *http.Request) {
-	repository, ok := h.resolveRepository(w, r)
-	if !ok {
-		return
-	}
-
-	availableWorktrees, err := h.worktrees.List(r.Context(), repository)
+	worktrees, err := h.repositories.ListWorktrees(r.Context(), r.PathValue("repositoryId"))
 	if err != nil {
-		writeServiceError(w, err, "Unable to list repository worktrees.")
+		writeModelError(w, err, "Unable to list repository worktrees.")
 		return
 	}
-
-	writeJSON(w, http.StatusOK, WorktreeList{Items: availableWorktrees})
+	writeJSON(w, http.StatusOK, WorktreeList{Items: worktrees})
 }
 
 // @Summary Create a repository worktree
@@ -70,8 +53,8 @@ func (h Worktrees) List(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param repositoryId path string true "Repository ID"
-// @Param request body CreateWorktreeRequest true "Worktree creation request"
-// @Success 201 {object} worktrees.Worktree
+// @Param request body repositories.CreateWorktreeRequest true "Worktree creation request"
+// @Success 201 {object} repositories.Worktree
 // @Header 201 {string} Location "Created worktree URL"
 // @Failure 400 {object} Problem
 // @Failure 404 {object} Problem
@@ -80,7 +63,7 @@ func (h Worktrees) List(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} Problem
 // @Router /api/v1/repositories/{repositoryId}/worktrees [post]
 func (h Worktrees) Create(w http.ResponseWriter, r *http.Request) {
-	var request CreateWorktreeRequest
+	var request repositories.CreateWorktreeRequest
 	if err := decodeJSONBody(r, &request); err != nil {
 		writeProblem(w, http.StatusBadRequest, "malformed_json", "Malformed JSON", "The request body must contain a valid worktree creation request.")
 		return
@@ -90,18 +73,13 @@ func (h Worktrees) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repository, ok := h.resolveRepository(w, r)
-	if !ok {
-		return
-	}
-
-	created, err := h.worktrees.Create(r.Context(), repository, request.BranchRef)
+	repositoryID := r.PathValue("repositoryId")
+	created, err := h.repositories.CreateWorktree(r.Context(), repositoryID, request)
 	if err != nil {
-		writeServiceError(w, err, "Unable to create the worktree.")
+		writeModelError(w, err, "Unable to create the worktree.")
 		return
 	}
-
-	w.Header().Set("Location", "/api/v1/repositories/"+url.PathEscape(repository.Repository.ID)+"/worktrees/"+url.PathEscape(created.ID))
+	w.Header().Set("Location", "/api/v1/repositories/"+url.PathEscape(repositoryID)+"/worktrees/"+url.PathEscape(created.ID))
 	writeJSON(w, http.StatusCreated, created)
 }
 
@@ -117,16 +95,23 @@ func (h Worktrees) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} Problem
 // @Router /api/v1/repositories/{repositoryId}/worktrees/{worktreeId} [delete]
 func (h Worktrees) Delete(w http.ResponseWriter, r *http.Request) {
-	repository, ok := h.resolveRepository(w, r)
-	if !ok {
+	repositoryID := r.PathValue("repositoryId")
+	worktreeID := r.PathValue("worktreeId")
+	target, err := h.repositories.GetWorktree(r.Context(), repositoryID, worktreeID)
+	if err != nil {
+		writeModelError(w, err, "Unable to inspect the worktree.")
 		return
 	}
-
-	if _, err := h.worktrees.Remove(r.Context(), repository, r.PathValue("worktreeId")); err != nil {
-		writeServiceError(w, err, "Unable to remove the worktree.")
+	if target.IsRemovable {
+		if _, err := h.terminals.DeleteAll(r.Context(), target.WorkspaceID); err != nil {
+			writeModelError(w, err, "Unable to close worktree terminals.")
+			return
+		}
+	}
+	if _, err := h.repositories.RemoveWorktree(r.Context(), repositoryID, worktreeID); err != nil {
+		writeModelError(w, err, "Unable to remove the worktree.")
 		return
 	}
-
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -143,48 +128,33 @@ func (h Worktrees) Delete(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} Problem
 // @Router /api/v1/repositories/{repositoryId}/branches [get]
 func (h Worktrees) ListBranches(w http.ResponseWriter, r *http.Request) {
-	kind := worktrees.BranchKind(r.URL.Query().Get("kind"))
-	if kind != "" && kind != worktrees.BranchKindLocal && kind != worktrees.BranchKindRemote {
+	kind := repositories.BranchKind(r.URL.Query().Get("kind"))
+	if kind != "" && kind != repositories.BranchKindLocal && kind != repositories.BranchKindRemote {
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_branch_kind", "Invalid branch kind", "kind must be local or remote when provided")
 		return
 	}
 
-	repository, ok := h.resolveRepository(w, r)
-	if !ok {
-		return
-	}
-
-	var branches []worktrees.Branch
+	repositoryID := r.PathValue("repositoryId")
+	var branches []repositories.Branch
 	if kind == "" {
-		localBranches, err := h.worktrees.Branches(r.Context(), repository, worktrees.BranchKindLocal)
+		localBranches, err := h.repositories.ListBranches(r.Context(), repositoryID, repositories.BranchKindLocal)
 		if err != nil {
-			writeServiceError(w, err, "Unable to list repository branches.")
+			writeModelError(w, err, "Unable to list repository branches.")
 			return
 		}
-		remoteBranches, err := h.worktrees.Branches(r.Context(), repository, worktrees.BranchKindRemote)
+		remoteBranches, err := h.repositories.ListBranches(r.Context(), repositoryID, repositories.BranchKindRemote)
 		if err != nil {
-			writeServiceError(w, err, "Unable to list repository branches.")
+			writeModelError(w, err, "Unable to list repository branches.")
 			return
 		}
 		branches = append(localBranches, remoteBranches...)
 	} else {
 		var err error
-		branches, err = h.worktrees.Branches(r.Context(), repository, kind)
+		branches, err = h.repositories.ListBranches(r.Context(), repositoryID, kind)
 		if err != nil {
-			writeServiceError(w, err, "Unable to list repository branches.")
+			writeModelError(w, err, "Unable to list repository branches.")
 			return
 		}
 	}
-
 	writeJSON(w, http.StatusOK, BranchList{Items: branches})
-}
-
-func (h Worktrees) resolveRepository(w http.ResponseWriter, r *http.Request) (gitrepositories.Context, bool) {
-	repository, err := h.repositories.Resolve(r.Context(), r.PathValue("repositoryId"))
-	if err != nil {
-		writeServiceError(w, err, "Unable to resolve the repository.")
-		return gitrepositories.Context{}, false
-	}
-
-	return repository, true
 }

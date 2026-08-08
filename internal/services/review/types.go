@@ -101,7 +101,7 @@ type Service struct {
 }
 
 type WorkspaceRepository interface {
-	Path(workspaceID string) (string, error)
+	Resolve(workspaceID string) (string, bool, error)
 }
 
 type snapshotState struct {

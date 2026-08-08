@@ -2,6 +2,14 @@ package review
 
 import "fmt"
 
+type WorkspaceNotFoundError struct {
+	WorkspaceID string
+}
+
+func (e WorkspaceNotFoundError) Error() string {
+	return fmt.Sprintf("workspace %q not found", e.WorkspaceID)
+}
+
 type WorkspaceNotGitRepositoryError struct{}
 
 func (WorkspaceNotGitRepositoryError) Error() string {

@@ -5,65 +5,45 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	terminalservice "wade/internal/services/terminals"
+	"wade/internal/models/terminals"
 )
 
-type terminalWorkspaceStub struct {
-	path string
-}
-
-func (s terminalWorkspaceStub) Path(string) (string, error) {
-	return s.path, nil
-}
-
-func (terminalWorkspaceStub) IDForDirectory(string) (string, bool, error) {
-	return "", false, nil
-}
-
 func TestPutTerminalReturnsCreatedThenOK(t *testing.T) {
-	service := terminalservice.NewService(
-		terminalWorkspaceStub{path: t.TempDir()},
-		"/bin/sh",
-		"editor.localhost:8765",
-		nil,
-	)
-	t.Cleanup(service.Close)
-	handler := NewTerminals(service, func(*http.Request) bool { return true })
+	terminalModel := &fakeTerminalsModel{
+		putItem:    terminals.Terminal{ID: "misc", WorkspaceID: "wade"},
+		putCreated: true,
+	}
+	handler := NewTerminals(terminalModel, func(*http.Request) bool { return true })
 
 	firstResponse := httptest.NewRecorder()
 	handler.Put(firstResponse, terminalRequest(http.MethodPut, "misc"))
 	if firstResponse.Code != http.StatusCreated {
-		t.Fatalf("first PUT status = %d, want %d", firstResponse.Code, http.StatusCreated)
+		t.Fatalf("first PUT status = %d", firstResponse.Code)
 	}
 	if location := firstResponse.Header().Get("Location"); location != "/api/v1/workspaces/wade/terminals/misc" {
-		t.Fatalf("Location = %q, want terminal resource URL", location)
+		t.Fatalf("Location = %q", location)
 	}
 
+	terminalModel.putCreated = false
 	secondResponse := httptest.NewRecorder()
 	handler.Put(secondResponse, terminalRequest(http.MethodPut, "misc"))
 	if secondResponse.Code != http.StatusOK {
-		t.Fatalf("second PUT status = %d, want %d", secondResponse.Code, http.StatusOK)
+		t.Fatalf("second PUT status = %d", secondResponse.Code)
 	}
 }
 
 func TestConnectTerminalDoesNotCreateMissingTerminal(t *testing.T) {
-	service := terminalservice.NewService(
-		terminalWorkspaceStub{path: t.TempDir()},
-		"/bin/sh",
-		"editor.localhost:8765",
-		nil,
-	)
-	t.Cleanup(service.Close)
-	handler := NewTerminals(service, func(*http.Request) bool { return true })
+	terminalModel := &fakeTerminalsModel{connectError: terminals.TerminalNotFoundError{WorkspaceID: "wade", TerminalID: "misc"}}
+	handler := NewTerminals(terminalModel, func(*http.Request) bool { return true })
 	response := httptest.NewRecorder()
 
 	handler.Connect(response, terminalRequest(http.MethodGet, "misc"))
 
 	if response.Code != http.StatusNotFound {
-		t.Fatalf("socket status = %d, want %d", response.Code, http.StatusNotFound)
+		t.Fatalf("socket status = %d", response.Code)
 	}
-	if terminals, err := service.List("wade"); err != nil || len(terminals) != 0 {
-		t.Fatalf("terminals after socket request = %#v, error = %v", terminals, err)
+	if terminalModel.putCalls != 0 {
+		t.Fatalf("Put() calls = %d, want 0", terminalModel.putCalls)
 	}
 }
 

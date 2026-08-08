@@ -1,42 +1,42 @@
 package app
 
-// TODO: Review properly
-
 import (
+	"wade/internal/models/repositories"
+	"wade/internal/models/terminals"
+	"wade/internal/models/workspaces"
 	"wade/internal/services/config"
-	"wade/internal/services/remoterepositories"
-	"wade/internal/services/terminals"
-	"wade/internal/services/workspaces"
-	"wade/internal/services/worktrees"
 )
 
 type runtimeConfigApplier struct {
-	workspaces         workspaces.Service
-	remoteRepositories *remoterepositories.Service
-	terminals          *terminals.Service
-	worktrees          worktrees.Service
+	workspaces   *workspaces.Model
+	repositories *repositories.Model
+	terminals    *terminals.Model
 }
 
-func (a runtimeConfigApplier) ApplyConfig(configuration config.Config) {
-	a.workspaces.Reload(configuration.WorkspaceDirs)
-	a.remoteRepositories.Configure(remoteWorkspaceDirectories(configuration))
-	a.terminals.Configure(configuration.Shell, terminalAgents(configuration.Agents))
-	a.worktrees.Configure(configuration)
+func (applier runtimeConfigApplier) ApplyConfig(configuration config.Config) {
+	applier.workspaces.Configure(workspaceConfiguration(configuration))
+	applier.repositories.Configure(repositoryConfiguration(configuration))
+	applier.terminals.Configure(terminals.Configuration{
+		Shell:  configuration.Shell,
+		Agents: terminalAgents(configuration.Agents),
+	})
 }
 
-func remoteWorkspaceDirectories(configuration config.Config) []remoterepositories.WorkspaceDirectory {
-	workspaceDirectories := make([]remoterepositories.WorkspaceDirectory, 0, len(configuration.WorkspaceDirs))
+func workspaceConfiguration(configuration config.Config) workspaces.Configuration {
+	workspaceDirectories := make([]workspaces.WorkspaceDirectory, 0, len(configuration.WorkspaceDirs))
 	for index, path := range configuration.WorkspaceDirs {
 		setting := path
 		if index < len(configuration.WorkspaceDirectorySettings) {
 			setting = configuration.WorkspaceDirectorySettings[index]
 		}
-
-		workspaceDirectories = append(workspaceDirectories, remoterepositories.WorkspaceDirectory{
-			Setting: setting,
-			Path:    path,
-		})
+		workspaceDirectories = append(workspaceDirectories, workspaces.WorkspaceDirectory{Setting: setting, Path: path})
 	}
+	return workspaces.Configuration{WorkspaceDirectories: workspaceDirectories}
+}
 
-	return workspaceDirectories
+func repositoryConfiguration(configuration config.Config) repositories.Configuration {
+	return repositories.Configuration{
+		CopyIgnoredFilesOnWorktreeCreation: configuration.CopyIgnoredFilesOnWorktreeCreation,
+		WorktreeCopyExcludes:               append([]string(nil), configuration.WorktreeCopyExcludes...),
+	}
 }

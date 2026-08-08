@@ -1,40 +1,28 @@
 package controllers
 
 import (
-	"context"
+	"log"
 	"net/http"
 	"net/url"
 
-	"wade/internal/services/remoterepositories"
-	"wade/internal/services/workspaces"
+	"wade/internal/models/repositories"
+	"wade/internal/models/workspaces"
 )
 
-type workspaceService interface {
-	List(ctx context.Context) ([]workspaces.WorkspaceSummary, error)
-	ListActive(ctx context.Context) ([]workspaces.WorkspaceSummary, error)
-	Get(ctx context.Context, workspaceID string) (workspaces.Workspace, error)
-}
-
-type workspaceMaterialiser interface {
-	Clone(ctx context.Context, request remoterepositories.CloneRequest) (workspaces.Workspace, error)
-}
-
+// Workspaces coordinates Workspace responses across aggregate Models.
 type Workspaces struct {
-	workspaces   workspaceService
-	materialiser workspaceMaterialiser
+	workspaces   WorkspacesModel
+	repositories RepositoriesModel
+	terminals    TerminalsModel
 }
 
 type WorkspaceList struct {
 	Items []workspaces.WorkspaceSummary `json:"items"`
 } // @name WorkspaceList
 
-type MaterialiseWorkspaceRequest struct {
-	RemoteRepositoryID string `json:"remoteRepositoryId"`
-	WorkspaceDirectory string `json:"workspaceDirectory"`
-} // @name MaterialiseWorkspaceRequest
-
-func NewWorkspaces(workspaceService workspaceService, materialiser workspaceMaterialiser) Workspaces {
-	return Workspaces{workspaces: workspaceService, materialiser: materialiser}
+// NewWorkspaces constructs the Workspace controller.
+func NewWorkspaces(workspaceModel WorkspacesModel, repositoryModel RepositoriesModel, terminalModel TerminalsModel) Workspaces {
+	return Workspaces{workspaces: workspaceModel, repositories: repositoryModel, terminals: terminalModel}
 }
 
 // @Summary List workspaces
@@ -55,22 +43,45 @@ func (h Workspaces) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var workspaceSummaries []workspaces.WorkspaceSummary
+	var summaries []workspaces.WorkspaceSummary
+	var contexts map[string]repositories.WorkspaceContext
 	var err error
 	if activity == "active" {
-		workspaceSummaries, err = h.workspaces.ListActive(r.Context())
+		activeWorkspaceIDs := h.terminals.ActiveWorkspaceIDs()
+		if len(activeWorkspaceIDs) == 0 {
+			writeJSON(w, http.StatusOK, WorkspaceList{Items: []workspaces.WorkspaceSummary{}})
+			return
+		}
+		summaries, err = h.workspaces.ListByIDs(r.Context(), activeWorkspaceIDs)
+		if err == nil {
+			discoveredActiveWorkspaceIDs := make([]string, 0, len(summaries))
+			for _, summary := range summaries {
+				discoveredActiveWorkspaceIDs = append(discoveredActiveWorkspaceIDs, summary.ID)
+			}
+			contexts, err = h.repositories.ListWorkspaceContextsByIDs(r.Context(), discoveredActiveWorkspaceIDs)
+		}
 	} else {
-		workspaceSummaries, err = h.workspaces.List(r.Context())
+		summaries, err = h.workspaces.List(r.Context())
+		if err == nil {
+			workspaceContexts, contextErr := h.repositories.ListWorkspaceContexts(r.Context())
+			err = contextErr
+			contexts = make(map[string]repositories.WorkspaceContext, len(workspaceContexts))
+			for _, workspaceContext := range workspaceContexts {
+				contexts[workspaceContext.WorkspaceID] = workspaceContext
+			}
+		}
 	}
 	if err != nil {
-		writeServiceError(w, err, "Unable to list workspaces.")
+		writeModelError(w, err, "Unable to list workspaces.")
 		return
 	}
 
 	repositoryID := r.URL.Query().Get("repositoryId")
 	remoteRepositoryID := r.URL.Query().Get("remoteRepositoryId")
-	items := make([]workspaces.WorkspaceSummary, 0, len(workspaceSummaries))
-	for _, workspace := range workspaceSummaries {
+	items := make([]workspaces.WorkspaceSummary, 0, len(summaries))
+	for _, summary := range summaries {
+		workspace := workspaces.Workspace(summary)
+		h.enrichWorkspace(r, &workspace, contexts[summary.ID], false)
 		if activity == "active" && workspace.Activity.ActiveTerminalCount == 0 {
 			continue
 		}
@@ -80,8 +91,7 @@ func (h Workspaces) List(w http.ResponseWriter, r *http.Request) {
 		if remoteRepositoryID != "" && !matchesReference(workspace.RemoteRepositoryID, remoteRepositoryID) {
 			continue
 		}
-
-		items = append(items, workspace)
+		items = append(items, workspaces.WorkspaceSummary(workspace))
 	}
 
 	writeJSON(w, http.StatusOK, WorkspaceList{Items: items})
@@ -100,8 +110,18 @@ func (h Workspaces) List(w http.ResponseWriter, r *http.Request) {
 func (h Workspaces) Get(w http.ResponseWriter, r *http.Request) {
 	workspace, err := h.workspaces.Get(r.Context(), r.PathValue("workspaceId"))
 	if err != nil {
-		writeServiceError(w, err, "Unable to load the workspace.")
+		writeModelError(w, err, "Unable to load the workspace.")
 		return
+	}
+	workspaceContext, err := h.repositories.GetWorkspaceContext(r.Context(), workspace.ID)
+	if err != nil {
+		writeModelError(w, err, "Unable to load the workspace.")
+		return
+	}
+	if workspaceContext != nil {
+		h.enrichWorkspace(r, &workspace, *workspaceContext, true)
+	} else {
+		workspace.Activity.ActiveTerminalCount = h.terminals.ActiveTerminalCount(workspace.ID)
 	}
 
 	writeJSON(w, http.StatusOK, workspace)
@@ -112,7 +132,7 @@ func (h Workspaces) Get(w http.ResponseWriter, r *http.Request) {
 // @Tags Workspaces
 // @Accept json
 // @Produce json
-// @Param request body MaterialiseWorkspaceRequest true "Workspace materialisation request"
+// @Param request body workspaces.MaterialiseRequest true "Workspace materialisation request"
 // @Success 201 {object} workspaces.Workspace
 // @Header 201 {string} Location "Created workspace URL"
 // @Failure 400 {object} Problem
@@ -121,25 +141,75 @@ func (h Workspaces) Get(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} Problem
 // @Router /api/v1/workspaces [post]
 func (h Workspaces) Materialise(w http.ResponseWriter, r *http.Request) {
-	var request MaterialiseWorkspaceRequest
+	var request workspaces.MaterialiseRequest
 	if err := decodeJSONBody(r, &request); err != nil {
 		writeProblem(w, http.StatusBadRequest, "malformed_json", "Malformed JSON", "The request body must contain a valid workspace materialisation request.")
 		return
 	}
 
-	workspace, err := h.materialiser.Clone(r.Context(), remoterepositories.CloneRequest{
-		RemoteRepositoryID: request.RemoteRepositoryID,
-		WorkspaceDirectory: request.WorkspaceDirectory,
-	})
+	workspace, err := h.workspaces.Materialise(r.Context(), request)
 	if err != nil {
-		writeServiceError(w, err, "Unable to materialise the remote repository.")
+		writeModelError(w, err, "Unable to materialise the remote repository.")
 		return
+	}
+	workspaceContext, err := h.repositories.GetWorkspaceContext(r.Context(), workspace.ID)
+	if err != nil {
+		writeModelError(w, err, "Unable to load the materialised workspace.")
+		return
+	}
+	if workspaceContext != nil {
+		h.enrichWorkspace(r, &workspace, *workspaceContext, true)
 	}
 
 	w.Header().Set("Location", "/api/v1/workspaces/"+url.PathEscape(workspace.ID))
 	writeJSON(w, http.StatusCreated, workspace)
 }
 
+func (h Workspaces) enrichWorkspace(r *http.Request, workspace *workspaces.Workspace, context repositories.WorkspaceContext, resolvePullRequest bool) {
+	workspace.Activity.ActiveTerminalCount = h.terminals.ActiveTerminalCount(workspace.ID)
+	if context.WorkspaceID == "" {
+		return
+	}
+
+	workspace.RepositoryID = stringReference(context.Repository.ID)
+	workspace.RemoteRepositoryID = cloneStringReference(context.Repository.RemoteRepositoryID)
+	workspace.Worktree = &workspaces.WorktreeReference{
+		ID:          workspace.ID,
+		IsMain:      context.IsMain,
+		IsRemovable: context.IsRemovable,
+	}
+	workspace.Branch = &workspaces.Branch{
+		Ref:        context.Branch.Ref,
+		Name:       context.Branch.Name,
+		IsDetached: context.Branch.IsDetached,
+		Commit:     context.Branch.Commit,
+	}
+	links, err := h.workspaces.ResolveLinks(r.Context(), workspaces.LinkContext{
+		RemoteRepositoryID: context.Repository.RemoteRepositoryID,
+		BranchName:         context.Branch.Name,
+		ResolvePullRequest: resolvePullRequest,
+	})
+	workspace.Links = links
+	if err != nil {
+		log.Printf("workspace %q provider link enrichment failed: %v", workspace.ID, err)
+	}
+}
+
 func matchesReference(reference *string, expected string) bool {
 	return reference != nil && *reference == expected
+}
+
+func stringReference(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+func cloneStringReference(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	cloned := *value
+	return &cloned
 }

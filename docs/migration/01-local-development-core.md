@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned.
+Complete.
 
 ## Goal
 
@@ -58,92 +58,92 @@ temporary repository wrappers around new infrastructure.
 
 ### Infrastructure
 
-- [ ] Add filesystem infrastructure with generic file operations.
-- [ ] Add shared, concurrency-safe workspace discovery under filesystem.
-- [ ] Preserve configured-directory order, duplicate basename precedence,
+- [x] Add filesystem infrastructure with generic file operations.
+- [x] Add shared, concurrency-safe workspace discovery under filesystem.
+- [x] Preserve configured-directory order, duplicate basename precedence,
       canonical paths, and fresh discovery behaviour.
-- [ ] Add Git infrastructure with typed technical outputs and cohesive external
+- [x] Add Git infrastructure with typed technical outputs and cohesive external
       operations.
-- [ ] Add GitHub infrastructure for repository listing, cloning, repository
+- [x] Add GitHub infrastructure for repository listing, cloning, repository
       links, and optional pull request lookup.
-- [ ] Add Linear infrastructure with `TicketForBranch(branch) (*Ticket, error)`.
-- [ ] Add PTY infrastructure for start, read, write, resize, and close.
-- [ ] Move infrastructure tests or add equivalent final-layer tests.
+- [x] Add Linear infrastructure with `TicketForBranch(branch) (*Ticket, error)`.
+- [x] Add PTY infrastructure for start, read, write, resize, and close.
+- [x] Move infrastructure tests or add equivalent final-layer tests.
 
 ### Workspaces Model
 
-- [ ] Create the agreed Model types, commands, errors, validators, configuration,
+- [x] Create the agreed Model types, commands, errors, validators, configuration,
       and constructor.
-- [ ] Implement `List`, `ListByIDs`, `Get`, `Materialise`, `ResolveLinks`, and
+- [x] Implement `List`, `ListByIDs`, `Get`, `Materialise`, `ResolveLinks`, and
       `Configure`.
-- [ ] Keep Materialise atomic with respect to a workspace ID or target path.
-- [ ] Preserve best-effort optional provider links and log enrichment failures.
-- [ ] Move workspace domain tests into the Model package.
+- [x] Keep Materialise atomic with respect to a workspace ID or target path.
+- [x] Preserve best-effort optional provider links and log enrichment failures.
+- [x] Move workspace domain tests into the Model package.
 
 ### Repositories Model
 
-- [ ] Create the agreed flat Model and its eleven public operations.
-- [ ] Merge local repository identity, worktree, branch, ignored-file copy, and
+- [x] Create the agreed flat Model and its eleven public operations.
+- [x] Merge local repository identity, worktree, branch, ignored-file copy, and
       validation behaviour.
-- [ ] Add bulk and targeted workspace-context queries.
-- [ ] Retain `WorkspaceIDsByRemoteRepository` as a bulk optimisable query.
-- [ ] Add per-repository mutation locking.
-- [ ] Return detached Repository, WorkspaceContext, Worktree, and Branch values.
-- [ ] Move repository and worktree domain tests into the Model package.
+- [x] Add bulk and targeted workspace-context queries.
+- [x] Retain `WorkspaceIDsByRemoteRepository` as a bulk optimisable query.
+- [x] Add per-repository mutation locking.
+- [x] Return detached Repository, WorkspaceContext, Worktree, and Branch values.
+- [x] Move repository and worktree domain tests into the Model package.
 
 ### RemoteRepositories Model
 
-- [ ] Implement the focused `List` operation.
-- [ ] Map and validate GitHub technical repository results.
-- [ ] Remove cloning and local workspace mapping from this Model.
-- [ ] Move remote repository tests into the Model package.
+- [x] Implement the focused `List` operation.
+- [x] Map and validate GitHub technical repository results.
+- [x] Remove cloning and local workspace mapping from this Model.
+- [x] Move remote repository tests into the Model package.
 
 ### Terminals Model
 
-- [ ] Move terminal lifecycle and registry behaviour into the Model.
-- [ ] Separate detached `Terminal` resources from live `TerminalSession` handles.
-- [ ] Preserve terminal natural IDs, idempotent Put, buffering, selected-agent
+- [x] Move terminal lifecycle and registry behaviour into the Model.
+- [x] Separate detached `Terminal` resources from live `TerminalSession` handles.
+- [x] Preserve terminal natural IDs, idempotent Put, buffering, selected-agent
       behaviour, control messages, and process cleanup.
-- [ ] Implement all agreed lifecycle, input, activity, connection,
+- [x] Implement all agreed lifecycle, input, activity, connection,
       configuration, and Close methods.
-- [ ] Remove directory-based terminal closure from the public API.
-- [ ] Move terminal domain tests into the Model package and PTY tests into
+- [x] Remove directory-based terminal closure from the public API.
+- [x] Move terminal domain tests into the Model package and PTY tests into
       infrastructure.
 
 ### Controllers
 
-- [ ] Add aggregate-wide controller Model interfaces in
+- [x] Add aggregate-wide controller Model interfaces in
       `internal/controllers/model_interfaces.go`.
-- [ ] Decode Model-owned command types directly where transport shapes match.
-- [ ] Compose Workspace repository context, terminal activity, and links.
-- [ ] Preserve targeted active-workspace loading through `ListByIDs` and
+- [x] Decode Model-owned command types directly where transport shapes match.
+- [x] Compose Workspace repository context, terminal activity, and links.
+- [x] Preserve targeted active-workspace loading through `ListByIDs` and
       `ListWorkspaceContextsByIDs`.
-- [ ] Compose RemoteRepository local workspace IDs through the bulk Repository
+- [x] Compose RemoteRepository local workspace IDs through the bulk Repository
       query.
-- [ ] Move worktree resolution into the Repositories Model API.
-- [ ] Preserve inspect, close terminals, remove, and revalidate ordering for
+- [x] Move worktree resolution into the Repositories Model API.
+- [x] Preserve inspect, close terminals, remove, and revalidate ordering for
       worktree deletion.
-- [ ] Update terminal WebSocket handling to use `TerminalSession`.
-- [ ] Rename central service error mapping to Model error mapping while
+- [x] Update terminal WebSocket handling to use `TerminalSession`.
+- [x] Rename central service error mapping to Model error mapping while
       preserving every problem code and status.
-- [ ] Update controller orchestration tests and reusable Model fakes.
+- [x] Update controller orchestration tests and reusable Model fakes.
 
 ### Composition and deletion
 
-- [ ] Wire infrastructure and Models in `internal/app`.
-- [ ] Share one filesystem workspace discovery instance across consuming Models.
-- [ ] Keep the existing Settings bootstrap temporarily, mapping its runtime
+- [x] Wire infrastructure and Models in `internal/app`.
+- [x] Share one filesystem workspace discovery instance across consuming Models.
+- [x] Keep the existing Settings bootstrap temporarily, mapping its runtime
       configuration into final Model configuration types.
-- [ ] Update runtime settings application to configure the new Models until
+- [x] Update runtime settings application to configure the new Models until
       Slice 3 moves orchestration into the Settings controller.
-- [ ] Delete `internal/services/workspaces`.
-- [ ] Delete `internal/services/gitrepositories`.
-- [ ] Delete `internal/services/worktrees`.
-- [ ] Delete `internal/services/remoterepositories`.
-- [ ] Delete `internal/services/terminals`.
-- [ ] Delete `internal/services/workspacequeries`.
-- [ ] Delete migrated files from `internal/repositories`.
-- [ ] Confirm no compatibility adapters remain for migrated domains.
+- [x] Delete `internal/services/workspaces`.
+- [x] Delete `internal/services/gitrepositories`.
+- [x] Delete `internal/services/worktrees`.
+- [x] Delete `internal/services/remoterepositories`.
+- [x] Delete `internal/services/terminals`.
+- [x] Delete `internal/services/workspacequeries`.
+- [x] Delete migrated files from `internal/repositories`.
+- [x] Confirm no compatibility adapters remain for migrated domains.
 
 ## Acceptance criteria
 
@@ -169,10 +169,16 @@ Run focused race tests for Workspaces, Repositories, and Terminals.
 
 ## Handoff
 
-- Last completed: Not started.
-- Next action: Confirm the overall migration design, then begin infrastructure
-  and Model construction as one vertical slice.
+- Last completed: Migrated Workspaces, Repositories, RemoteRepositories, and
+  Terminals into final Models; introduced filesystem, Git, GitHub, Linear, and
+  PTY infrastructure; rewired controllers and application composition; removed
+  the replaced services, workspace query layer, and migrated repository files.
+- Next action: Review `02-review-snapshots.md` before beginning the ReviewSnapshots
+  migration.
 - Current failures: None.
-- Last validation: Not run for this slice.
-- Important context: Do not adapt the old services to new infrastructure as a
-  standalone phase.
+- Last validation: `mise run test`, `mise run lint:openapi`, `mise run lint:fmt`,
+  and `mise run lint:vet` passed. Focused race tests passed for Workspaces,
+  Repositories, and Terminals.
+- Important context: Review remains a legacy Service until Slice 2. Settings and
+  bootstrap remain on the legacy configuration path until Slice 3. No
+  compatibility adapters remain for the migrated Slice 1 domains.
