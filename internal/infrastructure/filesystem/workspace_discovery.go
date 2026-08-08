@@ -1,7 +1,5 @@
 package filesystem
 
-// TODO: Review properly
-
 import (
 	"errors"
 	"os"
@@ -10,6 +8,7 @@ import (
 	"sync"
 )
 
+// WorkspaceDiscovery resolves configured workspace directories through fresh scans.
 type WorkspaceDiscovery struct {
 	state *workspaceDiscoveryState
 }

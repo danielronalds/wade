@@ -1,5 +1,6 @@
 package settings
 
+// Supported theme accent colour values.
 const (
 	ThemeAccentColorWhite  = "white"
 	ThemeAccentColorOrange = "orange"

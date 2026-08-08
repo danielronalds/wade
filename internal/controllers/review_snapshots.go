@@ -17,6 +17,7 @@ func NewReviewSnapshots(reviewSnapshots ReviewSnapshotsModel) ReviewSnapshots {
 	return ReviewSnapshots{reviewSnapshots: reviewSnapshots}
 }
 
+// Create captures and returns a review snapshot for a workspace.
 // @Summary Create a review snapshot
 // @ID createReviewSnapshot
 // @Tags Review snapshots
@@ -39,6 +40,7 @@ func (controller ReviewSnapshots) Create(response http.ResponseWriter, request *
 	writeJSON(response, http.StatusCreated, snapshot)
 }
 
+// Get returns a previously captured review snapshot.
 // @Summary Get a review snapshot
 // @ID getReviewSnapshot
 // @Tags Review snapshots
@@ -58,6 +60,7 @@ func (controller ReviewSnapshots) Get(response http.ResponseWriter, request *htt
 	writeJSON(response, http.StatusOK, snapshot)
 }
 
+// GetFileContents returns one snapshot file comparison.
 // @Summary Get review snapshot file contents
 // @ID getReviewSnapshotFileContents
 // @Tags Review snapshots
@@ -85,6 +88,7 @@ func (controller ReviewSnapshots) GetFileContents(response http.ResponseWriter, 
 	writeJSON(response, http.StatusOK, contents)
 }
 
+// Delete removes an in-memory review snapshot.
 // @Summary Delete a review snapshot
 // @ID deleteReviewSnapshot
 // @Tags Review snapshots

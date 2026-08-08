@@ -9,6 +9,7 @@ import (
 //go:embed .dist
 var distFiles embed.FS
 
+// Files returns the embedded frontend distribution filesystem.
 func Files() (fs.FS, error) {
 	return fs.Sub(distFiles, ".dist")
 }

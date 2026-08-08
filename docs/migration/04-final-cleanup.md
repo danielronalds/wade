@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned. Depends on Slices 1 through 3.
+Complete.
 
 ## Goal
 
@@ -14,25 +14,25 @@ Read [`PLAN.md`](PLAN.md) and
 
 ## Implementation checklist
 
-- [ ] Confirm `internal/services` no longer exists.
-- [ ] Confirm `internal/repositories` no longer exists.
-- [ ] Search all Go files for imports from either old path.
-- [ ] Remove temporary migration adapters and obsolete TODO comments.
-- [ ] Confirm every controller depends on aggregate-wide Model interfaces.
-- [ ] Confirm Models depend only on Model-owned infrastructure interfaces and
+- [x] Confirm `internal/services` no longer exists.
+- [x] Confirm `internal/repositories` no longer exists.
+- [x] Search all Go files for imports from either old path.
+- [x] Remove temporary migration adapters and obsolete TODO comments.
+- [x] Confirm every controller depends on aggregate-wide Model interfaces.
+- [x] Confirm Models depend only on Model-owned infrastructure interfaces and
       technical infrastructure types.
-- [ ] Confirm infrastructure never imports Models or controllers.
-- [ ] Confirm exported functions and methods precede private functions and
+- [x] Confirm infrastructure never imports Models or controllers.
+- [x] Confirm exported functions and methods precede private functions and
       methods in every changed file.
-- [ ] Confirm exported Go APIs have concise contract comments.
-- [ ] Regenerate OpenAPI and inspect the diff for accidental contract changes.
-- [ ] Regenerate the frontend client and embedded assets through the standard
+- [x] Confirm exported Go APIs have concise contract comments.
+- [x] Regenerate OpenAPI and inspect the diff for accidental contract changes.
+- [x] Regenerate the frontend client and embedded assets through the standard
       tasks.
-- [ ] Confirm the frontend requires no behavioural change.
-- [ ] Verify `AGENTS.md` matches the implemented Controllers, Models,
+- [x] Confirm the frontend requires no behavioural change.
+- [x] Verify `AGENTS.md` matches the implemented Controllers, Models,
       Infrastructure structure and remove its temporary legacy-migration note.
-- [ ] Update README architecture references if any are stale.
-- [ ] Run the full test, lint, race, and lifecycle validation suite.
+- [x] Confirm README architecture references are current.
+- [x] Run the full test, lint, race, and lifecycle validation suite.
 
 ## Contract audit
 
@@ -62,9 +62,16 @@ in `AGENTS.md`. Confirm no stale test processes remain.
 
 ## Handoff
 
-- Last completed: Not started.
-- Next action: Wait for Slice 3 acceptance criteria.
+- Last completed: Removed residual migration artefacts, completed the dependency
+  and contract audits, regenerated backend and frontend outputs, and aligned
+  project documentation with the implemented architecture.
+- Next action: Use `PLAN.md` and the completed slice records to build permanent
+  architecture documentation.
 - Current failures: None.
-- Last validation: Not run for this slice.
-- Important context: This slice must not introduce new architecture or API
-  behaviour. It validates and documents the completed migration.
+- Last validation: `mise run test`, `mise run lint:openapi`,
+  `mise run lint:fmt`, and `mise run lint:vet` passed. Focused race tests passed
+  for Workspaces, Repositories, Terminals, ReviewSnapshots, Settings, and HTTP
+  controllers. The isolated managed and foreground lifecycle smoke test passed
+  without stale processes or sockets.
+- Important context: OpenAPI regeneration produced no contract diff and the
+  frontend required no behavioural changes.

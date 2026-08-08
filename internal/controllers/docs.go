@@ -1,7 +1,5 @@
 package controllers
 
-// TODO: Review properly
-
 import (
 	"net/http"
 
@@ -10,14 +8,17 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
+// Docs serves the embedded OpenAPI specification and documentation UI.
 type Docs struct {
 	docsHandler http.HandlerFunc
 }
 
+// NewDocs constructs the OpenAPI documentation controller.
 func NewDocs() Docs {
 	return Docs{docsHandler: newOpenAPIDocsHandler()}
 }
 
+// OpenAPISpec writes the embedded OpenAPI JSON specification.
 // @Summary Get OpenAPI spec
 // @ID getOpenAPISpec
 // @Tags OpenAPI
@@ -29,6 +30,7 @@ func (h Docs) OpenAPISpec(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write(openapi.JSON())
 }
 
+// OpenAPIDocs serves the interactive OpenAPI documentation UI.
 func (h Docs) OpenAPIDocs(w http.ResponseWriter, r *http.Request) {
 	h.docsHandler(w, r)
 }

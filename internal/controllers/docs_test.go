@@ -1,7 +1,5 @@
 package controllers
 
-// TODO: Review properly
-
 import (
 	"encoding/json"
 	"net/http"

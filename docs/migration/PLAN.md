@@ -16,9 +16,9 @@ that it reflects the established API domain.
 | Local development core | Complete | [`01-local-development-core.md`](01-local-development-core.md) |
 | Review snapshots | Complete | [`02-review-snapshots.md`](02-review-snapshots.md) |
 | Settings and bootstrap | Complete | [`03-settings-and-bootstrap.md`](03-settings-and-bootstrap.md) |
-| Final cleanup | Planned | [`04-final-cleanup.md`](04-final-cleanup.md) |
+| Final cleanup | Complete | [`04-final-cleanup.md`](04-final-cleanup.md) |
 
-Current phase: Slice 3 complete; Final cleanup planned.
+Current phase: Internal Model migration complete.
 
 ## Session handoff protocol
 
@@ -557,8 +557,7 @@ implementation.
 
 ## Final architecture documentation
 
-`AGENTS.md` has been updated before implementation so migration sessions receive
-the target Controllers, Models, Infrastructure rules rather than the legacy
-service and repository rules. Keep it aligned with architectural decisions made
-during implementation. After migration, remove its temporary note describing
-`internal/services` and `internal/repositories` as legacy code.
+`AGENTS.md` reflects the implemented Controllers, Models, Infrastructure
+architecture and no longer describes `internal/services` or
+`internal/repositories` as legacy migration code. Keep it aligned with future
+architectural decisions.

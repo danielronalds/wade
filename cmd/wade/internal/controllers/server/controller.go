@@ -20,6 +20,7 @@ import (
 	"wade/internal/web"
 )
 
+// Command names handled by the server lifecycle controller.
 const (
 	ServerCommand = "server"
 	StatusCommand = "status"
@@ -35,16 +36,19 @@ type daemonLifecycle interface {
 	Stop() error
 }
 
+// Controller manages foreground and background server lifecycle commands.
 type Controller struct {
 	stdout   io.Writer
 	daemon   daemonLifecycle
 	settings controllers.SettingsModel
 }
 
+// NewController constructs the server lifecycle controller.
 func NewController(stdout io.Writer, settingsModel controllers.SettingsModel) Controller {
 	return Controller{stdout: stdout, daemon: daemon.NewManager(), settings: settingsModel}
 }
 
+// HandleArgs executes a server, status, or stop command.
 func (c Controller) HandleArgs(args []string) (int, error) {
 	if len(args) == 0 {
 		return 0, fmt.Errorf("usage: wade server [%s]", foregroundFlag)

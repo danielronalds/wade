@@ -1,7 +1,4 @@
-// NOTE: Vibecoded and not suppppppper reviewed
 package repositories
-
-// TODO: Review properly
 
 import (
 	"context"

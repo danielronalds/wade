@@ -1,7 +1,5 @@
 package filesystem
 
-// TODO: Review properly
-
 import (
 	"errors"
 	"io"
@@ -10,16 +8,20 @@ import (
 	"path/filepath"
 )
 
+// FileSystem performs mechanical local filesystem operations.
 type FileSystem struct{}
 
+// NewFileSystem constructs a filesystem client.
 func NewFileSystem() FileSystem {
 	return FileSystem{}
 }
 
+// EnsureDirectory creates a directory and any missing parents.
 func (r FileSystem) EnsureDirectory(path string) error {
 	return os.MkdirAll(path, 0o755)
 }
 
+// EnsurePathDoesNotExist returns os.ErrExist when the path already exists.
 func (r FileSystem) EnsurePathDoesNotExist(path string) error {
 	_, err := os.Stat(path)
 	if err == nil {
@@ -33,10 +35,12 @@ func (r FileSystem) EnsurePathDoesNotExist(path string) error {
 	return err
 }
 
+// ReadFile reads the complete contents of a file.
 func (r FileSystem) ReadFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
+// CopyPath recursively copies a file, directory, or symbolic link when present.
 func (r FileSystem) CopyPath(source string, destination string) error {
 	info, err := os.Lstat(source)
 	if err != nil {

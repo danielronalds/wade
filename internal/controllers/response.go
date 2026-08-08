@@ -16,6 +16,7 @@ import (
 	"wade/internal/models/workspaces"
 )
 
+// Problem is the stable application/problem+json response shape.
 type Problem struct {
 	Type   string `json:"type"`
 	Title  string `json:"title"`
@@ -24,6 +25,7 @@ type Problem struct {
 	Code   string `json:"code"`
 } // @name Problem
 
+// WriteAPINotFound writes the response for an unregistered API route.
 func WriteAPINotFound(w http.ResponseWriter, _ *http.Request) {
 	writeProblem(w, http.StatusNotFound, "endpoint_not_found", "Endpoint not found", "The requested API endpoint does not exist.")
 }
@@ -79,6 +81,8 @@ func writeModelError(w http.ResponseWriter, err error, fallbackDetail string) {
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_remote_repository_id", "Invalid remote repository ID", err.Error())
 	case matchesError[workspaces.WorkspaceDirectoryNotConfiguredError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "workspace_directory_not_configured", "Workspace directory is not configured", err.Error())
+	case matchesError[repositories.BranchReferenceRequiredError](err):
+		writeProblem(w, http.StatusUnprocessableEntity, "branch_ref_required", "Branch reference is required", "branchRef must identify a local or remote branch.")
 	case matchesError[repositories.InvalidBranchReferenceError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_branch_reference", "Invalid branch reference", err.Error())
 	case matchesError[repositories.InvalidWorktreeIDError](err):

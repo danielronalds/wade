@@ -1,5 +1,6 @@
 package controllers
 
+// Controllers groups the HTTP controllers registered by the server.
 type Controllers struct {
 	Workspaces         Workspaces
 	Repositories       Repositories

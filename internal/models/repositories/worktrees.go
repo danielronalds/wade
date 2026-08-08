@@ -1,7 +1,4 @@
-// NOTE: Vibecoded and not suppppppper reviewed
 package repositories
-
-// TODO: Review properly
 
 import (
 	"context"
@@ -204,7 +201,7 @@ func (model *Model) listBranches(ctx context.Context, repository repositoryConte
 func (model *Model) createWorktree(ctx context.Context, repository repositoryContext, requestedBranchRef string) (Worktree, error) {
 	branchRef := strings.TrimSpace(requestedBranchRef)
 	if branchRef == "" {
-		return Worktree{}, InvalidBranchReferenceError{BranchRef: branchRef}
+		return Worktree{}, BranchReferenceRequiredError{}
 	}
 
 	repositoryPath := repository.mainWorktreePath

@@ -8,6 +8,7 @@ import (
 
 var scpRemotePattern = regexp.MustCompile(`^(?:[^@]+@)?([^:]+):(.+)$`)
 
+// CanonicalRemoteIdentity normalises a Git remote for provider-independent comparison.
 func CanonicalRemoteIdentity(remoteURL string) string {
 	host, repositoryPath := parseRemote(remoteURL)
 	if host == "" || repositoryPath == "" {

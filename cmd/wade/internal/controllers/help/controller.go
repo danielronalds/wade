@@ -5,14 +5,17 @@ import (
 	"io"
 )
 
+// Controller writes command-line usage information.
 type Controller struct {
 	stdout io.Writer
 }
 
+// NewController constructs the help command controller.
 func NewController(stdout io.Writer) Controller {
 	return Controller{stdout: stdout}
 }
 
+// HandleArgs writes help text and returns a successful exit code.
 func (c Controller) HandleArgs(args []string) (int, error) {
 	_, err := fmt.Fprint(c.stdout, helpText())
 	return 0, err

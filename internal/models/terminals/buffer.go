@@ -1,7 +1,5 @@
 package terminals
 
-// TODO: Review properly
-
 type outputBuffer struct {
 	data  []byte
 	limit int

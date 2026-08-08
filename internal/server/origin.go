@@ -5,7 +5,7 @@ import (
 	"net/url"
 )
 
-// Prevents arbitrary browser tabs from connecting to the local shell via WebSocket.
+// AllowSameOrigin prevents arbitrary browser tabs from connecting to local shells.
 func AllowSameOrigin(r *http.Request) bool {
 	origin := r.Header.Get("Origin")
 	if origin == "" {

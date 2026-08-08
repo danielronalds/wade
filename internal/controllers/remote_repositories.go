@@ -12,6 +12,7 @@ type RemoteRepositories struct {
 	repositories       RepositoriesModel
 }
 
+// RemoteRepositoryList is the collection response for provider repositories.
 type RemoteRepositoryList struct {
 	Items []remoterepositories.RemoteRepository `json:"items"`
 } // @name RemoteRepositoryList
@@ -21,6 +22,7 @@ func NewRemoteRepositories(remoteRepositories RemoteRepositoriesModel, repositor
 	return RemoteRepositories{remoteRepositories: remoteRepositories, repositories: repositories}
 }
 
+// List returns provider repositories enriched with local workspace identities.
 // @Summary List remote repositories
 // @ID listRemoteRepositories
 // @Tags Remote repositories

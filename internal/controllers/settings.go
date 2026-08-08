@@ -30,6 +30,7 @@ func NewSettings(settingsModel SettingsModel, workspaceModel WorkspacesModel, re
 	}
 }
 
+// Get returns settings loaded fresh from disk.
 // @Summary Get settings
 // @ID getSettings
 // @Tags Settings
@@ -46,6 +47,7 @@ func (controller *Settings) Get(response http.ResponseWriter, _ *http.Request) {
 	writeJSON(response, http.StatusOK, currentSettings)
 }
 
+// Update persists settings and applies their runtime configuration serially.
 // @Summary Update settings
 // @ID updateSettings
 // @Tags Settings
@@ -76,6 +78,7 @@ func (controller *Settings) Update(response http.ResponseWriter, request *http.R
 	writeJSON(response, http.StatusOK, result.Settings)
 }
 
+// Reload validates out-of-band settings and applies their runtime configuration serially.
 // @Summary Reload settings from disk
 // @ID reloadSettings
 // @Tags Settings

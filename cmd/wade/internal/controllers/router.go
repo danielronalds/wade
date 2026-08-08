@@ -15,14 +15,17 @@ const (
 	helpCommand   = "help"
 )
 
+// Controller handles one command-line command.
 type Controller interface {
 	HandleArgs(args []string) (int, error)
 }
 
+// Router dispatches command-line arguments to command controllers.
 type Router struct {
 	controllers map[string]Controller
 }
 
+// NewRouter constructs the command-line router with shared dependencies.
 func NewRouter(stdout io.Writer, settingsModel httpcontrollers.SettingsModel) Router {
 	serverController := server.NewController(stdout, settingsModel)
 
@@ -35,6 +38,7 @@ func NewRouter(stdout io.Writer, settingsModel httpcontrollers.SettingsModel) Ro
 	}}
 }
 
+// HandleArgs dispatches arguments and returns the requested process exit code.
 func (r Router) HandleArgs(args []string) (int, error) {
 	command := helpCommand
 	if len(args) > 0 {

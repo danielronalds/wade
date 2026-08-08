@@ -133,11 +133,6 @@ backend:
 controllers -> models -> infrastructure
 ```
 
-The migration to this structure is planned in
-`docs/migration/PLAN.md`. Existing `internal/services` and
-`internal/repositories` code is legacy migration code, not a pattern for new
-work. Follow the active migration slice when changing those areas.
-
 - `cmd/wade/main.go`: Top-level composition root for infrastructure and the
   Settings Model shared by CLI commands and server startup.
 - `internal/app`: HTTP application composition root. Wires the remaining Models,

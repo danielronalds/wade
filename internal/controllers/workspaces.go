@@ -16,6 +16,7 @@ type Workspaces struct {
 	terminals    TerminalsModel
 }
 
+// WorkspaceList is the collection response for workspace summaries.
 type WorkspaceList struct {
 	Items []workspaces.WorkspaceSummary `json:"items"`
 } // @name WorkspaceList
@@ -25,6 +26,7 @@ func NewWorkspaces(workspaceModel WorkspacesModel, repositoryModel RepositoriesM
 	return Workspaces{workspaces: workspaceModel, repositories: repositoryModel, terminals: terminalModel}
 }
 
+// List returns enriched workspace summaries using targeted loading for active workspaces.
 // @Summary List workspaces
 // @ID listWorkspaces
 // @Tags Workspaces
@@ -97,6 +99,7 @@ func (h Workspaces) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, WorkspaceList{Items: items})
 }
 
+// Get returns one workspace enriched across aggregate Models.
 // @Summary Get a workspace
 // @ID getWorkspace
 // @Tags Workspaces
@@ -127,6 +130,7 @@ func (h Workspaces) Get(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, workspace)
 }
 
+// Materialise creates and enriches a workspace from a remote repository.
 // @Summary Materialise a remote repository as a workspace
 // @ID materialiseWorkspace
 // @Tags Workspaces

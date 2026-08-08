@@ -74,6 +74,16 @@ func TestRemoteBranchCanCreateWorktree(t *testing.T) {
 	}
 }
 
+func TestCreateWorktreeRequiresBranchReference(t *testing.T) {
+	model := newWorktreeTestModel(initGitRepository(t))
+
+	_, err := model.CreateWorktree(context.Background(), "project", CreateWorktreeRequest{BranchRef: "  "})
+	var required BranchReferenceRequiredError
+	if !errors.As(err, &required) {
+		t.Fatalf("CreateWorktree() error = %v", err)
+	}
+}
+
 func TestCreateWorktreeRejectsInvalidBranchReferences(t *testing.T) {
 	projectPath := initGitRepository(t)
 	remotePath := filepath.Join(t.TempDir(), "origin.git")

@@ -1,7 +1,4 @@
-// NOTE: Vibecoded and not suppppppper reviewed
 package reviewsnapshots
-
-// TODO: Review properly
 
 import (
 	"context"

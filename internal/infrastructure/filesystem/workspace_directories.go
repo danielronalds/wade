@@ -1,7 +1,5 @@
 package filesystem
 
-// TODO: Review properly
-
 import (
 	"errors"
 	"os"

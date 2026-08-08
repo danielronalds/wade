@@ -38,6 +38,11 @@ func TestWriteModelErrorProblems(t *testing.T) {
 			wantStatus: http.StatusConflict,
 			wantCode:   "worktree_not_removable",
 		},
+		"branch reference required": {
+			err:        repositories.BranchReferenceRequiredError{},
+			wantStatus: http.StatusUnprocessableEntity,
+			wantCode:   "branch_ref_required",
+		},
 		"invalid branch reference": {
 			err:        repositories.InvalidBranchReferenceError{BranchRef: "refs/heads/invalid..branch"},
 			wantStatus: http.StatusUnprocessableEntity,

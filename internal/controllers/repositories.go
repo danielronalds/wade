@@ -12,6 +12,7 @@ func NewRepositories(repositories RepositoriesModel) Repositories {
 	return Repositories{repositories: repositories}
 }
 
+// Get returns one detached local repository resource.
 // @Summary Get a local repository
 // @ID getRepository
 // @Tags Repositories

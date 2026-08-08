@@ -1,9 +1,8 @@
 package pty
 
-// TODO: Review properly
-
 const fallbackShell = "/bin/bash"
 
+// ResolveShell returns the configured shell or the platform fallback.
 func ResolveShell(shell string) string {
 	if shell == "" {
 		return fallbackShell

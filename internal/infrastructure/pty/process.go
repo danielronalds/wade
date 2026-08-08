@@ -1,7 +1,5 @@
 package pty
 
-// TODO: Review properly
-
 import (
 	"os"
 	"os/exec"
@@ -10,11 +8,13 @@ import (
 	creackpty "github.com/creack/pty"
 )
 
+// Size describes a PTY window in character cells.
 type Size struct {
 	Cols uint16
 	Rows uint16
 }
 
+// WadeEnvironment contains WADE session values injected into a PTY process.
 type WadeEnvironment struct {
 	WorkspaceID string
 	TerminalID  string

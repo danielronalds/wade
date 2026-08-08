@@ -3,7 +3,6 @@ package controllers
 import (
 	"net/http"
 	"net/url"
-	"strings"
 
 	"wade/internal/models/repositories"
 )
@@ -14,10 +13,12 @@ type Worktrees struct {
 	terminals    TerminalsModel
 }
 
+// WorktreeList is the collection response for repository worktrees.
 type WorktreeList struct {
 	Items []repositories.Worktree `json:"items"`
 } // @name WorktreeList
 
+// BranchList is the collection response for repository branches.
 type BranchList struct {
 	Items []repositories.Branch `json:"items"`
 } // @name BranchList
@@ -27,6 +28,7 @@ func NewWorktrees(repositories RepositoriesModel, terminals TerminalsModel) Work
 	return Worktrees{repositories: repositories, terminals: terminals}
 }
 
+// List returns the worktrees owned by a local repository.
 // @Summary List repository worktrees
 // @ID listRepositoryWorktrees
 // @Tags Worktrees
@@ -47,6 +49,7 @@ func (h Worktrees) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, WorktreeList{Items: worktrees})
 }
 
+// Create materialises a branch as a new repository worktree.
 // @Summary Create a repository worktree
 // @ID createRepositoryWorktree
 // @Tags Worktrees
@@ -68,11 +71,6 @@ func (h Worktrees) Create(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, http.StatusBadRequest, "malformed_json", "Malformed JSON", "The request body must contain a valid worktree creation request.")
 		return
 	}
-	if strings.TrimSpace(request.BranchRef) == "" {
-		writeProblem(w, http.StatusUnprocessableEntity, "branch_ref_required", "Branch reference is required", "branchRef must identify a local or remote branch.")
-		return
-	}
-
 	repositoryID := r.PathValue("repositoryId")
 	created, err := h.repositories.CreateWorktree(r.Context(), repositoryID, request)
 	if err != nil {
@@ -83,6 +81,7 @@ func (h Worktrees) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, created)
 }
 
+// Delete closes active terminals before removing a repository worktree.
 // @Summary Remove a repository worktree
 // @ID deleteRepositoryWorktree
 // @Tags Worktrees
@@ -115,6 +114,7 @@ func (h Worktrees) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// ListBranches returns local, remote, or all repository branches.
 // @Summary List repository branches
 // @ID listRepositoryBranches
 // @Tags Branches

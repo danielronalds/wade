@@ -15,6 +15,7 @@ const (
 // ClientOutputKind identifies terminal stream framing messages.
 type ClientOutputKind string
 
+// Terminal client stream framing kinds.
 const (
 	ClientOutputKindData        ClientOutputKind = "data"
 	ClientOutputKindReplayStart ClientOutputKind = "replayStart"

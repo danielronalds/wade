@@ -17,6 +17,7 @@ type Terminals struct {
 	upgrader  websocket.Upgrader
 }
 
+// TerminalList is the collection response for workspace terminals.
 type TerminalList struct {
 	Items []terminals.Terminal `json:"items"`
 } // @name TerminalList
@@ -26,6 +27,7 @@ func NewTerminals(terminalModel TerminalsModel, checkOrigin func(r *http.Request
 	return Terminals{terminals: terminalModel, upgrader: websocket.Upgrader{CheckOrigin: checkOrigin}}
 }
 
+// List returns detached terminal resources for a workspace.
 // @Summary List workspace terminals
 // @ID listWorkspaceTerminals
 // @Tags Terminals
@@ -45,6 +47,7 @@ func (h Terminals) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, TerminalList{Items: workspaceTerminals})
 }
 
+// DeleteAll closes every terminal belonging to a workspace.
 // @Summary Close all workspace terminals
 // @ID deleteWorkspaceTerminals
 // @Tags Terminals
@@ -62,6 +65,7 @@ func (h Terminals) DeleteAll(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// Put idempotently starts or returns a workspace terminal.
 // @Summary Start or reconnect to a terminal
 // @ID putWorkspaceTerminal
 // @Tags Terminals
@@ -91,6 +95,7 @@ func (h Terminals) Put(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, status, terminal)
 }
 
+// Get returns one detached workspace terminal resource.
 // @Summary Get a workspace terminal
 // @ID getWorkspaceTerminal
 // @Tags Terminals
@@ -111,6 +116,7 @@ func (h Terminals) Get(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, terminal)
 }
 
+// Delete closes one workspace terminal.
 // @Summary Close a workspace terminal
 // @ID deleteWorkspaceTerminal
 // @Tags Terminals
@@ -129,6 +135,7 @@ func (h Terminals) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// Input sends validated text to one workspace terminal.
 // @Summary Send input to a workspace terminal
 // @ID sendWorkspaceTerminalInput
 // @Tags Terminals
@@ -157,6 +164,7 @@ func (h Terminals) Input(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// Connect upgrades a request to a live terminal WebSocket session.
 // @Summary Connect to a workspace terminal
 // @Description Upgrades the connection to a WebSocket for terminal input, output, and control messages.
 // @ID connectWorkspaceTerminal

@@ -9,6 +9,7 @@ type TerminalStatus string // @name TerminalStatus
 // InputMode controls how input is written to the PTY.
 type InputMode string // @name TerminalInputMode
 
+// Supported terminal roles.
 const (
 	TerminalRoleAgent      TerminalRole = "agent"
 	TerminalRoleMisc       TerminalRole = "misc"
@@ -16,8 +17,10 @@ const (
 	TerminalRoleScratchpad TerminalRole = "scratchpad"
 )
 
+// TerminalStatusRunning identifies a live terminal process.
 const TerminalStatusRunning TerminalStatus = "running"
 
+// Supported terminal input modes.
 const (
 	InputModeRaw            InputMode = "raw"
 	InputModeBracketedPaste InputMode = "bracketed-paste"

@@ -1,7 +1,5 @@
 package pty
 
-// TODO: Review properly
-
 import (
 	"reflect"
 	"strings"
