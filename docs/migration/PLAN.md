@@ -15,10 +15,10 @@ that it reflects the established API domain.
 | --- | --- | --- |
 | Local development core | Complete | [`01-local-development-core.md`](01-local-development-core.md) |
 | Review snapshots | Complete | [`02-review-snapshots.md`](02-review-snapshots.md) |
-| Settings and bootstrap | Planned | [`03-settings-and-bootstrap.md`](03-settings-and-bootstrap.md) |
+| Settings and bootstrap | Complete | [`03-settings-and-bootstrap.md`](03-settings-and-bootstrap.md) |
 | Final cleanup | Planned | [`04-final-cleanup.md`](04-final-cleanup.md) |
 
-Current phase: Slice 2 complete; Settings and bootstrap planned.
+Current phase: Slice 3 complete; Final cleanup planned.
 
 ## Session handoff protocol
 

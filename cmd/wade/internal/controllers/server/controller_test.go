@@ -8,7 +8,29 @@ import (
 	"testing"
 
 	"wade/internal/daemon"
+	"wade/internal/models/settings"
 )
+
+type serverSettingsModelStub struct {
+	configuration settings.RuntimeConfiguration
+	err           error
+}
+
+func (stub serverSettingsModelStub) EnsureFile() (string, error) {
+	return "", stub.err
+}
+func (stub serverSettingsModelStub) Get() (settings.Settings, error) {
+	return settings.Settings{}, stub.err
+}
+func (stub serverSettingsModelStub) LoadRuntimeConfiguration() (settings.RuntimeConfiguration, error) {
+	return stub.configuration, stub.err
+}
+func (stub serverSettingsModelStub) Update(settings.Settings) (settings.UpdateResult, error) {
+	return settings.UpdateResult{}, stub.err
+}
+func (stub serverSettingsModelStub) Reload() (settings.UpdateResult, error) {
+	return settings.UpdateResult{}, stub.err
+}
 
 type daemonStub struct {
 	startStatus       daemon.Status
@@ -193,6 +215,16 @@ func TestControllerRejectsUnexpectedArguments(t *testing.T) {
 				t.Fatalf("HandleArgs() error = %v, want %q", err, test.wantError)
 			}
 		})
+	}
+}
+
+func TestControllerLoadsStartupConfigurationFromSettingsModel(t *testing.T) {
+	wantError := errors.New("settings failure")
+	controller := Controller{settings: serverSettingsModelStub{err: wantError}}
+
+	err := controller.runServer(nil)
+	if !errors.Is(err, wantError) {
+		t.Fatalf("runServer() error = %v, want %v", err, wantError)
 	}
 }
 

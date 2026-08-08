@@ -5,6 +5,9 @@ import (
 	"os"
 
 	"wade/cmd/wade/internal/controllers"
+	"wade/internal/infrastructure/environment"
+	"wade/internal/infrastructure/filesystem"
+	"wade/internal/models/settings"
 )
 
 // @title WADE API
@@ -15,7 +18,11 @@ import (
 // @accept json
 // @produce json
 func main() {
-	router := controllers.NewRouter(os.Stdout)
+	environmentClient := environment.NewClient()
+	files := filesystem.NewFileSystem()
+	settingsModel := settings.New(files, environmentClient)
+
+	router := controllers.NewRouter(os.Stdout, settingsModel)
 	exitCode, err := router.HandleArgs(os.Args[1:])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

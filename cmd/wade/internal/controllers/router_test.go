@@ -28,7 +28,7 @@ func TestRouterRoutesDaemonLifecycleCommands(t *testing.T) {
 			t.Setenv("XDG_STATE_HOME", stateRoot)
 
 			var output bytes.Buffer
-			router := NewRouter(&output)
+			router := NewRouter(&output, nil)
 
 			exitCode, err := router.HandleArgs([]string{test.command})
 			if err != nil {
@@ -45,7 +45,7 @@ func TestRouterRoutesDaemonLifecycleCommands(t *testing.T) {
 }
 
 func TestRouterReturnsUnknownCommandError(t *testing.T) {
-	router := NewRouter(&bytes.Buffer{})
+	router := NewRouter(&bytes.Buffer{}, nil)
 
 	_, err := router.HandleArgs([]string{"unknown"})
 	if err == nil || !strings.Contains(err.Error(), "unknown command") {

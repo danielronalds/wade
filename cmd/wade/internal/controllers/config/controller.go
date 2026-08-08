@@ -4,33 +4,36 @@ import (
 	"os"
 	"os/exec"
 
-	configservice "wade/internal/services/config"
+	"wade/internal/controllers"
 )
 
-type Controller struct{}
-
-func NewController() Controller {
-	return Controller{}
+// Controller opens the persisted settings file in the user's editor.
+type Controller struct {
+	settings controllers.SettingsModel
 }
 
-func (c Controller) HandleArgs(args []string) (int, error) {
-	configPath, err := configservice.EnsureFile()
+// NewController constructs the config command controller.
+func NewController(settings controllers.SettingsModel) Controller {
+	return Controller{settings: settings}
+}
+
+// HandleArgs ensures and opens the settings file.
+func (c Controller) HandleArgs(_ []string) (int, error) {
+	configPath, err := c.settings.EnsureFile()
 	if err != nil {
 		return 0, err
 	}
 
-	cmd := exec.Command(getEditor(), configPath)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	return 0, cmd.Run()
+	command := exec.Command(getEditor(), configPath)
+	command.Stdin = os.Stdin
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+	return 0, command.Run()
 }
 
 func getEditor() string {
-	if editor, ok := os.LookupEnv("EDITOR"); ok {
+	if editor, found := os.LookupEnv("EDITOR"); found {
 		return editor
 	}
-
 	return "nvim"
 }

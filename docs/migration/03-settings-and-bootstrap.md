@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned. Depends on Slices 1 and 2.
+Complete.
 
 ## Goal
 
@@ -30,56 +30,56 @@ Read [`PLAN.md`](PLAN.md) and the Settings and API conventions sections of
 
 ### Infrastructure and Model
 
-- [ ] Add environment infrastructure for home directory, environment variables,
+- [x] Add environment infrastructure for home directory, environment variables,
       and inherited shell values.
-- [ ] Add settings file location, existence, read, and direct-write behaviour to
+- [x] Add settings file location, existence, read, and direct-write behaviour to
       filesystem infrastructure.
-- [ ] Preserve straightforward direct writes without temporary-file rename
+- [x] Preserve straightforward direct writes without temporary-file rename
       machinery.
-- [ ] Create the Settings Model with `EnsureFile`, `Get`,
+- [x] Create the Settings Model with `EnsureFile`, `Get`,
       `LoadRuntimeConfiguration`, `Update`, and `Reload`.
-- [ ] Define detached `Settings`, `Agent`, `RuntimeConfiguration`, and
+- [x] Define detached `Settings`, `Agent`, `RuntimeConfiguration`, and
       `UpdateResult` types.
-- [ ] Preserve defaults, legacy `projectDirectories`, unknown keys, validation,
+- [x] Preserve defaults, legacy `projectDirectories`, unknown keys, validation,
       normalisation, and environment precedence.
-- [ ] Keep Settings independent from all other Model packages.
-- [ ] Serialise Settings persistence mutations inside the Model.
+- [x] Keep Settings independent from all other Model packages.
+- [x] Serialise Settings persistence mutations inside the Model.
 
 ### HTTP orchestration
 
-- [ ] Decode and serialise the Model-owned Settings resource directly.
-- [ ] Inject Workspaces, Repositories, and Terminals Model interfaces into the
+- [x] Decode and serialise the Model-owned Settings resource directly.
+- [x] Inject Workspaces, Repositories, and Terminals Model interfaces into the
       Settings controller.
-- [ ] Hold one controller orchestration mutex across Update or Reload and all
+- [x] Hold one controller orchestration mutex across Update or Reload and all
       runtime Configure calls.
-- [ ] Store and call the Settings controller by pointer so its mutex is never
+- [x] Store and call the Settings controller by pointer so its mutex is never
       copied.
-- [ ] Map neutral runtime values into each aggregate's Configuration type.
-- [ ] Remove `runtimeConfigApplier` after controller orchestration is active.
+- [x] Map neutral runtime values into each aggregate's Configuration type.
+- [x] Remove `runtimeConfigApplier` after controller orchestration is active.
 
 ### CLI and startup
 
-- [ ] Construct environment, filesystem settings access, and one Settings Model
+- [x] Construct environment, filesystem settings access, and one Settings Model
       in `cmd/wade/main.go`.
-- [ ] Pass the same Settings Model through the CLI router.
-- [ ] Make `wade config` consume an injected Settings Model interface.
-- [ ] Keep editor selection, process IO, and CLI presentation in the CLI
+- [x] Pass the same Settings Model through the CLI router.
+- [x] Make `wade config` consume an injected Settings Model interface.
+- [x] Keep editor selection, process IO, and CLI presentation in the CLI
       controller.
-- [ ] Load server runtime configuration through the Settings Model before
+- [x] Load server runtime configuration through the Settings Model before
       opening the listener.
-- [ ] Pass the same Settings Model and resolved configuration into
+- [x] Pass the same Settings Model and resolved configuration into
       `internal/app`.
 
 ### Tests and deletion
 
-- [ ] Move settings domain tests into `models/settings`.
-- [ ] Move mechanical settings-file tests into `infrastructure/filesystem`.
-- [ ] Update CLI and HTTP controller tests with Settings Model fakes.
-- [ ] Add a concurrent controller orchestration test that prevents stale runtime
+- [x] Move settings domain tests into `models/settings`.
+- [x] Move mechanical settings-file tests into `infrastructure/filesystem`.
+- [x] Update CLI and HTTP controller tests with Settings Model fakes.
+- [x] Add a concurrent controller orchestration test that prevents stale runtime
       settings from winning after a newer persisted update.
-- [ ] Delete `internal/services/config`.
-- [ ] Delete remaining settings files from `internal/repositories`.
-- [ ] Confirm no compatibility adapter remains.
+- [x] Delete `internal/services/config`.
+- [x] Delete remaining settings files from `internal/repositories`.
+- [x] Confirm no compatibility adapter remains.
 
 ## Acceptance criteria
 
@@ -103,10 +103,16 @@ Run the documented isolated lifecycle smoke test after this slice.
 
 ## Handoff
 
-- Last completed: Not started.
-- Next action: Wait for Slice 2 acceptance criteria.
+- Last completed: Migrated persisted settings and runtime resolution into the
+  Settings Model; added environment and settings-file infrastructure; rewired
+  HTTP, CLI, server bootstrap, and application composition; and removed the
+  legacy config Service and settings repositories.
+- Next action: Review `04-final-cleanup.md` before beginning final cleanup.
 - Current failures: None.
-- Last validation: Not run for this slice.
-- Important context: The Settings controller owns cross-Model runtime
-  orchestration, while the Settings Model owns validation, persistence, and
-  resolution.
+- Last validation: `mise run test`, `mise run lint:openapi`,
+  `mise run lint:fmt`, and `mise run lint:vet` passed. The focused Settings
+  Model and controller race tests passed, and the isolated managed and
+  foreground lifecycle smoke test passed.
+- Important context: The Settings controller is stored by pointer and holds its
+  orchestration mutex across persistence and all runtime Model configuration,
+  while the Settings Model independently serialises file operations.

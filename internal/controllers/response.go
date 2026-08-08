@@ -11,9 +11,9 @@ import (
 	"wade/internal/models/remoterepositories"
 	"wade/internal/models/repositories"
 	"wade/internal/models/reviewsnapshots"
+	"wade/internal/models/settings"
 	"wade/internal/models/terminals"
 	"wade/internal/models/workspaces"
-	"wade/internal/services/config"
 )
 
 type Problem struct {
@@ -69,7 +69,7 @@ func writeModelError(w http.ResponseWriter, err error, fallbackDetail string) {
 		writeProblem(w, http.StatusConflict, "workspace_already_exists", "Workspace already exists", err.Error())
 	case matchesError[repositories.WorktreeNotRemovableError](err):
 		writeProblem(w, http.StatusConflict, "worktree_not_removable", "Worktree cannot be removed", err.Error())
-	case matchesError[config.InvalidSettingsError](err):
+	case matchesError[settings.InvalidSettingsError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_settings", "Invalid settings", err.Error())
 	case matchesError[workspaces.InvalidWorkspaceIDError](err), matchesError[repositories.InvalidWorkspaceIDError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_workspace_id", "Invalid workspace ID", err.Error())

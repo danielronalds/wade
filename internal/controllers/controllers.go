@@ -7,7 +7,7 @@ type Controllers struct {
 	Worktrees          Worktrees
 	Terminals          Terminals
 	ReviewSnapshots    ReviewSnapshots
-	Settings           Settings
+	Settings           *Settings
 	Docs               Docs
 	Page               Page
 }

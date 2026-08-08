@@ -7,6 +7,7 @@ import (
 	"wade/cmd/wade/internal/controllers/config"
 	"wade/cmd/wade/internal/controllers/help"
 	"wade/cmd/wade/internal/controllers/server"
+	httpcontrollers "wade/internal/controllers"
 )
 
 const (
@@ -22,11 +23,11 @@ type Router struct {
 	controllers map[string]Controller
 }
 
-func NewRouter(stdout io.Writer) Router {
-	serverController := server.NewController(stdout)
+func NewRouter(stdout io.Writer, settingsModel httpcontrollers.SettingsModel) Router {
+	serverController := server.NewController(stdout, settingsModel)
 
 	return Router{controllers: map[string]Controller{
-		configCommand:        config.NewController(),
+		configCommand:        config.NewController(settingsModel),
 		helpCommand:          help.NewController(stdout),
 		server.ServerCommand: serverController,
 		server.StatusCommand: serverController,

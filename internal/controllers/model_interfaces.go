@@ -6,6 +6,7 @@ import (
 	"wade/internal/models/remoterepositories"
 	"wade/internal/models/repositories"
 	"wade/internal/models/reviewsnapshots"
+	"wade/internal/models/settings"
 	"wade/internal/models/terminals"
 	"wade/internal/models/workspaces"
 )
@@ -17,6 +18,7 @@ type WorkspacesModel interface {
 	Get(ctx context.Context, workspaceID string) (workspaces.Workspace, error)
 	Materialise(ctx context.Context, request workspaces.MaterialiseRequest) (workspaces.Workspace, error)
 	ResolveLinks(ctx context.Context, linkContext workspaces.LinkContext) (workspaces.WorkspaceLinks, error)
+	Configure(configuration workspaces.Configuration)
 }
 
 // RepositoriesModel is the complete Repositories surface consumed by controllers.
@@ -31,6 +33,7 @@ type RepositoriesModel interface {
 	CreateWorktree(ctx context.Context, repositoryID string, request repositories.CreateWorktreeRequest) (repositories.Worktree, error)
 	RemoveWorktree(ctx context.Context, repositoryID string, worktreeID string) (repositories.Worktree, error)
 	ListBranches(ctx context.Context, repositoryID string, kind repositories.BranchKind) ([]repositories.Branch, error)
+	Configure(configuration repositories.Configuration)
 }
 
 // RemoteRepositoriesModel is the complete RemoteRepositories surface consumed by controllers.
@@ -46,6 +49,15 @@ type ReviewSnapshotsModel interface {
 	Delete(snapshotID string) error
 }
 
+// SettingsModel is the shared Settings surface consumed by HTTP and CLI controllers.
+type SettingsModel interface {
+	EnsureFile() (string, error)
+	Get() (settings.Settings, error)
+	LoadRuntimeConfiguration() (settings.RuntimeConfiguration, error)
+	Update(request settings.Settings) (settings.UpdateResult, error)
+	Reload() (settings.UpdateResult, error)
+}
+
 // TerminalsModel is the complete Terminals surface consumed by controllers.
 type TerminalsModel interface {
 	List(ctx context.Context, workspaceID string) ([]terminals.Terminal, error)
@@ -57,4 +69,5 @@ type TerminalsModel interface {
 	Connect(ctx context.Context, workspaceID string, terminalID string) (*terminals.TerminalSession, error)
 	ActiveTerminalCount(workspaceID string) int
 	ActiveWorkspaceIDs() []string
+	Configure(configuration terminals.Configuration)
 }

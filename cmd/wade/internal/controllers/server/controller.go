@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"wade/internal/app"
+	"wade/internal/controllers"
 	"wade/internal/daemon"
-	"wade/internal/services/config"
 	"wade/internal/web"
 )
 
@@ -36,12 +36,13 @@ type daemonLifecycle interface {
 }
 
 type Controller struct {
-	stdout io.Writer
-	daemon daemonLifecycle
+	stdout   io.Writer
+	daemon   daemonLifecycle
+	settings controllers.SettingsModel
 }
 
-func NewController(stdout io.Writer) Controller {
-	return Controller{stdout: stdout, daemon: daemon.NewManager()}
+func NewController(stdout io.Writer, settingsModel controllers.SettingsModel) Controller {
+	return Controller{stdout: stdout, daemon: daemon.NewManager(), settings: settingsModel}
 }
 
 func (c Controller) HandleArgs(args []string) (int, error) {
@@ -153,7 +154,7 @@ func (c Controller) runForeground() (runError error) {
 }
 
 func (c Controller) runServer(reporter *daemon.StartupReporter) error {
-	configuration, err := config.Load()
+	configuration, err := c.settings.LoadRuntimeConfiguration()
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
@@ -186,7 +187,7 @@ func (c Controller) runServer(reporter *daemon.StartupReporter) error {
 	}
 	defer listener.Close()
 
-	application := app.New(configuration, staticFiles)
+	application := app.New(configuration, c.settings, staticFiles)
 	if controlServer != nil {
 		controlServer.MarkReady()
 		if err := reporter.ReportReady(controlServer.Status()); err != nil {
