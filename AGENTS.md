@@ -126,45 +126,134 @@ directly, avoid thin wrapper modules.
 
 ## Backend structure
 
-Use a Controllers, Services, Repositories structure for the Go backend.
+Use a direct MVC-style Controllers, Models, Infrastructure structure for the Go
+backend:
 
-- `internal/app`: Composition root. Wires repositories, services, controllers,
-  and shutdown behaviour.
+```text
+controllers -> models -> infrastructure
+```
+
+The migration to this structure is planned in
+`docs/migration/PLAN.md`. Existing `internal/services` and
+`internal/repositories` code is legacy migration code, not a pattern for new
+work. Follow the active migration slice when changing those areas.
+
+- `cmd/wade/main.go`: Top-level composition root for infrastructure and the
+  Settings Model shared by CLI commands and server startup.
+- `internal/app`: HTTP application composition root. Wires the remaining Models,
+  HTTP controllers, and shutdown behaviour.
 - `internal/daemon`: Managed background process runtime. Owns detached startup,
   readiness reporting, state paths, and Unix control-socket lifecycle. It does
   not construct the HTTP application or own CLI presentation.
 - `internal/server`: HTTP server runtime. Owns the mux, route registration,
   origin checks, and server lifecycle.
-- `internal/controllers`: One package with separate files per controller.
-  Controllers handle HTTP/WebSocket request and response concerns only.
-- `internal/services/<service>`: One package per service. Services own
-  application behaviour, orchestration, and validation.
-- `internal/repositories`: One package with separate files per repository.
-  Repositories own filesystem, process, command, cache, and external IO.
+- `internal/controllers`: One package with separate files per HTTP controller.
+  Controllers handle HTTP and WebSocket transport concerns and thinly
+  orchestrate workflows across aggregate Models.
+- `internal/models/<aggregate>`: One package per aggregate Model. Models own
+  domain behaviour, validation, state, concurrency, and high-level operations.
+- `internal/infrastructure/<capability>`: Concrete filesystem, environment, Git,
+  GitHub, Linear, and PTY integrations. Infrastructure owns mechanical external
+  IO, command syntax, timeouts, and external-format parsing.
 - `internal/web`: Embeds built frontend assets for serving.
 - `internal/openapi`: Generated OpenAPI Go package and JSON spec.
+
+Aggregate Model packages are:
+
+```text
+internal/models/
+  remoterepositories/
+  repositories/
+  reviewsnapshots/
+  settings/
+  terminals/
+  workspaces/
+```
+
+Worktrees and branches belong to the Repositories aggregate. They are not
+independent Models.
+
+Infrastructure packages are:
+
+```text
+internal/infrastructure/
+  environment/
+  filesystem/
+  git/
+  github/
+  linear/
+  pty/
+```
+
+Workspace discovery and settings-file access are cohesive capabilities inside
+`infrastructure/filesystem`, not separate repository packages.
 
 Dependency direction rules:
 
 - The command-line server controller may depend on `internal/daemon`.
-- `internal/daemon` must remain independent of controllers, services, and
-  repositories.
-- Controllers may depend on services.
-- Services may depend on repository interfaces.
-- Repository interfaces should live in the service package that consumes them.
-- Repositories should provide concrete implementations.
-- Repositories must not depend on services or controllers.
+- `internal/daemon` must remain independent of controllers, Models, and
+  infrastructure.
+- Controllers may depend on Models, but must not call infrastructure directly.
+- Models may depend on infrastructure, but must not depend on controllers.
+- Infrastructure must not depend on Models or controllers.
+- Avoid Model-to-Model dependencies. Share infrastructure capabilities where
+  several Models need the same external lookup, such as workspace discovery.
+- Controllers define one cohesive, aggregate-wide Model interface for the whole
+  controller package in `model_interfaces.go`.
+- Each Model defines the cohesive infrastructure interfaces it consumes.
+  Concrete infrastructure implementations may satisfy interfaces for several
+  Models.
+- Infrastructure returns infrastructure-owned technical types. Models map them
+  into aggregate-owned domain and API types.
 
-Service package rules:
+Controller rules:
 
-- Put the public service and its methods in `service.go`.
-- Put pure validation helpers in `validators.go`.
-- Put validation tests in `validators_test.go`.
-- Put service request/result/domain types in `types.go` where needed.
-- Put typed service errors in `errors.go` where needed.
+- Keep controllers as thin orchestration and transport layers.
+- Controllers decode and validate HTTP syntax, coordinate calls across Models,
+  compose cross-aggregate responses, map typed Model errors to HTTP problems,
+  and write responses.
+- Controllers must not reimplement domain validation or pass internal filesystem
+  paths between Models.
+- Decode directly into Model-owned command types when the transport and Model
+  shapes match.
 - Keep OpenAPI annotations on controllers.
-- Terminal PTY code belongs inside `internal/services/terminalsessions`, behind
-  the public terminal session service API.
+- Store the Settings controller by pointer because it owns the mutex that
+  serialises persistence and cross-Model runtime configuration application.
+
+Model package rules:
+
+- Expose one application-scoped, concurrency-safe `Model` per aggregate through
+  normal dependency injection. Do not use package-global mutable state.
+- Models own domain validation, typed domain errors, aggregate mutation locks,
+  runtime state, and high-level external workflows.
+- Models must not store request contexts.
+- Return detached serialisable value snapshots, including defensive copies of
+  nested mutable values. Do not expose pointers into internal state.
+- Read filesystem, Git, GitHub, Linear, and settings state fresh unless profiling
+  justifies a cache behind the Model API.
+- Put the Model type, constructor, configuration, and lifecycle in `model.go`.
+- Organise other files by cohesive concern, such as `worktrees.go`,
+  `branches.go`, `types.go`, `errors.go`, and `validators.go`. Do not create
+  empty convention files.
+- In every file, place exported functions and methods above private functions
+  and methods.
+- Keep resource, command, and value types with their owning aggregate. Do not
+  add a generic shared Model-types package.
+- Document exported APIs with concise comments explaining their contracts or
+  non-obvious behaviour.
+
+Infrastructure rules:
+
+- Keep infrastructure free of WADE API resource types and multi-step aggregate
+  workflows. It may implement explicit data-source contracts such as configured
+  workspace discovery, basename precedence, and canonical path resolution.
+- Infrastructure may expose cohesive operations and parsed technical result
+  types, but Models own aggregate invariants, idempotency, orchestration, and
+  domain error selection.
+- Keep low-level PTY process start, read, write, resize, and close behaviour in
+  `internal/infrastructure/pty`.
+- The Terminals Model owns terminal resources, process registry behaviour,
+  buffering, clients, and live `TerminalSession` handles.
 
 ## Frontend structure
 
