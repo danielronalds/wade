@@ -9,10 +9,29 @@ Dependencies flow in one direction. Controllers handle transport concerns and co
 ### Dependency Flow
 
 ```mermaid
-flowchart LR
-    Controllers[Controllers<br/>Transport and orchestration]
-    Models[Models<br/>Domain behaviour and state]
-    Infrastructure[Infrastructure<br/>External IO]
+flowchart TB
+    subgraph Command["cmd/wade"]
+        direction TB
+        Main["main.go<br/>Top-level composition"]
+        Router["CLI router"]
+        Commands["CLI controllers<br/>config, help and server lifecycle"]
+        Main --> Router --> Commands
+    end
 
-    Controllers --> Models --> Infrastructure
+    subgraph Core["internal/"]
+        direction TB
+        App["app<br/>HTTP application composition"]
+        Server["server<br/>HTTP routing"]
+        Controllers["controllers<br/>Transport and orchestration"]
+        Models["models<br/>Domain behaviour and state"]
+        Infrastructure["infrastructure<br/>External IO"]
+        Daemon["daemon<br/>Background server lifecycle"]
+
+        App --> Server --> Controllers --> Models --> Infrastructure
+    end
+
+    Commands --> App
+    Commands --> Daemon
+
+    style Core stroke-dasharray: 5 5
 ```
