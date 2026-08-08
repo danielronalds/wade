@@ -10,5 +10,9 @@ Dependencies flow in one direction. Controllers handle transport concerns and co
 
 ```mermaid
 flowchart LR
+    Controllers[Controllers<br/>Transport and orchestration]
+    Models[Models<br/>Domain behaviour and state]
+    Infrastructure[Infrastructure<br/>External IO]
+
     Controllers --> Models --> Infrastructure
 ```
