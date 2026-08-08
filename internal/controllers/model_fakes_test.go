@@ -5,6 +5,7 @@ import (
 
 	"wade/internal/models/remoterepositories"
 	"wade/internal/models/repositories"
+	"wade/internal/models/reviewsnapshots"
 	"wade/internal/models/terminals"
 	"wade/internal/models/workspaces"
 )
@@ -131,6 +132,39 @@ func (fake *fakeTerminalsModel) ActiveTerminalCount(workspaceID string) int {
 }
 func (fake *fakeTerminalsModel) ActiveWorkspaceIDs() []string {
 	return append([]string(nil), fake.activeWorkspaceIDs...)
+}
+
+type fakeReviewSnapshotsModel struct {
+	snapshot            reviewsnapshots.ReviewSnapshot
+	contents            reviewsnapshots.FileContents
+	createError         error
+	getError            error
+	fileContentsError   error
+	deleteError         error
+	createdWorkspaceID  string
+	requestedSnapshotID string
+	requestedFileID     string
+	requestedScope      reviewsnapshots.Scope
+	deletedSnapshotID   string
+}
+
+func (fake *fakeReviewSnapshotsModel) Create(_ context.Context, workspaceID string) (reviewsnapshots.ReviewSnapshot, error) {
+	fake.createdWorkspaceID = workspaceID
+	return fake.snapshot, fake.createError
+}
+func (fake *fakeReviewSnapshotsModel) Get(snapshotID string) (reviewsnapshots.ReviewSnapshot, error) {
+	fake.requestedSnapshotID = snapshotID
+	return fake.snapshot, fake.getError
+}
+func (fake *fakeReviewSnapshotsModel) FileContents(_ context.Context, snapshotID string, fileID string, scope reviewsnapshots.Scope) (reviewsnapshots.FileContents, error) {
+	fake.requestedSnapshotID = snapshotID
+	fake.requestedFileID = fileID
+	fake.requestedScope = scope
+	return fake.contents, fake.fileContentsError
+}
+func (fake *fakeReviewSnapshotsModel) Delete(snapshotID string) error {
+	fake.deletedSnapshotID = snapshotID
+	return fake.deleteError
 }
 
 type fakeRemoteRepositoriesModel struct {

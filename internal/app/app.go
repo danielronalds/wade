@@ -12,12 +12,12 @@ import (
 	"wade/internal/infrastructure/pty"
 	"wade/internal/models/remoterepositories"
 	"wade/internal/models/repositories"
+	"wade/internal/models/reviewsnapshots"
 	"wade/internal/models/terminals"
 	"wade/internal/models/workspaces"
 	settingsrepositories "wade/internal/repositories"
 	"wade/internal/server"
 	"wade/internal/services/config"
-	"wade/internal/services/review"
 )
 
 // Application owns the HTTP handler and application-scoped runtime resources.
@@ -43,7 +43,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Application {
 		ServerAddress: configuration.Address,
 		Agents:        terminalAgents(configuration.Agents),
 	})
-	reviewService := review.NewService(discovery, gitClient, githubClient, files)
+	reviewSnapshotModel := reviewsnapshots.New(discovery, gitClient, githubClient, files)
 
 	runtimeApplier := runtimeConfigApplier{
 		workspaces:   workspaceModel,
@@ -58,7 +58,7 @@ func New(configuration config.Config, staticFiles fs.FS) *Application {
 		RemoteRepositories: controllers.NewRemoteRepositories(remoteRepositoryModel, repositoryModel),
 		Worktrees:          controllers.NewWorktrees(repositoryModel, terminalModel),
 		Terminals:          controllers.NewTerminals(terminalModel, server.AllowSameOrigin),
-		ReviewSnapshots:    controllers.NewReviewSnapshots(reviewService),
+		ReviewSnapshots:    controllers.NewReviewSnapshots(reviewSnapshotModel),
 		Settings:           controllers.NewSettings(settingsService),
 		Docs:               controllers.NewDocs(),
 		Page:               controllers.NewPage(staticFiles),

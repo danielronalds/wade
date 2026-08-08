@@ -14,11 +14,11 @@ that it reflects the established API domain.
 | Slice | Status | Execution document |
 | --- | --- | --- |
 | Local development core | Complete | [`01-local-development-core.md`](01-local-development-core.md) |
-| Review snapshots | Planned | [`02-review-snapshots.md`](02-review-snapshots.md) |
+| Review snapshots | Complete | [`02-review-snapshots.md`](02-review-snapshots.md) |
 | Settings and bootstrap | Planned | [`03-settings-and-bootstrap.md`](03-settings-and-bootstrap.md) |
 | Final cleanup | Planned | [`04-final-cleanup.md`](04-final-cleanup.md) |
 
-Current phase: Slice 1 complete; Review snapshots planned.
+Current phase: Slice 2 complete; Settings and bootstrap planned.
 
 ## Session handoff protocol
 

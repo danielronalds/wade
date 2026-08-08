@@ -5,6 +5,7 @@ import (
 
 	"wade/internal/models/remoterepositories"
 	"wade/internal/models/repositories"
+	"wade/internal/models/reviewsnapshots"
 	"wade/internal/models/terminals"
 	"wade/internal/models/workspaces"
 )
@@ -35,6 +36,14 @@ type RepositoriesModel interface {
 // RemoteRepositoriesModel is the complete RemoteRepositories surface consumed by controllers.
 type RemoteRepositoriesModel interface {
 	List(ctx context.Context) ([]remoterepositories.RemoteRepository, error)
+}
+
+// ReviewSnapshotsModel is the complete ReviewSnapshots surface consumed by controllers.
+type ReviewSnapshotsModel interface {
+	Create(ctx context.Context, workspaceID string) (reviewsnapshots.ReviewSnapshot, error)
+	Get(snapshotID string) (reviewsnapshots.ReviewSnapshot, error)
+	FileContents(ctx context.Context, snapshotID string, fileID string, scope reviewsnapshots.Scope) (reviewsnapshots.FileContents, error)
+	Delete(snapshotID string) error
 }
 
 // TerminalsModel is the complete Terminals surface consumed by controllers.

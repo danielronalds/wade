@@ -10,10 +10,10 @@ import (
 
 	"wade/internal/models/remoterepositories"
 	"wade/internal/models/repositories"
+	"wade/internal/models/reviewsnapshots"
 	"wade/internal/models/terminals"
 	"wade/internal/models/workspaces"
 	"wade/internal/services/config"
-	"wade/internal/services/review"
 )
 
 type Problem struct {
@@ -51,7 +51,7 @@ func writeModelError(w http.ResponseWriter, err error, fallbackDetail string) {
 	case matchesError[workspaces.WorkspaceNotFoundError](err),
 		matchesError[repositories.WorkspaceNotFoundError](err),
 		matchesError[terminals.WorkspaceNotFoundError](err),
-		matchesError[review.WorkspaceNotFoundError](err):
+		matchesError[reviewsnapshots.WorkspaceNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "workspace_not_found", "Workspace not found", err.Error())
 	case matchesError[repositories.RepositoryNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "repository_not_found", "Repository not found", err.Error())
@@ -59,9 +59,9 @@ func writeModelError(w http.ResponseWriter, err error, fallbackDetail string) {
 		writeProblem(w, http.StatusNotFound, "worktree_not_found", "Worktree not found", err.Error())
 	case matchesError[terminals.TerminalNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "terminal_not_found", "Terminal not found", err.Error())
-	case matchesError[review.SnapshotNotFoundError](err):
+	case matchesError[reviewsnapshots.SnapshotNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "review_snapshot_not_found", "Review snapshot not found", err.Error())
-	case matchesError[review.SnapshotFileNotFoundError](err):
+	case matchesError[reviewsnapshots.SnapshotFileNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "review_snapshot_file_not_found", "Review snapshot file not found", err.Error())
 	case matchesError[repositories.RepositoryIDConflictError](err):
 		writeProblem(w, http.StatusConflict, "repository_id_conflict", "Repository ID conflict", err.Error())
@@ -91,9 +91,9 @@ func writeModelError(w http.ResponseWriter, err error, fallbackDetail string) {
 		writeProblem(w, http.StatusUnprocessableEntity, "terminal_input_required", "Terminal input is required", err.Error())
 	case matchesError[terminals.InvalidInputModeError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_terminal_input_mode", "Invalid terminal input mode", err.Error())
-	case matchesError[review.WorkspaceNotGitRepositoryError](err):
+	case matchesError[reviewsnapshots.WorkspaceNotGitRepositoryError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "workspace_not_git_repository", "Workspace is not a Git repository", err.Error())
-	case matchesError[review.InvalidScopeError](err):
+	case matchesError[reviewsnapshots.InvalidScopeError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_review_scope", "Invalid review scope", err.Error())
 	default:
 		log.Printf("request failed: %v", err)

@@ -1,38 +1,36 @@
-package review
+package reviewsnapshots
 
-// TODO: Review properly
-
-import (
-	"context"
-	"sync"
-	"time"
-)
+import "time"
 
 const (
+	// ScopePullRequest compares the pull request base and head revisions.
 	ScopePullRequest Scope = "pull-request"
+	// ScopeWorkingTree compares the snapshot HEAD and captured working tree.
 	ScopeWorkingTree Scope = "working-tree"
-	ScopeLastCommit  Scope = "last-commit"
-	ScopeCurrent     Scope = "current"
+	// ScopeLastCommit compares the snapshot HEAD with its parent.
+	ScopeLastCommit Scope = "last-commit"
+	// ScopeCurrent returns the file's current working tree contents.
+	ScopeCurrent Scope = "current"
 )
 
 const (
+	// StatusModified identifies a modified path.
 	StatusModified ChangeStatus = "modified"
-	StatusAdded    ChangeStatus = "added"
-	StatusDeleted  ChangeStatus = "deleted"
-	StatusRenamed  ChangeStatus = "renamed"
+	// StatusAdded identifies an added path.
+	StatusAdded ChangeStatus = "added"
+	// StatusDeleted identifies a deleted path.
+	StatusDeleted ChangeStatus = "deleted"
+	// StatusRenamed identifies a renamed path.
+	StatusRenamed ChangeStatus = "renamed"
 )
 
+// Scope selects the comparison represented by requested file contents.
 type Scope string
 
+// ChangeStatus describes how a file changed between two states.
 type ChangeStatus string // @name ReviewChangeStatus
 
-type PullRequest struct {
-	Number      int    `json:"number"`
-	URL         string `json:"url"`
-	BaseRefName string `json:"baseRefName"`
-	HeadRefName string `json:"headRefName"`
-} // @name PullRequest
-
+// FileComparison describes one file across a comparison scope.
 type FileComparison struct {
 	Status      ChangeStatus `json:"status"`
 	OldPath     *string      `json:"oldPath" extensions:"x-nullable"`
@@ -41,10 +39,12 @@ type FileComparison struct {
 	HasOriginal bool         `json:"hasOriginal"`
 	HasModified bool         `json:"hasModified"`
 
-	originalRevision string
-	modifiedRevision string
+	originalRevision        string
+	modifiedRevision        string
+	capturedModifiedContent *string
 } // @name ReviewFileComparison
 
+// File is a snapshot-scoped file identity and its available comparisons.
 type File struct {
 	ID                 string          `json:"id"`
 	Path               string          `json:"path"`
@@ -58,24 +58,20 @@ type File struct {
 	PullRequest        *FileComparison `json:"pullRequest" extensions:"x-nullable"`
 } // @name ReviewFile
 
-type WindowData struct {
-	RepoRoot    string       `json:"repoRoot"`
-	BranchName  string       `json:"branchName"`
-	PullRequest *PullRequest `json:"pullRequest"`
-	Files       []File       `json:"files"`
-}
-
+// FileContents contains both sides of a requested comparison.
 type FileContents struct {
 	OriginalContent string `json:"originalContent"`
 	ModifiedContent string `json:"modifiedContent"`
 } // @name ReviewFileContents
 
+// SnapshotBranch identifies the branch captured by a snapshot.
 type SnapshotBranch struct {
 	Ref    string  `json:"ref"`
 	Name   string  `json:"name"`
 	Remote *string `json:"remote" extensions:"x-nullable"`
 } // @name ReviewSnapshotBranch
 
+// SnapshotPullRequest identifies the pull request captured by a snapshot.
 type SnapshotPullRequest struct {
 	Number  int    `json:"number"`
 	URL     string `json:"url"`
@@ -83,6 +79,7 @@ type SnapshotPullRequest struct {
 	HeadRef string `json:"headRef"`
 } // @name ReviewSnapshotPullRequest
 
+// ReviewSnapshot is a detached point-in-time review resource.
 type ReviewSnapshot struct {
 	ID          string               `json:"id"`
 	WorkspaceID string               `json:"workspaceId"`
@@ -92,41 +89,29 @@ type ReviewSnapshot struct {
 	CreatedAt   time.Time            `json:"createdAt"`
 } // @name ReviewSnapshot
 
-type Service struct {
-	workspaces WorkspaceRepository
-	git        gitRepository
-	github     gitHubRepository
-	files      fileRepository
-	state      *snapshotState
+type windowData struct {
+	repoRoot    string
+	branchName  string
+	pullRequest *pullRequest
+	files       []File
 }
 
-type WorkspaceRepository interface {
-	Resolve(workspaceID string) (string, bool, error)
-}
-
-type snapshotState struct {
-	mu    sync.RWMutex
-	items map[string]snapshotRecord
+type pullRequest struct {
+	number      int
+	url         string
+	baseRefName string
+	headRefName string
 }
 
 type snapshotRecord struct {
-	snapshot      ReviewSnapshot
-	workspacePath string
-	window        WindowData
+	snapshot ReviewSnapshot
+	window   windowData
 }
 
 type changedPath struct {
 	status  ChangeStatus
 	oldPath *string
 	newPath *string
-}
-
-type pullRequestResponse struct {
-	Number      int    `json:"number"`
-	URL         string `json:"url"`
-	State       string `json:"state"`
-	BaseRefName string `json:"baseRefName"`
-	HeadRefName string `json:"headRefName"`
 }
 
 type fileSeed struct {
@@ -139,27 +124,4 @@ type fileSeed struct {
 	gitDiff            *FileComparison
 	lastCommit         *FileComparison
 	pullRequest        *FileComparison
-}
-
-type gitRepository interface {
-	RepoRoot(ctx context.Context, cwd string) (string, error)
-	VerifyHead(ctx context.Context, repoRoot string) error
-	ReviewCurrentBranch(ctx context.Context, repoRoot string) ([]byte, error)
-	TrackedDiffNameStatus(ctx context.Context, repoRoot string) ([]byte, error)
-	UntrackedFiles(ctx context.Context, repoRoot string) ([]byte, error)
-	TrackedFiles(ctx context.Context, repoRoot string) ([]byte, error)
-	DeletedFiles(ctx context.Context, repoRoot string) ([]byte, error)
-	LastCommitNameStatus(ctx context.Context, repoRoot string) ([]byte, error)
-	DiffNameStatusBetween(ctx context.Context, repoRoot string, originalRevision string, modifiedRevision string) ([]byte, error)
-	CommitRevision(ctx context.Context, repoRoot string, revision string) ([]byte, error)
-	MergeBase(ctx context.Context, repoRoot string, revision string) ([]byte, error)
-	RevisionContent(ctx context.Context, repoRoot string, revision string, filePath string) ([]byte, error)
-}
-
-type gitHubRepository interface {
-	PullRequest(ctx context.Context, repoRoot string, branch string) ([]byte, error)
-}
-
-type fileRepository interface {
-	ReadFile(path string) ([]byte, error)
 }

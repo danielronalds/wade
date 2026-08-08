@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned. Depends on Slice 1.
+Complete.
 
 ## Goal
 
@@ -26,21 +26,21 @@ of [`API_ENDPOINT_PROPOSAL.md`](API_ENDPOINT_PROPOSAL.md) before implementing.
 
 ## Implementation checklist
 
-- [ ] Create `internal/models/reviewsnapshots` with the agreed `Create`, `Get`,
+- [x] Create `internal/models/reviewsnapshots` with the agreed `Create`, `Get`,
       `FileContents`, and `Delete` surface.
-- [ ] Define cohesive Model-owned filesystem, Git, and GitHub interfaces.
-- [ ] Extend infrastructure technical operations only where required.
-- [ ] Keep window construction, revision pinning, parsing, and file loading
+- [x] Define cohesive Model-owned filesystem, Git, and GitHub interfaces.
+- [x] Extend infrastructure technical operations only where required.
+- [x] Keep window construction, revision pinning, parsing, and file loading
       private to the Model.
-- [ ] Preserve in-memory snapshot lifetime and deletion behaviour.
-- [ ] Preserve snapshot-scoped file identity and pinned revision semantics.
-- [ ] Return defensive copies of every snapshot and nested mutable value.
-- [ ] Switch the ReviewSnapshots controller to the aggregate-wide Model
+- [x] Preserve in-memory snapshot lifetime and deletion behaviour.
+- [x] Preserve snapshot-scoped file identity and pinned revision semantics.
+- [x] Return defensive copies of every snapshot and nested mutable value.
+- [x] Switch the ReviewSnapshots controller to the aggregate-wide Model
       interface.
-- [ ] Preserve all review scope names, responses, errors, and status codes.
-- [ ] Move service and registry tests into Model tests with fake infrastructure.
-- [ ] Delete `internal/services/review`.
-- [ ] Confirm no compatibility adapter remains.
+- [x] Preserve all review scope names, responses, errors, and status codes.
+- [x] Move service and registry tests into Model tests with fake infrastructure.
+- [x] Delete `internal/services/review`.
+- [x] Confirm no compatibility adapter remains.
 
 ## Acceptance criteria
 
@@ -63,9 +63,14 @@ Run focused race tests for the snapshot registry.
 
 ## Handoff
 
-- Last completed: Not started.
-- Next action: Wait for Slice 1 acceptance criteria.
+- Last completed: Migrated ReviewSnapshots into its aggregate Model, switched
+  controller and application wiring, added typed GitHub pull request
+  infrastructure, and removed the legacy review Service.
+- Next action: Review `03-settings-and-bootstrap.md` before beginning the
+  Settings and bootstrap migration.
 - Current failures: None.
-- Last validation: Not run for this slice.
-- Important context: Keep infrastructure technical and leave review workflow in
-  the Model.
+- Last validation: `mise run test`, `mise run lint:openapi`,
+  `mise run lint:fmt`, and `mise run lint:vet` passed. The focused
+  ReviewSnapshots race test passed.
+- Important context: Working-tree contents are captured by snapshots while the
+  `current` scope continues to read current filesystem contents.

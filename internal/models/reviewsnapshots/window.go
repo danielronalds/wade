@@ -1,11 +1,10 @@
 // NOTE: Vibecoded and not suppppppper reviewed
-package review
+package reviewsnapshots
 
 // TODO: Review properly
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -15,44 +14,44 @@ import (
 	"strings"
 )
 
-func (s Service) BuildWindowData(ctx context.Context, cwd string) (WindowData, error) {
-	repoRoot, err := repoRoot(ctx, cwd, s.git)
+func (model *Model) buildWindowData(ctx context.Context, cwd string) (windowData, error) {
+	repoRoot, err := repoRoot(ctx, cwd, model.git)
 	if err != nil {
-		return WindowData{}, err
+		return windowData{}, err
 	}
 
-	branchName := currentBranchName(ctx, repoRoot, s.git)
-	repositoryHasHead := hasHead(ctx, repoRoot, s.git)
+	branchName := currentBranchName(ctx, repoRoot, model.git)
+	repositoryHasHead := hasHead(ctx, repoRoot, model.git)
 
 	trackedDiffOutput := []byte(nil)
 	if repositoryHasHead {
-		trackedDiffOutput, err = s.git.TrackedDiffNameStatus(ctx, repoRoot)
+		trackedDiffOutput, err = model.git.TrackedDiffNameStatus(ctx, repoRoot)
 		if err != nil {
-			return WindowData{}, err
+			return windowData{}, err
 		}
 	}
 
-	untrackedOutput := runGitAllowFailure(func() ([]byte, error) { return s.git.UntrackedFiles(ctx, repoRoot) })
-	trackedFilesOutput := runGitAllowFailure(func() ([]byte, error) { return s.git.TrackedFiles(ctx, repoRoot) })
-	deletedFilesOutput := runGitAllowFailure(func() ([]byte, error) { return s.git.DeletedFiles(ctx, repoRoot) })
+	untrackedOutput := runGitAllowFailure(func() ([]byte, error) { return model.git.UntrackedFiles(ctx, repoRoot) })
+	trackedFilesOutput := runGitAllowFailure(func() ([]byte, error) { return model.git.TrackedFiles(ctx, repoRoot) })
+	deletedFilesOutput := runGitAllowFailure(func() ([]byte, error) { return model.git.DeletedFiles(ctx, repoRoot) })
 	lastCommitOutput := []byte(nil)
 	if repositoryHasHead {
-		lastCommitOutput = runGitAllowFailure(func() ([]byte, error) { return s.git.LastCommitNameStatus(ctx, repoRoot) })
+		lastCommitOutput = runGitAllowFailure(func() ([]byte, error) { return model.git.LastCommitNameStatus(ctx, repoRoot) })
 	}
 
-	var pullRequest *PullRequest
+	var pullRequest *pullRequest
 	if repositoryHasHead {
-		pullRequest = openPullRequest(ctx, repoRoot, branchName, s.github)
+		pullRequest = openPullRequest(ctx, repoRoot, branchName, model.github)
 	}
 
 	pullRequestOriginalRevision := ""
 	pullRequestChanges := []changedPath(nil)
 	if pullRequest != nil {
-		resolvedBaseRevision := resolvePullRequestBaseRevision(ctx, repoRoot, pullRequest.BaseRefName, s.git)
-		pullRequestOriginalRevision = mergeBase(ctx, repoRoot, resolvedBaseRevision, s.git)
+		resolvedBaseRevision := resolvePullRequestBaseRevision(ctx, repoRoot, pullRequest.baseRefName, model.git)
+		pullRequestOriginalRevision = mergeBase(ctx, repoRoot, resolvedBaseRevision, model.git)
 		if pullRequestOriginalRevision != "" {
 			pullRequestOutput := runGitAllowFailure(func() ([]byte, error) {
-				return s.git.DiffNameStatusBetween(ctx, repoRoot, pullRequestOriginalRevision, "HEAD")
+				return model.git.DiffNameStatusBetween(ctx, repoRoot, pullRequestOriginalRevision, "HEAD")
 			})
 			pullRequestChanges = filterReviewableChanges(parseNameStatusZ(pullRequestOutput))
 		}
@@ -120,17 +119,17 @@ func (s Service) BuildWindowData(ctx context.Context, cwd string) (WindowData, e
 		return files[i].Path < files[j].Path
 	})
 
-	return WindowData{
-		RepoRoot:    repoRoot,
-		BranchName:  branchName,
-		PullRequest: pullRequest,
-		Files:       files,
+	return windowData{
+		repoRoot:    repoRoot,
+		branchName:  branchName,
+		pullRequest: pullRequest,
+		files:       files,
 	}, nil
 }
 
-func (s Service) LoadFileContents(ctx context.Context, repoRoot string, file File, scope Scope) (FileContents, error) {
+func (model *Model) loadFileContents(ctx context.Context, repoRoot string, file File, scope Scope) (FileContents, error) {
 	if scope == ScopeCurrent {
-		content, err := workingTreeContent(s.files, repoRoot, file.Path)
+		content, err := workingTreeContent(model.files, repoRoot, file.Path)
 		if err != nil {
 			return FileContents{}, err
 		}
@@ -161,30 +160,32 @@ func (s Service) LoadFileContents(ctx context.Context, repoRoot string, file Fil
 
 	originalContent := ""
 	if comparison.OldPath != nil && originalRevision != "" {
-		originalContent = revisionContent(ctx, s.git, repoRoot, originalRevision, *comparison.OldPath)
+		originalContent = revisionContent(ctx, model.git, repoRoot, originalRevision, *comparison.OldPath)
 	}
 
 	modifiedContent := ""
 	if comparison.NewPath != nil {
-		if modifiedRevision == "" {
-			content, err := workingTreeContent(s.files, repoRoot, *comparison.NewPath)
+		if comparison.capturedModifiedContent != nil {
+			modifiedContent = *comparison.capturedModifiedContent
+		} else if modifiedRevision == "" {
+			content, err := workingTreeContent(model.files, repoRoot, *comparison.NewPath)
 			if err != nil {
 				return FileContents{}, err
 			}
 			modifiedContent = content
 		} else {
-			modifiedContent = revisionContent(ctx, s.git, repoRoot, modifiedRevision, *comparison.NewPath)
+			modifiedContent = revisionContent(ctx, model.git, repoRoot, modifiedRevision, *comparison.NewPath)
 		}
 	}
 
 	return FileContents{OriginalContent: originalContent, ModifiedContent: modifiedContent}, nil
 }
 
-func IsValidScope(scope Scope) bool {
+func isValidScope(scope Scope) bool {
 	return scope == ScopePullRequest || scope == ScopeWorkingTree || scope == ScopeLastCommit || scope == ScopeCurrent
 }
 
-func repoRoot(ctx context.Context, cwd string, git gitRepository) (string, error) {
+func repoRoot(ctx context.Context, cwd string, git Git) (string, error) {
 	root, err := git.RepoRoot(ctx, cwd)
 	if err != nil {
 		return "", WorkspaceNotGitRepositoryError{}
@@ -193,27 +194,22 @@ func repoRoot(ctx context.Context, cwd string, git gitRepository) (string, error
 	return root, nil
 }
 
-func hasHead(ctx context.Context, repoRoot string, git gitRepository) bool {
+func hasHead(ctx context.Context, repoRoot string, git Git) bool {
 	return git.VerifyHead(ctx, repoRoot) == nil
 }
 
-func currentBranchName(ctx context.Context, repoRoot string, git gitRepository) string {
+func currentBranchName(ctx context.Context, repoRoot string, git Git) string {
 	output := runGitAllowFailure(func() ([]byte, error) { return git.ReviewCurrentBranch(ctx, repoRoot) })
 	return strings.TrimSpace(string(output))
 }
 
-func openPullRequest(ctx context.Context, repoRoot string, branchName string, github gitHubRepository) *PullRequest {
+func openPullRequest(ctx context.Context, repoRoot string, branchName string, github GitHub) *pullRequest {
 	if branchName == "" || github == nil {
 		return nil
 	}
 
-	output, err := github.PullRequest(ctx, repoRoot, branchName)
-	if err != nil {
-		return nil
-	}
-
-	var response pullRequestResponse
-	if err := json.Unmarshal(output, &response); err != nil {
+	response, err := github.PullRequest(ctx, repoRoot, branchName)
+	if err != nil || response == nil {
 		return nil
 	}
 
@@ -226,15 +222,15 @@ func openPullRequest(ctx context.Context, repoRoot string, branchName string, gi
 		headRefName = branchName
 	}
 
-	return &PullRequest{
-		Number:      response.Number,
-		URL:         response.URL,
-		BaseRefName: response.BaseRefName,
-		HeadRefName: headRefName,
+	return &pullRequest{
+		number:      response.Number,
+		url:         response.URL,
+		baseRefName: response.BaseRefName,
+		headRefName: headRefName,
 	}
 }
 
-func resolvePullRequestBaseRevision(ctx context.Context, repoRoot string, baseRefName string, git gitRepository) string {
+func resolvePullRequestBaseRevision(ctx context.Context, repoRoot string, baseRefName string, git Git) string {
 	if baseRefName == "" {
 		return ""
 	}
@@ -255,12 +251,12 @@ func resolvePullRequestBaseRevision(ctx context.Context, repoRoot string, baseRe
 	return ""
 }
 
-func commitRevision(ctx context.Context, repoRoot string, revision string, git gitRepository) string {
+func commitRevision(ctx context.Context, repoRoot string, revision string, git Git) string {
 	output := runGitAllowFailure(func() ([]byte, error) { return git.CommitRevision(ctx, repoRoot, revision) })
 	return strings.TrimSpace(string(output))
 }
 
-func mergeBase(ctx context.Context, repoRoot string, revision string, git gitRepository) string {
+func mergeBase(ctx context.Context, repoRoot string, revision string, git Git) string {
 	if revision == "" {
 		return ""
 	}
@@ -542,12 +538,12 @@ func binaryExtensions() map[string]struct{} {
 	}
 }
 
-func revisionContent(ctx context.Context, git gitRepository, repoRoot string, revision string, filePath string) string {
+func revisionContent(ctx context.Context, git Git, repoRoot string, revision string, filePath string) string {
 	output := runGitAllowFailure(func() ([]byte, error) { return git.RevisionContent(ctx, repoRoot, revision, filePath) })
 	return string(output)
 }
 
-func workingTreeContent(files fileRepository, repoRoot string, filePath string) (string, error) {
+func workingTreeContent(files FileSystem, repoRoot string, filePath string) (string, error) {
 	cleanPath, err := safeRelativePath(filePath)
 	if err != nil {
 		return "", err

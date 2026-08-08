@@ -23,14 +23,24 @@ type Repository struct {
 	SSHURL        string `json:"sshUrl"`
 }
 
+// PullRequest is parsed technical pull request metadata.
+type PullRequest struct {
+	Number      int    `json:"number"`
+	URL         string `json:"url"`
+	State       string `json:"state"`
+	BaseRefName string `json:"baseRefName"`
+	HeadRefName string `json:"headRefName"`
+}
+
 // Client executes GitHub provider operations.
 type Client struct {
-	runner CommandRunner
+	runner          CommandRunner
+	directoryRunner func(ctx context.Context, directory string, name string, args ...string) (string, error)
 }
 
 // NewClient constructs a GitHub client using the supplied command runner.
 func NewClient(runner CommandRunner) Client {
-	return Client{runner: runner}
+	return Client{runner: runner, directoryRunner: runCommandInDirectory}
 }
 
 // ListRepositories returns parsed repositories visible to the current GitHub account.
@@ -67,10 +77,18 @@ func (client Client) PullRequestURL(ctx context.Context, repository string, bran
 	return url, nil
 }
 
-// PullRequest returns the legacy parsed-input payload used by ReviewSnapshots during its migration slice.
-func (client Client) PullRequest(ctx context.Context, repoRoot string, branch string) ([]byte, error) {
+// PullRequest returns parsed pull request metadata for a local repository branch.
+func (client Client) PullRequest(ctx context.Context, repoRoot string, branch string) (*PullRequest, error) {
 	output, err := client.runInDirectory(ctx, repoRoot, "pr", "view", branch, "--json", "number,url,state,baseRefName,headRefName")
-	return []byte(output), err
+	if err != nil {
+		return nil, err
+	}
+
+	var pullRequest PullRequest
+	if err := json.Unmarshal([]byte(output), &pullRequest); err != nil {
+		return nil, fmt.Errorf("parsing GitHub pull request: %w", err)
+	}
+	return &pullRequest, nil
 }
 
 // RunCommand executes a command in the current process directory.
@@ -89,9 +107,13 @@ func (client Client) run(ctx context.Context, args ...string) (string, error) {
 }
 
 func (client Client) runInDirectory(ctx context.Context, directory string, args ...string) (string, error) {
+	if client.directoryRunner == nil {
+		return "", errors.New("directory command runner is required")
+	}
+
 	commandContext, cancel := context.WithTimeout(ctx, commandTimeout)
 	defer cancel()
-	return runCommandInDirectory(commandContext, directory, "gh", args...)
+	return client.directoryRunner(commandContext, directory, "gh", args...)
 }
 
 func runCommandInDirectory(ctx context.Context, directory string, name string, args ...string) (string, error) {

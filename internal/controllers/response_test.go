@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"wade/internal/models/repositories"
+	"wade/internal/models/reviewsnapshots"
 	"wade/internal/models/terminals"
 	"wade/internal/models/workspaces"
-	"wade/internal/services/review"
 )
 
 func TestWriteModelErrorProblems(t *testing.T) {
@@ -49,7 +49,7 @@ func TestWriteModelErrorProblems(t *testing.T) {
 			wantCode:   "invalid_terminal_id",
 		},
 		"snapshot not found": {
-			err:        review.SnapshotNotFoundError{SnapshotID: "missing"},
+			err:        reviewsnapshots.SnapshotNotFoundError{SnapshotID: "missing"},
 			wantStatus: http.StatusNotFound,
 			wantCode:   "review_snapshot_not_found",
 		},
