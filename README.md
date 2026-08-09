@@ -1,5 +1,9 @@
 # WADE
 
+![WADE's Review tab showing a side-by-side working tree diff, reviewed files and inline feedback](.github/assets/wade_review_window.png)
+
+<p align="center"><sub>Review working-tree changes side by side and leave inline feedback.</sub></p>
+
 WADE is a Web-based Agentic Development Environment. It is a local-first
 browser workspace for agentic coding sessions, backed by real workspace shells
 through Go, PTYs, WebSockets and xterm.js.
