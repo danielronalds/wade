@@ -40,5 +40,6 @@ flowchart TB
 
 - [HTTP Controllers](backend-controllers.md) describes API transport boundaries, Model orchestration and error mapping.
 - [CLI Controllers](backend-cli-controllers.md) describes command routing and server lifecycle operations.
+- [Backend Domain](backend-domain.md) describes resource identities, relationships and API conventions.
 - [Aggregate Models](backend-models.md) describes domain ownership, state, concurrency and cross-aggregate boundaries.
 - [Infrastructure Modules](backend-infrastructure.md) describes external IO capabilities and their boundary with Models.
