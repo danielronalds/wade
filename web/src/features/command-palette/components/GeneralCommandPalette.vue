@@ -10,7 +10,8 @@ import { useRecentWorkspaces } from '@/features/workspaces/composables/useRecent
 import { useWorkspaces } from '@/features/workspaces/composables/useWorkspaces';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useWorkspaceDetailsStore } from '@/stores/useWorkspaceDetailsStore';
-import { isReviewInProgressState, useReviewState } from '@/views/workspace/tabs/review/composables/useReviewState';
+import { useWorkspaceSessionStore } from '@/stores/useWorkspaceSessionStore';
+import { isReviewInProgressState } from '@/types/review';
 import { dispatchCancelReviewEvent } from '@/views/workspace/tabs/review/events/cancelReview';
 import { dispatchStartReviewEvent } from '@/views/workspace/tabs/review/events/startReview';
 
@@ -30,6 +31,7 @@ const { syncActiveWorkspaces } = useActiveWorkspaces();
 const { syncWorkspaces } = useWorkspaces();
 const { removeUnavailableRecentWorkspaces } = useRecentWorkspaces();
 const workspaceDetailsStore = useWorkspaceDetailsStore();
+const workspaceSessionStore = useWorkspaceSessionStore();
 const { reloadSettingsFromDisk } = useSettingsStore();
 
 const query = ref('');
@@ -44,7 +46,7 @@ const isWorkspaceDetailsLoading = computed(() => (
   workspaceDetailsStore.isWorkspaceDetailsLoading(currentWorkspaceId.value)
 ));
 const isWaitingForWorkspaceDetails = computed(() => isWorkspaceDetailsLoading.value && !workspaceDetails.value);
-const currentReviewState = useReviewState(currentWorkspaceId);
+const currentReviewState = computed(() => workspaceSessionStore.getReviewState(currentWorkspaceId.value));
 const isReviewInProgress = computed(() => isReviewInProgressState(currentReviewState.value));
 const hasRepository = computed(() => Boolean(workspaceDetails.value?.repositoryId));
 

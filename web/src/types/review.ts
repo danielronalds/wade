@@ -19,6 +19,17 @@ export type CommentSide = 'original' | 'modified' | 'file';
 
 export type ReviewCommentKind = 'feedback' | 'question';
 
+export type ReviewState = 'idle' | 'loading' | 'ready' | 'error';
+
+export interface DraftReviewComment {
+  fileId: string;
+  filePath: string;
+  scope: ReviewScope;
+  side: CommentSide;
+  startLine: number | null;
+  endLine: number | null;
+}
+
 export interface ReviewComment {
   id: string;
   fileId: string;
@@ -29,3 +40,24 @@ export interface ReviewComment {
   endLine: number | null;
   body: string;
 }
+
+export interface ReviewCheckpoint {
+  snapshotId: string;
+  activeScope: ReviewScope;
+  activeFileId: string | null;
+  filterText: string;
+  reviewedFiles: Record<string, boolean>;
+  collapsedDirectories: Record<string, boolean>;
+  comments: ReviewComment[];
+  overallComment: string;
+  draftComment: DraftReviewComment | null;
+  draftCommentBody: string;
+  draftCommentKind: ReviewCommentKind;
+  isOverallNoteOpen: boolean;
+  overallNoteDraft: string;
+  hideUnchanged: boolean;
+  renderSideBySide: boolean;
+  wrapLines: boolean;
+}
+
+export const isReviewInProgressState = (state: ReviewState) => state === 'loading' || state === 'ready';
