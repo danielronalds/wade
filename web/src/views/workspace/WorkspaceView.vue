@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { storeToRefs } from 'pinia';
 import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import { useWorkspaceDetailsStore } from '@/stores/useWorkspaceDetailsStore';
+import { useWorkspaceSessionStore } from '@/stores/useWorkspaceSessionStore';
 import type { ReviewScreenComponent, WorkspaceScreenComponent } from '@/types/workspaceScreens';
 import { WorkspaceTabs, workspaceTabs, type WorkspaceTab } from '@/types/workspaceTabs';
 import {
@@ -21,14 +23,15 @@ const props = defineProps<{
 }>();
 
 const workspaceDetailsStore = useWorkspaceDetailsStore();
+const workspaceSessionStore = useWorkspaceSessionStore();
+workspaceSessionStore.activateWorkspaceSession(props.workspaceId);
+const { activeTab, isScratchpadOpen } = storeToRefs(workspaceSessionStore);
 
-const activeTab = ref<WorkspaceTab>(WorkspaceTabs.Terminal);
 const terminalTab = ref<WorkspaceScreenComponent | null>(null);
 const serverTab = ref<WorkspaceScreenComponent | null>(null);
 const reviewTab = ref<ReviewScreenComponent | null>(null);
 const scratchpadTerminal = ref<WorkspaceScreenComponent | null>(null);
-const isScratchpadOpen = ref(false);
-const hasScratchpadOpened = ref(false);
+const hasScratchpadOpened = ref(isScratchpadOpen.value);
 const connectionStatuses = reactive<Record<WorkspaceTab, TerminalConnectionStatus>>({
   [WorkspaceTabs.Terminal]: createDisconnectedTerminalConnectionStatus(),
   [WorkspaceTabs.Server]: createDisconnectedTerminalConnectionStatus(),
@@ -175,8 +178,15 @@ useWorkspaceKeyboardShortcuts({
   toggleTerminalZoom
 });
 
-onMounted(() => {
+onMounted(async () => {
   void workspaceDetailsStore.loadWorkspaceDetails(props.workspaceId);
+
+  if (!isScratchpadOpen.value) {
+    return;
+  }
+
+  await nextTick();
+  await scratchpadTerminal.value?.focusActiveTerminal();
 });
 </script>
 

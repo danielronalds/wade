@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { useWorkspaceSessionStore } from '@/stores/useWorkspaceSessionStore';
 import HomeView from '@/views/home/HomeView.vue';
 import SettingsView from '@/views/settings/SettingsView.vue';
 import WorkspaceView from '@/views/workspace/WorkspaceView.vue';
@@ -25,4 +26,13 @@ export const router = createRouter({
       })
     }
   ]
+});
+
+router.beforeResolve(async (to) => {
+  if (to.name !== 'workspace') {
+    return;
+  }
+
+  const workspaceId = String(to.params.workspaceId ?? '');
+  await useWorkspaceSessionStore().prepareWorkspaceSession(workspaceId);
 });

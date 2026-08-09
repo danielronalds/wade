@@ -1,18 +1,19 @@
-import { computed, nextTick, ref, type Ref } from 'vue';
+import { computed, nextTick, type Ref } from 'vue';
 import { TerminalPanes, terminalPanes, type TerminalPaneId } from '@/types/terminalPanes';
 
 type TerminalTabPaneZoomOptions = {
+  activePane: Ref<TerminalPaneId>;
+  zoomedPane: Ref<TerminalPaneId | null>;
   isActive: Readonly<Ref<boolean>>;
   focusPane: (pane: TerminalPaneId) => Promise<void>;
 };
 
 export const useTerminalTabPaneZoom = ({
+  activePane,
+  zoomedPane,
   isActive,
   focusPane
 }: TerminalTabPaneZoomOptions) => {
-  const activePane = ref<TerminalPaneId>(TerminalPanes.Agent);
-  const zoomedPane = ref<TerminalPaneId | null>(null);
-
   const activeVisiblePane = computed(() => zoomedPane.value ?? activePane.value);
 
   const isAgentPaneZoomed = computed(() => zoomedPane.value === TerminalPanes.Agent);
