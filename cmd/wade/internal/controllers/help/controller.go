@@ -3,21 +3,28 @@ package help
 import (
 	"fmt"
 	"io"
+	"runtime/debug"
 )
 
 // Controller writes command-line usage information.
 type Controller struct {
-	stdout io.Writer
+	stdout  io.Writer
+	version string
 }
 
 // NewController constructs the help command controller.
 func NewController(stdout io.Writer) Controller {
-	return Controller{stdout: stdout}
+	version := "(devel)"
+	if buildInfo, ok := debug.ReadBuildInfo(); ok && buildInfo.Main.Version != "" {
+		version = buildInfo.Main.Version
+	}
+
+	return Controller{stdout: stdout, version: version}
 }
 
 // HandleArgs writes help text and returns a successful exit code.
-func (c Controller) HandleArgs(args []string) (int, error) {
-	_, err := fmt.Fprint(c.stdout, helpText())
+func (c Controller) HandleArgs(_ []string) (int, error) {
+	_, err := fmt.Fprintf(c.stdout, "wade %s\n\n%s", c.version, helpText())
 	return 0, err
 }
 
