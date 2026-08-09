@@ -1,6 +1,8 @@
 # Aggregate Models
 
-Each package under `internal/models` represents a domain aggregate and exposes one application-scoped, concurrency-safe `Model`. The Model is the authoritative boundary for its domain behaviour, validation, state and high-level workflows, returning detached value snapshots rather than exposing mutable internal state.
+Each package under `internal/models` represents a domain aggregate and exposes one application-scoped, concurrency-safe `Model`. Models are constructed through dependency injection and do not use package-global mutable state. The Model is the authoritative boundary for its domain behaviour, validation, state and high-level workflows, returning detached value snapshots rather than exposing mutable internal state.
+
+Operations that perform IO accept a request context, but Models never retain request contexts beyond an operation's lifetime.
 
 WADE has six aggregate Models:
 
