@@ -18,6 +18,6 @@ The `help` controller writes command usage and the available WADE commands. It h
 
 ## Server Lifecycle
 
-The `server` controller handles the `server`, `status` and `stop` commands. It starts the managed background daemon or runs the server in the foreground, reports lifecycle state and requests graceful shutdown through `daemon`.
+The `server` controller handles the `server`, `status` and `stop` commands. It starts the managed background daemon or runs the server in the foreground, reports lifecycle state and the daemon's embedded build version, and requests graceful shutdown through `daemon`.
 
 When running the HTTP server, it loads runtime configuration from `settings`, loads embedded web assets and constructs the application through `internal/app`. It owns listener setup, operating-system signal handling and graceful HTTP shutdown, while `internal/app` constructs the Models and HTTP controllers.

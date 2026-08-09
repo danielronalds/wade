@@ -5,6 +5,8 @@ import (
 	"os"
 	"syscall"
 	"time"
+
+	"wade/internal/buildinfo"
 )
 
 const (
@@ -15,6 +17,7 @@ const (
 
 // Manager coordinates the lifecycle of the single managed background daemon.
 type Manager struct {
+	version         string
 	executablePath  func() (string, error)
 	controlTimeout  time.Duration
 	shutdownTimeout time.Duration
@@ -25,6 +28,7 @@ type Manager struct {
 // NewManager creates a daemon manager with the standard lifecycle timeouts.
 func NewManager() *Manager {
 	return &Manager{
+		version:         buildinfo.Version(),
 		executablePath:  os.Executable,
 		controlTimeout:  defaultControlTimeout,
 		shutdownTimeout: defaultShutdownTimeout,

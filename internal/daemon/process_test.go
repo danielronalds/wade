@@ -34,7 +34,7 @@ if [ "$1" != "test-daemon" ]; then
   exit 1
 fi
 printf '%s' "$$" > "$WADE_TEST_PID_PATH"
-printf '{"status":{"address":"test.localhost:1234","pid":%s,"logPath":"%s/wade/server.log"}}\n' "$$" "$XDG_STATE_HOME" >&3
+printf '{"status":{"version":"v0.1.0","address":"test.localhost:1234","pid":%s,"logPath":"%s/wade/server.log"}}\n' "$$" "$XDG_STATE_HOME" >&3
 exec sleep 30
 `)
 	t.Setenv("HOME", homeDirectory)
@@ -63,8 +63,8 @@ exec sleep 30
 	}
 	t.Cleanup(func() { _ = process.Signal(syscall.SIGTERM) })
 
-	if status.PID != pid || status.Address != "test.localhost:1234" {
-		t.Fatalf("Start() status = %#v, want PID %d and test address", status, pid)
+	if status.Version != "v0.1.0" || status.PID != pid || status.Address != "test.localhost:1234" {
+		t.Fatalf("Start() status = %#v, want version v0.1.0, PID %d and test address", status, pid)
 	}
 	wantLogPath := filepath.Join(stateDirectory, "wade", "server.log")
 	if status.LogPath != wantLogPath {

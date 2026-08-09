@@ -111,6 +111,7 @@ func TestControlServerWaitsForReadiness(t *testing.T) {
 	}
 	want := controlResponse{
 		Status:  controlStatusRunning,
+		Version: server.Status().Version,
 		PID:     server.Status().PID,
 		Address: server.Status().Address,
 		LogPath: server.Status().LogPath,

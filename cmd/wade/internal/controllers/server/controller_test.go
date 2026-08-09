@@ -62,6 +62,7 @@ func (s daemonStub) Stop() error {
 
 func TestControllerStartsBackgroundDaemon(t *testing.T) {
 	status := daemon.Status{
+		Version: "v0.1.0",
 		PID:     12345,
 		Address: "test.localhost:1234",
 		LogPath: "/tmp/wade/server.log",
@@ -84,14 +85,14 @@ func TestControllerStartsBackgroundDaemon(t *testing.T) {
 		t.Fatalf("Start() foreground command = %#v, want server foreground command", foregroundCommand)
 	}
 
-	want := "WADE server listening on test.localhost:1234\nPID: 12345\nLog: /tmp/wade/server.log\n"
+	want := "WADE server listening on test.localhost:1234\nVersion: v0.1.0\nPID: 12345\nLog: /tmp/wade/server.log\n"
 	if output.String() != want {
 		t.Fatalf("output = %q, want %q", output.String(), want)
 	}
 }
 
 func TestControllerReportsExistingDaemon(t *testing.T) {
-	status := daemon.Status{PID: 12345, Address: "test.localhost:1234", LogPath: "/tmp/server.log"}
+	status := daemon.Status{Version: "v0.1.0", PID: 12345, Address: "test.localhost:1234", LogPath: "/tmp/server.log"}
 	var output bytes.Buffer
 	controller := Controller{
 		stdout: &output,
@@ -106,7 +107,7 @@ func TestControllerReportsExistingDaemon(t *testing.T) {
 		t.Fatalf("HandleArgs() exit code = %d, want 0", exitCode)
 	}
 
-	want := "WADE is already running\nPID: 12345\nAddress: test.localhost:1234\n"
+	want := "WADE is already running\nVersion: v0.1.0\nPID: 12345\nAddress: test.localhost:1234\n"
 	if output.String() != want {
 		t.Fatalf("output = %q, want %q", output.String(), want)
 	}
@@ -114,6 +115,7 @@ func TestControllerReportsExistingDaemon(t *testing.T) {
 
 func TestControllerReportsRunningStatus(t *testing.T) {
 	status := daemon.Status{
+		Version: "v0.1.0",
 		PID:     12345,
 		Address: "test.localhost:1234",
 		LogPath: "/tmp/wade/server.log",
@@ -129,7 +131,7 @@ func TestControllerReportsRunningStatus(t *testing.T) {
 		t.Fatalf("HandleArgs() exit code = %d, want 0", exitCode)
 	}
 
-	want := "WADE is running\nPID: 12345\nAddress: test.localhost:1234\nLog: /tmp/wade/server.log\n"
+	want := "WADE is running\nVersion: v0.1.0\nPID: 12345\nAddress: test.localhost:1234\nLog: /tmp/wade/server.log\n"
 	if output.String() != want {
 		t.Fatalf("output = %q, want %q", output.String(), want)
 	}

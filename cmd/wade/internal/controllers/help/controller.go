@@ -3,7 +3,8 @@ package help
 import (
 	"fmt"
 	"io"
-	"runtime/debug"
+
+	"wade/internal/buildinfo"
 )
 
 // Controller writes command-line usage information.
@@ -14,12 +15,7 @@ type Controller struct {
 
 // NewController constructs the help command controller.
 func NewController(stdout io.Writer) Controller {
-	version := "(devel)"
-	if buildInfo, ok := debug.ReadBuildInfo(); ok && buildInfo.Main.Version != "" {
-		version = buildInfo.Main.Version
-	}
-
-	return Controller{stdout: stdout, version: version}
+	return Controller{stdout: stdout, version: buildinfo.Version()}
 }
 
 // HandleArgs writes help text and returns a successful exit code.

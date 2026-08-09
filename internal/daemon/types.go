@@ -9,6 +9,7 @@ const (
 
 // Status identifies a running managed daemon and its local resources.
 type Status struct {
+	Version string `json:"version,omitempty"`
 	PID     int    `json:"pid"`
 	Address string `json:"address"`
 	LogPath string `json:"logPath"`
@@ -31,6 +32,7 @@ type controlRequest struct {
 
 type controlResponse struct {
 	Status  string `json:"status"`
+	Version string `json:"version,omitempty"`
 	PID     int    `json:"pid,omitempty"`
 	Address string `json:"address,omitempty"`
 	LogPath string `json:"logPath,omitempty"`

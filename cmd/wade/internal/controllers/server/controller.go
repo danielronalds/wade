@@ -79,7 +79,8 @@ func (c Controller) handleServer(args []string) (int, error) {
 	if errors.As(err, &alreadyRunningError) {
 		_, writeError := fmt.Fprintf(
 			c.stdout,
-			"WADE is already running\nPID: %d\nAddress: %s\n",
+			"WADE is already running\nVersion: %s\nPID: %d\nAddress: %s\n",
+			displayVersion(alreadyRunningError.Status.Version),
 			alreadyRunningError.Status.PID,
 			alreadyRunningError.Status.Address,
 		)
@@ -91,8 +92,9 @@ func (c Controller) handleServer(args []string) (int, error) {
 
 	_, err = fmt.Fprintf(
 		c.stdout,
-		"WADE server listening on %s\nPID: %d\nLog: %s\n",
+		"WADE server listening on %s\nVersion: %s\nPID: %d\nLog: %s\n",
 		status.Address,
+		displayVersion(status.Version),
 		status.PID,
 		status.LogPath,
 	)
@@ -116,12 +118,20 @@ func (c Controller) handleStatus(args []string) (int, error) {
 
 	_, err = fmt.Fprintf(
 		c.stdout,
-		"WADE is running\nPID: %d\nAddress: %s\nLog: %s\n",
+		"WADE is running\nVersion: %s\nPID: %d\nAddress: %s\nLog: %s\n",
+		displayVersion(status.Version),
 		status.PID,
 		status.Address,
 		status.LogPath,
 	)
 	return 0, err
+}
+
+func displayVersion(version string) string {
+	if version == "" {
+		return "(unknown)"
+	}
+	return version
 }
 
 func (c Controller) handleStop(args []string) (int, error) {

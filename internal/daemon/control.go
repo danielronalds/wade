@@ -47,7 +47,7 @@ func (m *Manager) Acquire(address string) (*ControlServer, error) {
 		return nil, err
 	}
 
-	status := Status{PID: os.Getpid(), Address: address, LogPath: paths.LogPath}
+	status := Status{Version: m.version, PID: os.Getpid(), Address: address, LogPath: paths.LogPath}
 	if err := validateStatus(status); err != nil {
 		return nil, fmt.Errorf("creating daemon status: %w", err)
 	}
@@ -195,6 +195,7 @@ func (s *ControlServer) handleConnection(connection net.Conn, timeout time.Durat
 	}
 	_ = json.NewEncoder(connection).Encode(controlResponse{
 		Status:  controlStatusRunning,
+		Version: s.status.Version,
 		PID:     s.status.PID,
 		Address: s.status.Address,
 		LogPath: s.status.LogPath,
@@ -231,6 +232,7 @@ func (m *Manager) request(socketPath string, command controlCommand) (Status, er
 	switch response.Status {
 	case controlStatusRunning:
 		status := Status{
+			Version: response.Version,
 			PID:     response.PID,
 			Address: response.Address,
 			LogPath: response.LogPath,
