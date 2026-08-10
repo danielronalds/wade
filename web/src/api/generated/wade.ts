@@ -329,7 +329,7 @@ export const getGetOpenAPISpecUrl = () => {
 /**
  * @summary Get OpenAPI spec
  */
-export const getOpenAPISpec = async ( options?: RequestInit): Promise<GetOpenAPISpec200> => {
+export const getOpenAPISpec = async ( options?: Parameters<typeof wadeFetch>[1]): Promise<GetOpenAPISpec200> => {
 
   return wadeFetch<GetOpenAPISpec200>(getGetOpenAPISpecUrl(),
   {
@@ -353,7 +353,7 @@ export const getListRemoteRepositoriesUrl = () => {
 /**
  * @summary List remote repositories
  */
-export const listRemoteRepositories = async ( options?: RequestInit): Promise<RemoteRepositoryList> => {
+export const listRemoteRepositories = async ( options?: Parameters<typeof wadeFetch>[1]): Promise<RemoteRepositoryList> => {
 
   return wadeFetch<RemoteRepositoryList>(getListRemoteRepositoriesUrl(),
   {
@@ -377,7 +377,7 @@ export const getGetRepositoryUrl = (repositoryId: string,) => {
 /**
  * @summary Get a local repository
  */
-export const getRepository = async (repositoryId: string, options?: RequestInit): Promise<Repository> => {
+export const getRepository = async (repositoryId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<Repository> => {
 
   return wadeFetch<Repository>(getGetRepositoryUrl(repositoryId),
   {
@@ -410,7 +410,7 @@ export const getListRepositoryBranchesUrl = (repositoryId: string,
  * @summary List repository branches
  */
 export const listRepositoryBranches = async (repositoryId: string,
-    params?: ListRepositoryBranchesParams, options?: RequestInit): Promise<BranchList> => {
+    params?: ListRepositoryBranchesParams, options?: Parameters<typeof wadeFetch>[1]): Promise<BranchList> => {
 
   return wadeFetch<BranchList>(getListRepositoryBranchesUrl(repositoryId,params),
   {
@@ -434,7 +434,7 @@ export const getListRepositoryWorktreesUrl = (repositoryId: string,) => {
 /**
  * @summary List repository worktrees
  */
-export const listRepositoryWorktrees = async (repositoryId: string, options?: RequestInit): Promise<WorktreeList> => {
+export const listRepositoryWorktrees = async (repositoryId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<WorktreeList> => {
 
   return wadeFetch<WorktreeList>(getListRepositoryWorktreesUrl(repositoryId),
   {
@@ -459,7 +459,7 @@ export const getCreateRepositoryWorktreeUrl = (repositoryId: string,) => {
  * @summary Create a repository worktree
  */
 export const createRepositoryWorktree = async (repositoryId: string,
-    createWorktreeRequest: CreateWorktreeRequest, options?: RequestInit): Promise<Worktree> => {
+    createWorktreeRequest: CreateWorktreeRequest, options?: Parameters<typeof wadeFetch>[1]): Promise<Worktree> => {
 
   return wadeFetch<Worktree>(getCreateRepositoryWorktreeUrl(repositoryId),
   {
@@ -485,7 +485,7 @@ export const getDeleteRepositoryWorktreeUrl = (repositoryId: string,
  * @summary Remove a repository worktree
  */
 export const deleteRepositoryWorktree = async (repositoryId: string,
-    worktreeId: string, options?: RequestInit): Promise<void> => {
+    worktreeId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<void> => {
 
   return wadeFetch<void>(getDeleteRepositoryWorktreeUrl(repositoryId,worktreeId),
   {
@@ -509,7 +509,7 @@ export const getGetReviewSnapshotUrl = (snapshotId: string,) => {
 /**
  * @summary Get a review snapshot
  */
-export const getReviewSnapshot = async (snapshotId: string, options?: RequestInit): Promise<ReviewSnapshot> => {
+export const getReviewSnapshot = async (snapshotId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<ReviewSnapshot> => {
 
   return wadeFetch<ReviewSnapshot>(getGetReviewSnapshotUrl(snapshotId),
   {
@@ -533,7 +533,7 @@ export const getDeleteReviewSnapshotUrl = (snapshotId: string,) => {
 /**
  * @summary Delete a review snapshot
  */
-export const deleteReviewSnapshot = async (snapshotId: string, options?: RequestInit): Promise<void> => {
+export const deleteReviewSnapshot = async (snapshotId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<void> => {
 
   return wadeFetch<void>(getDeleteReviewSnapshotUrl(snapshotId),
   {
@@ -568,7 +568,7 @@ export const getGetReviewSnapshotFileContentsUrl = (snapshotId: string,
  */
 export const getReviewSnapshotFileContents = async (snapshotId: string,
     fileId: string,
-    params: GetReviewSnapshotFileContentsParams, options?: RequestInit): Promise<ReviewFileContents> => {
+    params: GetReviewSnapshotFileContentsParams, options?: Parameters<typeof wadeFetch>[1]): Promise<ReviewFileContents> => {
 
   return wadeFetch<ReviewFileContents>(getGetReviewSnapshotFileContentsUrl(snapshotId,fileId,params),
   {
@@ -592,7 +592,7 @@ export const getGetSettingsUrl = () => {
 /**
  * @summary Get settings
  */
-export const getSettings = async ( options?: RequestInit): Promise<Settings> => {
+export const getSettings = async ( options?: Parameters<typeof wadeFetch>[1]): Promise<Settings> => {
 
   return wadeFetch<Settings>(getGetSettingsUrl(),
   {
@@ -616,7 +616,7 @@ export const getUpdateSettingsUrl = () => {
 /**
  * @summary Update settings
  */
-export const updateSettings = async (settings: Settings, options?: RequestInit): Promise<Settings> => {
+export const updateSettings = async (settings: Settings, options?: Parameters<typeof wadeFetch>[1]): Promise<Settings> => {
 
   return wadeFetch<Settings>(getUpdateSettingsUrl(),
   {
@@ -640,7 +640,7 @@ export const getReloadSettingsUrl = () => {
 /**
  * @summary Reload settings from disk
  */
-export const reloadSettings = async ( options?: RequestInit): Promise<Settings> => {
+export const reloadSettings = async ( options?: Parameters<typeof wadeFetch>[1]): Promise<Settings> => {
 
   return wadeFetch<Settings>(getReloadSettingsUrl(),
   {
@@ -671,7 +671,7 @@ export const getListWorkspacesUrl = (params?: ListWorkspacesParams,) => {
 /**
  * @summary List workspaces
  */
-export const listWorkspaces = async (params?: ListWorkspacesParams, options?: RequestInit): Promise<WorkspaceList> => {
+export const listWorkspaces = async (params?: ListWorkspacesParams, options?: Parameters<typeof wadeFetch>[1]): Promise<WorkspaceList> => {
 
   return wadeFetch<WorkspaceList>(getListWorkspacesUrl(params),
   {
@@ -695,7 +695,7 @@ export const getMaterialiseWorkspaceUrl = () => {
 /**
  * @summary Materialise a remote repository as a workspace
  */
-export const materialiseWorkspace = async (materialiseWorkspaceRequest: MaterialiseWorkspaceRequest, options?: RequestInit): Promise<Workspace> => {
+export const materialiseWorkspace = async (materialiseWorkspaceRequest: MaterialiseWorkspaceRequest, options?: Parameters<typeof wadeFetch>[1]): Promise<Workspace> => {
 
   return wadeFetch<Workspace>(getMaterialiseWorkspaceUrl(),
   {
@@ -719,7 +719,7 @@ export const getGetWorkspaceUrl = (workspaceId: string,) => {
 /**
  * @summary Get a workspace
  */
-export const getWorkspace = async (workspaceId: string, options?: RequestInit): Promise<Workspace> => {
+export const getWorkspace = async (workspaceId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<Workspace> => {
 
   return wadeFetch<Workspace>(getGetWorkspaceUrl(workspaceId),
   {
@@ -743,7 +743,7 @@ export const getCreateReviewSnapshotUrl = (workspaceId: string,) => {
 /**
  * @summary Create a review snapshot
  */
-export const createReviewSnapshot = async (workspaceId: string, options?: RequestInit): Promise<ReviewSnapshot> => {
+export const createReviewSnapshot = async (workspaceId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<ReviewSnapshot> => {
 
   return wadeFetch<ReviewSnapshot>(getCreateReviewSnapshotUrl(workspaceId),
   {
@@ -767,7 +767,7 @@ export const getListWorkspaceTerminalsUrl = (workspaceId: string,) => {
 /**
  * @summary List workspace terminals
  */
-export const listWorkspaceTerminals = async (workspaceId: string, options?: RequestInit): Promise<TerminalList> => {
+export const listWorkspaceTerminals = async (workspaceId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<TerminalList> => {
 
   return wadeFetch<TerminalList>(getListWorkspaceTerminalsUrl(workspaceId),
   {
@@ -791,7 +791,7 @@ export const getDeleteWorkspaceTerminalsUrl = (workspaceId: string,) => {
 /**
  * @summary Close all workspace terminals
  */
-export const deleteWorkspaceTerminals = async (workspaceId: string, options?: RequestInit): Promise<void> => {
+export const deleteWorkspaceTerminals = async (workspaceId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<void> => {
 
   return wadeFetch<void>(getDeleteWorkspaceTerminalsUrl(workspaceId),
   {
@@ -817,7 +817,7 @@ export const getGetWorkspaceTerminalUrl = (workspaceId: string,
  * @summary Get a workspace terminal
  */
 export const getWorkspaceTerminal = async (workspaceId: string,
-    terminalId: string, options?: RequestInit): Promise<Terminal> => {
+    terminalId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<Terminal> => {
 
   return wadeFetch<Terminal>(getGetWorkspaceTerminalUrl(workspaceId,terminalId),
   {
@@ -843,7 +843,7 @@ export const getPutWorkspaceTerminalUrl = (workspaceId: string,
  * @summary Start or reconnect to a terminal
  */
 export const putWorkspaceTerminal = async (workspaceId: string,
-    terminalId: string, options?: RequestInit): Promise<Terminal> => {
+    terminalId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<Terminal> => {
 
   return wadeFetch<Terminal>(getPutWorkspaceTerminalUrl(workspaceId,terminalId),
   {
@@ -869,7 +869,7 @@ export const getDeleteWorkspaceTerminalUrl = (workspaceId: string,
  * @summary Close a workspace terminal
  */
 export const deleteWorkspaceTerminal = async (workspaceId: string,
-    terminalId: string, options?: RequestInit): Promise<void> => {
+    terminalId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<void> => {
 
   return wadeFetch<void>(getDeleteWorkspaceTerminalUrl(workspaceId,terminalId),
   {
@@ -896,7 +896,7 @@ export const getSendWorkspaceTerminalInputUrl = (workspaceId: string,
  */
 export const sendWorkspaceTerminalInput = async (workspaceId: string,
     terminalId: string,
-    terminalInputRequest: TerminalInputRequest, options?: RequestInit): Promise<void> => {
+    terminalInputRequest: TerminalInputRequest, options?: Parameters<typeof wadeFetch>[1]): Promise<void> => {
 
   return wadeFetch<void>(getSendWorkspaceTerminalInputUrl(workspaceId,terminalId),
   {
@@ -923,7 +923,7 @@ export const getConnectWorkspaceTerminalUrl = (workspaceId: string,
  * @summary Connect to a workspace terminal
  */
 export const connectWorkspaceTerminal = async (workspaceId: string,
-    terminalId: string, options?: RequestInit): Promise<unknown> => {
+    terminalId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<unknown> => {
 
   return wadeFetch<unknown>(getConnectWorkspaceTerminalUrl(workspaceId,terminalId),
   {
