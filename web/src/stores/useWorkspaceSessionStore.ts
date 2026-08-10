@@ -7,6 +7,7 @@ import {
   listWorkspaceTerminals,
   TerminalStatus
 } from '@/api/generated/wade';
+import { WadeHTTPError } from '@/api/httpClient';
 import type {
   DraftReviewComment,
   ReviewCheckpoint,
@@ -397,17 +398,27 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
 
     entry.reviewState.value = 'loading';
 
+    let data: ReviewData;
     try {
-      const data = await getReviewSnapshot(snapshotId);
-      if (data.workspaceId !== workspaceId) {
-        throw new Error('Review snapshot belongs to another workspace');
+      data = await getReviewSnapshot(snapshotId);
+    } catch (error) {
+      if (error instanceof WadeHTTPError && error.status === 404) {
+        clearReview(workspaceId);
+        return;
       }
 
-      entry.reviewData.value = data;
-      entry.reviewState.value = 'ready';
-    } catch {
-      clearReview(workspaceId);
+      entry.reviewData.value = null;
+      entry.reviewState.value = 'error';
+      return;
     }
+
+    if (data.workspaceId !== workspaceId) {
+      clearReview(workspaceId);
+      return;
+    }
+
+    entry.reviewData.value = data;
+    entry.reviewState.value = 'ready';
   };
 
   return {

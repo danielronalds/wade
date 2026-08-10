@@ -339,6 +339,9 @@ const activeContents = computed(() => activeFileRequestState.value?.contents ?? 
 const isActiveFileLoading = computed(() => activeFileRequestState.value?.isLoading === true);
 const activeFileError = computed(() => activeFileRequestState.value?.error ?? '');
 const visibleErrorMessage = computed(() => sendErrorMessage.value || activeFileError.value);
+const startErrorMessage = computed(() => errorMessage.value || (state.value === 'error'
+  ? 'Could not restore the saved review. Reload to retry, or start a new review.'
+  : ''));
 const canStartReview = computed(() => state.value === 'idle' || state.value === 'error');
 const canCancelReview = computed(() => isReviewInProgressState(state.value));
 const hasReviewableFiles = computed(() => (reviewData.value?.files.length ?? 0) > 0);
@@ -962,7 +965,7 @@ defineExpose({
         <button ref="startButton" type="button" :disabled="state === 'loading'" @click="startReview">
           {{ state === 'loading' ? 'Starting review' : 'Start Review' }}
         </button>
-        <p v-if="errorMessage" class="review-error" role="alert">{{ errorMessage }}</p>
+        <p v-if="startErrorMessage" class="review-error" role="alert">{{ startErrorMessage }}</p>
       </div>
     </section>
 
