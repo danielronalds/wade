@@ -328,7 +328,7 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
   );
 
   const getSelectedAgentName = (workspaceId: string) => (
-    ensureWorkspaceSessionEntry(workspaceId).state.terminal.selectedAgentName
+    workspaceSessions.get(workspaceId)?.state.terminal.selectedAgentName ?? ''
   );
 
   const getActiveReview = () => (
