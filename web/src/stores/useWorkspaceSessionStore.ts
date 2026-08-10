@@ -1,6 +1,6 @@
 import { watchDebounced } from '@vueuse/core';
 import { defineStore } from 'pinia';
-import { computed, reactive, ref, type Ref } from 'vue';
+import { computed, reactive, ref, shallowReactive, type Ref } from 'vue';
 import {
   deleteReviewSnapshot,
   getReviewSnapshot,
@@ -39,7 +39,7 @@ type WorkspaceSessionEntry = {
 };
 
 export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
-  const workspaceSessions = new Map<string, WorkspaceSessionEntry>();
+  const workspaceSessions = shallowReactive(new Map<string, WorkspaceSessionEntry>());
   const preparationRequests = new Map<string, Promise<void>>();
   const activeWorkspaceId = ref('');
   const defaultReview = createFreshReviewCheckpoint('');
