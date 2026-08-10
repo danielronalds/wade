@@ -31,8 +31,10 @@ Use `.github/pull_request_template.md` as the basis for the PR body. If it is mi
 
 ## Compose the PR title
 
-- Write a short, imperative summary derived from the complete branch diff and commits.
-- Do not add a work-item identifier or other prefix unless the user explicitly requests one.
+- Use the Conventional Commits format: `<type>[optional scope]: <description>`.
+- Write a short, imperative description derived from the complete branch diff and commits.
+- Choose the type that best represents the complete PR, such as `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `build`, or `ci`.
+- Do not add a work-item identifier or any prefix before the conventional commit type unless the user explicitly requests one.
 - Do not copy a long commit message verbatim.
 - Keep the title under approximately 70 characters where possible.
 
@@ -62,7 +64,7 @@ Example:
 ```bash
 gh pr create \
   --draft \
-  --title "Add workspace search filters" \
+  --title "feat: add workspace search filters" \
   --body-file "$pr_body_file"
 ```
 
