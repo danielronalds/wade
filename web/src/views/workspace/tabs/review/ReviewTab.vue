@@ -14,11 +14,7 @@ import {
 } from '@lucide/vue';
 import { storeToRefs } from 'pinia';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import {
-  createReviewSnapshot,
-  deleteReviewSnapshot,
-  getReviewSnapshotFileContents
-} from '@/api/generated/wade';
+import { createReviewSnapshot, deleteReviewSnapshot, getReviewSnapshotFileContents } from '@/api/generated/wade';
 import { pasteIntoAgentTerminal } from '@/features/terminal-session/composables/useAgentTerminalInput';
 import { useWorkspaceSessionStore } from '@/stores/useWorkspaceSessionStore';
 import {
@@ -120,16 +116,20 @@ const cacheKey = (scope: ReviewScope, fileId: string) => `${scope}:${fileId}`;
 
 const scopeLabel = (scope: ReviewScope) => {
   switch (scope) {
-    case 'pull-request': return 'Pull request';
-    case 'working-tree': return 'Working tree';
-    case 'last-commit': return 'Last commit';
-    default: return 'Current files';
+    case 'pull-request':
+      return 'Pull request';
+    case 'working-tree':
+      return 'Working tree';
+    case 'last-commit':
+      return 'Last commit';
+    default:
+      return 'Current files';
   }
 };
 
 const promptScopeLabel = (scope: ReviewScope) => scopeLabel(scope).toLowerCase();
 
-const commentKindLabel = (kind: ReviewCommentKind) => kind === 'question' ? 'Question' : 'Feedback';
+const commentKindLabel = (kind: ReviewCommentKind) => (kind === 'question' ? 'Question' : 'Feedback');
 
 const commentSideLabel = (side: CommentSide) => {
   if (side === 'original') return 'original';
@@ -161,7 +161,7 @@ const scopeCounts = computed<Record<ReviewScope, number>>(() => ({
   'pull-request': reviewData.value?.files.filter((file) => file.inPullRequest).length ?? 0,
   'working-tree': reviewData.value?.files.filter((file) => file.inGitDiff).length ?? 0,
   'last-commit': reviewData.value?.files.filter((file) => file.inLastCommit).length ?? 0,
-  'current': reviewData.value?.files.filter((file) => file.hasWorkingTreeFile).length ?? 0
+  current: reviewData.value?.files.filter((file) => file.hasWorkingTreeFile).length ?? 0
 }));
 
 const scopedFiles = computed(() => {
@@ -210,7 +210,13 @@ const scoreSubsequence = (query: string, candidate: string) => {
     }
 
     const previousCharacter = index > 0 ? candidate[index - 1] : '';
-    if (index === 0 || previousCharacter === '/' || previousCharacter === '_' || previousCharacter === '-' || previousCharacter === '.') {
+    if (
+      index === 0 ||
+      previousCharacter === '/' ||
+      previousCharacter === '_' ||
+      previousCharacter === '-' ||
+      previousCharacter === '.'
+    ) {
       score += 12;
     }
 
@@ -307,57 +313,76 @@ const buildFileTree = (files: ReviewFile[]) => {
   return root;
 };
 
-const flattenFileTree = (node: ReviewFileTreeNode, depth = 0): ReviewFileTreeRow[] => [...node.children.values()]
-  .sort((a, b) => {
-    if (a.kind !== b.kind) {
-      return a.kind === 'dir' ? -1 : 1;
-    }
+const flattenFileTree = (node: ReviewFileTreeNode, depth = 0): ReviewFileTreeRow[] =>
+  [...node.children.values()]
+    .sort((a, b) => {
+      if (a.kind !== b.kind) {
+        return a.kind === 'dir' ? -1 : 1;
+      }
 
-    return a.name.localeCompare(b.name);
-  })
-  .flatMap((child): ReviewFileTreeRow[] => {
-    if (child.kind === 'file' && child.file) {
-      return [{ kind: 'file', id: child.file.id, name: child.name, path: child.path, depth, file: child.file }];
-    }
+      return a.name.localeCompare(b.name);
+    })
+    .flatMap((child): ReviewFileTreeRow[] => {
+      if (child.kind === 'file' && child.file) {
+        return [{ kind: 'file', id: child.file.id, name: child.name, path: child.path, depth, file: child.file }];
+      }
 
-    const row: ReviewFileTreeRow = { kind: 'dir', id: child.path, name: child.name, path: child.path, depth };
-    if (collapsedDirectories.value[child.path]) {
-      return [row];
-    }
+      const row: ReviewFileTreeRow = { kind: 'dir', id: child.path, name: child.name, path: child.path, depth };
+      if (collapsedDirectories.value[child.path]) {
+        return [row];
+      }
 
-    return [row, ...flattenFileTree(child, depth + 1)];
-  });
+      return [row, ...flattenFileTree(child, depth + 1)];
+    });
 
-const fileTreeRows = computed(() => normalizedFilterText.value ? [] : flattenFileTree(buildFileTree(filteredFiles.value)));
+const fileTreeRows = computed(() =>
+  normalizedFilterText.value ? [] : flattenFileTree(buildFileTree(filteredFiles.value))
+);
 
 const activeFile = computed(() => reviewData.value?.files.find((file) => file.id === activeFileId.value) ?? null);
 const activeComparison = computed(() => getComparison(activeFile.value, activeScope.value));
 const activeFilePath = computed(() => activeComparison.value?.displayPath ?? activeFile.value?.path ?? '');
-const activeCacheKey = computed(() => activeFile.value ? cacheKey(activeScope.value, activeFile.value.id) : '');
-const activeFileRequestState = computed(() => activeCacheKey.value ? fileRequestStates.value[activeCacheKey.value] : undefined);
+const activeCacheKey = computed(() => (activeFile.value ? cacheKey(activeScope.value, activeFile.value.id) : ''));
+const activeFileRequestState = computed(() =>
+  activeCacheKey.value ? fileRequestStates.value[activeCacheKey.value] : undefined
+);
 const activeContents = computed(() => activeFileRequestState.value?.contents ?? null);
 const isActiveFileLoading = computed(() => activeFileRequestState.value?.isLoading === true);
 const activeFileError = computed(() => activeFileRequestState.value?.error ?? '');
 const visibleErrorMessage = computed(() => sendErrorMessage.value || activeFileError.value);
-const startErrorMessage = computed(() => errorMessage.value || (state.value === 'error'
-  ? 'Could not restore the saved review. Reload to retry, or start a new review.'
-  : ''));
+const startErrorMessage = computed(
+  () =>
+    errorMessage.value ||
+    (state.value === 'error' ? 'Could not restore the saved review. Reload to retry, or start a new review.' : '')
+);
 const canStartReview = computed(() => state.value === 'idle' || state.value === 'error');
 const canCancelReview = computed(() => isReviewInProgressState(state.value));
 const hasReviewableFiles = computed(() => (reviewData.value?.files.length ?? 0) > 0);
-const activeFileComments = computed(() => comments.value.filter((comment) => comment.fileId === activeFileId.value && comment.scope === activeScope.value));
+const activeFileComments = computed(() =>
+  comments.value.filter((comment) => comment.fileId === activeFileId.value && comment.scope === activeScope.value)
+);
 const activeFileInlineComments = computed(() => activeFileComments.value.filter((comment) => comment.side !== 'file'));
 const activeFileFileComments = computed(() => activeFileComments.value.filter((comment) => comment.side === 'file'));
-const isActiveFileReviewed = computed(() => activeFileId.value != null && reviewedFiles.value[activeFileId.value] === true);
-const reviewedFileCount = computed(() => scopedFiles.value.filter((file) => reviewedFiles.value[file.id] === true).length);
-const trimmedComments = computed(() => comments.value
-  .map((comment) => ({ ...comment, body: comment.body.trim() }))
-  .filter((comment) => comment.body.length > 0));
-const canFinishReview = computed(() => !isSendingPrompt.value && (trimmedComments.value.length > 0 || overallComment.value.trim().length > 0));
-const reviewScrollKey = computed(() => activeFileId.value ? `${activeScope.value}:${activeFileId.value}` : '');
-const hideUnchangedButtonLabel = computed(() => hideUnchanged.value ? 'Show full file' : 'Show changed areas only');
-const renderSideBySideButtonLabel = computed(() => renderSideBySide.value ? 'Use inline diff' : 'Use side-by-side diff');
-const wrapLinesButtonLabel = computed(() => wrapLines.value ? 'Disable line wrap' : 'Enable line wrap');
+const isActiveFileReviewed = computed(
+  () => activeFileId.value != null && reviewedFiles.value[activeFileId.value] === true
+);
+const reviewedFileCount = computed(
+  () => scopedFiles.value.filter((file) => reviewedFiles.value[file.id] === true).length
+);
+const trimmedComments = computed(() =>
+  comments.value
+    .map((comment) => ({ ...comment, body: comment.body.trim() }))
+    .filter((comment) => comment.body.length > 0)
+);
+const canFinishReview = computed(
+  () => !isSendingPrompt.value && (trimmedComments.value.length > 0 || overallComment.value.trim().length > 0)
+);
+const reviewScrollKey = computed(() => (activeFileId.value ? `${activeScope.value}:${activeFileId.value}` : ''));
+const hideUnchangedButtonLabel = computed(() => (hideUnchanged.value ? 'Show full file' : 'Show changed areas only'));
+const renderSideBySideButtonLabel = computed(() =>
+  renderSideBySide.value ? 'Use inline diff' : 'Use side-by-side diff'
+);
+const wrapLinesButtonLabel = computed(() => (wrapLines.value ? 'Disable line wrap' : 'Enable line wrap'));
 const draftCommentTitle = computed(() => {
   if (!draftComment.value) {
     return '';
@@ -389,7 +414,10 @@ const getFileStatus = (file: ReviewFile) => getComparison(file, activeScope.valu
 
 const isFileReviewed = (file: ReviewFile) => reviewedFiles.value[file.id] === true;
 
-const commentCountForFile = (file: ReviewFile) => comments.value.filter((comment) => comment.fileId === file.id && comment.scope === activeScope.value && comment.body.trim().length > 0).length;
+const commentCountForFile = (file: ReviewFile) =>
+  comments.value.filter(
+    (comment) => comment.fileId === file.id && comment.scope === activeScope.value && comment.body.trim().length > 0
+  ).length;
 
 const toggleActiveFileReviewed = () => {
   const file = activeFile.value;
@@ -485,9 +513,8 @@ const selectAdjacentFile = (offset: number) => {
   }
 
   const currentIndex = filteredFiles.value.findIndex((file) => file.id === activeFileId.value);
-  const nextIndex = currentIndex < 0
-    ? 0
-    : (currentIndex + offset + filteredFiles.value.length) % filteredFiles.value.length;
+  const nextIndex =
+    currentIndex < 0 ? 0 : (currentIndex + offset + filteredFiles.value.length) % filteredFiles.value.length;
   selectFileByIndex(nextIndex);
 };
 
@@ -501,7 +528,13 @@ const isKeyboardTextTarget = (target: EventTarget | null) => {
 };
 
 const handleReviewKeydown = (event: KeyboardEvent) => {
-  if (!props.isActive || state.value !== 'ready' || draftComment.value || isOverallNoteOpen.value || isKeyboardTextTarget(event.target)) {
+  if (
+    !props.isActive ||
+    state.value !== 'ready' ||
+    draftComment.value ||
+    isOverallNoteOpen.value ||
+    isKeyboardTextTarget(event.target)
+  ) {
     return;
   }
 
@@ -529,10 +562,8 @@ const handleReviewKeydown = (event: KeyboardEvent) => {
   }
 };
 
-const isAbortError = (error: unknown) => typeof error === 'object'
-  && error !== null
-  && 'name' in error
-  && (error as { name?: unknown }).name === 'AbortError';
+const isAbortError = (error: unknown) =>
+  typeof error === 'object' && error !== null && 'name' in error && (error as { name?: unknown }).name === 'AbortError';
 
 const abortReviewRequests = () => {
   reviewLoadAbortController?.abort();
@@ -603,10 +634,7 @@ const startReview = async () => {
   fileRequestStates.value = {};
 
   try {
-    const data = await createReviewSnapshot(
-      props.workspaceId,
-      { signal: abortController.signal }
-    );
+    const data = await createReviewSnapshot(props.workspaceId, { signal: abortController.signal });
     if (reviewLoadRun !== run || abortController.signal.aborted) {
       void deleteReviewSnapshot(data.id);
       return;
@@ -705,15 +733,15 @@ const addLineComment = (payload: { side: Exclude<CommentSide, 'file'>; lineNumbe
 };
 
 const updateCommentBody = (payload: { commentId: string; body: string }) => {
-  comments.value = comments.value.map((comment) => comment.id === payload.commentId
-    ? { ...comment, body: payload.body }
-    : comment);
+  comments.value = comments.value.map((comment) =>
+    comment.id === payload.commentId ? { ...comment, body: payload.body } : comment
+  );
 };
 
 const toggleCommentKind = (commentId: string) => {
-  comments.value = comments.value.map((comment) => comment.id === commentId
-    ? { ...comment, kind: comment.kind === 'feedback' ? 'question' : 'feedback' }
-    : comment);
+  comments.value = comments.value.map((comment) =>
+    comment.id === commentId ? { ...comment, kind: comment.kind === 'feedback' ? 'question' : 'feedback' } : comment
+  );
 };
 
 const openDraftComment = async (draft: DraftReviewComment) => {
@@ -811,12 +839,11 @@ const formatCommentLocation = (comment: ReviewComment) => {
     return `${prefix} ${filePath}`;
   }
 
-  const lineRange = comment.endLine != null && comment.endLine !== comment.startLine
-    ? `${comment.startLine}-${comment.endLine}`
-    : `${comment.startLine}`;
-  const sideSuffix = comment.scope === 'current'
-    ? ''
-    : comment.side === 'original' ? ' (old)' : ' (new)';
+  const lineRange =
+    comment.endLine != null && comment.endLine !== comment.startLine
+      ? `${comment.startLine}-${comment.endLine}`
+      : `${comment.startLine}`;
+  const sideSuffix = comment.scope === 'current' ? '' : comment.side === 'original' ? ' (old)' : ' (new)';
 
   return `${prefix} ${filePath}:${lineRange}${sideSuffix}`;
 };
@@ -843,8 +870,12 @@ const composeReviewPrompt = () => {
   lines.push('Please address the following review comments.');
   lines.push('');
   lines.push('Instructions:');
-  lines.push('- Feedback/improvement items request code changes. Action them. If an item is unclear, ask a clarifying question before changing code.');
-  lines.push('- Question items are reviewer questions. Answer them briefly and clearly. Do not make code changes for question items.');
+  lines.push(
+    '- Feedback/improvement items request code changes. Action them. If an item is unclear, ask a clarifying question before changing code.'
+  );
+  lines.push(
+    '- Question items are reviewer questions. Answer them briefly and clearly. Do not make code changes for question items.'
+  );
   lines.push('');
 
   const trimmedOverallComment = overallComment.value.trim();
@@ -939,11 +970,14 @@ watch(filteredFiles, (files) => {
   selectFile(files[0]);
 });
 
-watch(() => props.isActive, (isActive) => {
-  if (isActive) {
-    void focusActiveTerminal();
+watch(
+  () => props.isActive,
+  (isActive) => {
+    if (isActive) {
+      void focusActiveTerminal();
+    }
   }
-});
+);
 
 defineExpose({
   cancelReview,
@@ -959,9 +993,7 @@ defineExpose({
       <div class="review-empty-card">
         <p class="review-kicker">Code review</p>
         <h2>Review this workspace from inside WADE.</h2>
-        <p>
-          Start a local review of an open pull request, current working tree, last commit or full working tree.
-        </p>
+        <p>Start a local review of an open pull request, current working tree, last commit or full working tree.</p>
         <button ref="startButton" type="button" :disabled="state === 'loading'" @click="startReview">
           {{ state === 'loading' ? 'Starting review' : 'Start Review' }}
         </button>
@@ -994,7 +1026,7 @@ defineExpose({
 
         <label class="review-search">
           <span>Filter files</span>
-          <input ref="searchInput" v-model="filterText" type="search" placeholder="Search files" spellcheck="false">
+          <input ref="searchInput" v-model="filterText" type="search" placeholder="Search files" spellcheck="false" />
         </label>
 
         <section class="review-file-list" aria-label="Files">
@@ -1013,7 +1045,9 @@ defineExpose({
               <span class="review-file-name">{{ file.path }}</span>
               <span class="review-file-meta">
                 <span v-if="isFileReviewed(file)" class="review-reviewed-marker">Reviewed</span>
-                <span v-if="commentCountForFile(file) > 0" class="review-comment-count">{{ commentCountForFile(file) }}</span>
+                <span v-if="commentCountForFile(file) > 0" class="review-comment-count">{{
+                  commentCountForFile(file)
+                }}</span>
                 <span v-if="getFileStatus(file)" class="review-file-status" :data-status="getFileStatus(file)">
                   {{ statusLabel(getFileStatus(file)) }}
                 </span>
@@ -1033,12 +1067,16 @@ defineExpose({
               @click="row.kind === 'dir' ? toggleDirectoryCollapsed(row.path) : selectFile(row.file)"
             >
               <span class="review-file-name">
-                <span v-if="row.kind === 'dir'" class="review-directory-chevron">{{ collapsedDirectories[row.path] ? '›' : '⌄' }}</span>
+                <span v-if="row.kind === 'dir'" class="review-directory-chevron">{{
+                  collapsedDirectories[row.path] ? '›' : '⌄'
+                }}</span>
                 <span>{{ row.name }}</span>
               </span>
               <span v-if="row.kind === 'file'" class="review-file-meta">
                 <span v-if="isFileReviewed(row.file)" class="review-reviewed-marker">Reviewed</span>
-                <span v-if="commentCountForFile(row.file) > 0" class="review-comment-count">{{ commentCountForFile(row.file) }}</span>
+                <span v-if="commentCountForFile(row.file) > 0" class="review-comment-count">{{
+                  commentCountForFile(row.file)
+                }}</span>
                 <span v-if="getFileStatus(row.file)" class="review-file-status" :data-status="getFileStatus(row.file)">
                   {{ statusLabel(getFileStatus(row.file)) }}
                 </span>
@@ -1057,31 +1095,81 @@ defineExpose({
           </section>
           <section class="review-header-actions" aria-label="Review actions">
             <section class="review-action-group" aria-label="Comment actions">
-              <button class="review-icon-button" type="button" title="Overall note" aria-label="Overall note" @click="openOverallNote">
+              <button
+                class="review-icon-button"
+                type="button"
+                title="Overall note"
+                aria-label="Overall note"
+                @click="openOverallNote"
+              >
                 <NotebookPen :size="15" :stroke-width="1.8" aria-hidden="true" />
               </button>
-              <button class="review-icon-button" type="button" :disabled="!activeFile" title="Add file comment" aria-label="Add file comment" @click="openFileComment">
+              <button
+                class="review-icon-button"
+                type="button"
+                :disabled="!activeFile"
+                title="Add file comment"
+                aria-label="Add file comment"
+                @click="openFileComment"
+              >
                 <MessageSquarePlus :size="15" :stroke-width="1.8" aria-hidden="true" />
               </button>
             </section>
             <section class="review-action-group" aria-label="Editor view actions">
-              <button class="review-icon-button" type="button" :disabled="!activeComparison" :data-active="String(hideUnchanged)" :title="hideUnchangedButtonLabel" :aria-label="hideUnchangedButtonLabel" @click="toggleHideUnchanged">
+              <button
+                class="review-icon-button"
+                type="button"
+                :disabled="!activeComparison"
+                :data-active="String(hideUnchanged)"
+                :title="hideUnchangedButtonLabel"
+                :aria-label="hideUnchangedButtonLabel"
+                @click="toggleHideUnchanged"
+              >
                 <ListCollapse v-if="hideUnchanged" :size="15" :stroke-width="1.8" aria-hidden="true" />
                 <EyeOff v-else :size="15" :stroke-width="1.8" aria-hidden="true" />
               </button>
-              <button class="review-icon-button" type="button" :data-active="String(wrapLines)" :title="wrapLinesButtonLabel" :aria-label="wrapLinesButtonLabel" @click="toggleWrapLines">
+              <button
+                class="review-icon-button"
+                type="button"
+                :data-active="String(wrapLines)"
+                :title="wrapLinesButtonLabel"
+                :aria-label="wrapLinesButtonLabel"
+                @click="toggleWrapLines"
+              >
                 <TextWrap :size="15" :stroke-width="1.8" aria-hidden="true" />
               </button>
-              <button class="review-icon-button" type="button" :disabled="!activeComparison" :data-active="String(renderSideBySide)" :title="renderSideBySideButtonLabel" :aria-label="renderSideBySideButtonLabel" @click="toggleRenderSideBySide">
+              <button
+                class="review-icon-button"
+                type="button"
+                :disabled="!activeComparison"
+                :data-active="String(renderSideBySide)"
+                :title="renderSideBySideButtonLabel"
+                :aria-label="renderSideBySideButtonLabel"
+                @click="toggleRenderSideBySide"
+              >
                 <Columns2 v-if="renderSideBySide" :size="15" :stroke-width="1.8" aria-hidden="true" />
                 <Rows2 v-else :size="15" :stroke-width="1.8" aria-hidden="true" />
               </button>
-              <button class="review-icon-button" type="button" :disabled="!activeFile" :data-active="String(isActiveFileReviewed)" :title="isActiveFileReviewed ? 'Mark not reviewed' : 'Mark reviewed'" :aria-label="isActiveFileReviewed ? 'Mark not reviewed' : 'Mark reviewed'" @click="toggleActiveFileReviewed">
+              <button
+                class="review-icon-button"
+                type="button"
+                :disabled="!activeFile"
+                :data-active="String(isActiveFileReviewed)"
+                :title="isActiveFileReviewed ? 'Mark not reviewed' : 'Mark reviewed'"
+                :aria-label="isActiveFileReviewed ? 'Mark not reviewed' : 'Mark reviewed'"
+                @click="toggleActiveFileReviewed"
+              >
                 <Check :size="15" :stroke-width="1.8" aria-hidden="true" />
               </button>
             </section>
             <section class="review-action-group" aria-label="Review lifecycle actions">
-              <button class="review-icon-button" type="button" title="Cancel review" aria-label="Cancel review" @click="cancelReview">
+              <button
+                class="review-icon-button"
+                type="button"
+                title="Cancel review"
+                aria-label="Cancel review"
+                @click="cancelReview"
+              >
                 <X :size="15" :stroke-width="1.8" aria-hidden="true" />
               </button>
               <button class="review-finish-button" type="button" :disabled="!canFinishReview" @click="finishReview">
@@ -1099,11 +1187,22 @@ defineExpose({
         >
           {{ visibleErrorMessage }}
         </p>
-        <section class="review-comments-panel" :data-visible="String(activeFileFileComments.length > 0)" aria-label="File comments for selected file">
-          <article v-for="comment in activeFileFileComments" :key="comment.id" class="review-comment-card" :data-kind="comment.kind">
+        <section
+          class="review-comments-panel"
+          :data-visible="String(activeFileFileComments.length > 0)"
+          aria-label="File comments for selected file"
+        >
+          <article
+            v-for="comment in activeFileFileComments"
+            :key="comment.id"
+            class="review-comment-card"
+            :data-kind="comment.kind"
+          >
             <header>
               <span>{{ commentKindLabel(comment.kind) }}</span>
-              <span>{{ comment.side === 'file' ? 'File' : `${commentSideLabel(comment.side)}:${comment.startLine}` }}</span>
+              <span>{{
+                comment.side === 'file' ? 'File' : `${commentSideLabel(comment.side)}:${comment.startLine}`
+              }}</span>
             </header>
             <p>{{ comment.body }}</p>
             <button type="button" @click="deleteComment(comment.id)">Delete</button>
@@ -1127,30 +1226,59 @@ defineExpose({
       </main>
     </section>
 
-    <section v-if="draftComment" class="review-modal-backdrop" aria-label="Add review comment" @click.self="closeDraftComment">
+    <section
+      v-if="draftComment"
+      class="review-modal-backdrop"
+      aria-label="Add review comment"
+      @click.self="closeDraftComment"
+    >
       <article class="review-modal-card" :data-kind="draftCommentKind">
         <header>
           <p class="review-kicker">{{ commentKindLabel(draftCommentKind) }}</p>
           <h2>{{ draftCommentTitle }}</h2>
           <p>{{ draftCommentDescription }}</p>
         </header>
-        <textarea ref="draftCommentTextarea" v-model="draftCommentBody" spellcheck="true" placeholder="Write a review comment"></textarea>
+        <textarea
+          ref="draftCommentTextarea"
+          v-model="draftCommentBody"
+          spellcheck="true"
+          placeholder="Write a review comment"
+        ></textarea>
         <footer>
-          <button class="review-kind-toggle" type="button" :data-kind="draftCommentKind" @click="toggleDraftCommentKind">{{ commentKindLabel(draftCommentKind) }}</button>
+          <button
+            class="review-kind-toggle"
+            type="button"
+            :data-kind="draftCommentKind"
+            @click="toggleDraftCommentKind"
+          >
+            {{ commentKindLabel(draftCommentKind) }}
+          </button>
           <button type="button" @click="closeDraftComment">Cancel</button>
-          <button type="button" :disabled="draftCommentBody.trim().length === 0" @click="saveDraftComment">Add comment</button>
+          <button type="button" :disabled="draftCommentBody.trim().length === 0" @click="saveDraftComment">
+            Add comment
+          </button>
         </footer>
       </article>
     </section>
 
-    <section v-if="isOverallNoteOpen" class="review-modal-backdrop" aria-label="Overall review note" @click.self="closeOverallNote">
+    <section
+      v-if="isOverallNoteOpen"
+      class="review-modal-backdrop"
+      aria-label="Overall review note"
+      @click.self="closeOverallNote"
+    >
       <article class="review-modal-card">
         <header>
           <p class="review-kicker">Review note</p>
           <h2>Overall note</h2>
           <p>This note appears above the generated review comments.</p>
         </header>
-        <textarea ref="overallNoteTextarea" v-model="overallNoteDraft" spellcheck="true" placeholder="Write an overall review note"></textarea>
+        <textarea
+          ref="overallNoteTextarea"
+          v-model="overallNoteDraft"
+          spellcheck="true"
+          placeholder="Write an overall review note"
+        ></textarea>
         <footer>
           <button type="button" @click="closeOverallNote">Cancel</button>
           <button type="button" @click="saveOverallNote">Save note</button>
@@ -1302,7 +1430,7 @@ button:not(:disabled):focus-visible {
   font-size: 12px;
 }
 
-.review-scopes button[data-active="true"] {
+.review-scopes button[data-active='true'] {
   border-color: var(--text);
   background: rgb(var(--accent-rgb) / 10%);
   color: var(--text);
@@ -1358,16 +1486,16 @@ button:not(:disabled):focus-visible {
   text-align: left;
 }
 
-.review-file-row[data-active="true"] {
+.review-file-row[data-active='true'] {
   background: rgb(var(--accent-rgb) / 14%);
 }
 
-.review-file-row[data-kind="dir"] {
+.review-file-row[data-kind='dir'] {
   color: var(--muted);
   font-weight: 500;
 }
 
-.review-file-row[data-reviewed="true"] .review-file-name {
+.review-file-row[data-reviewed='true'] .review-file-name {
   color: var(--muted);
 }
 
@@ -1421,15 +1549,15 @@ button:not(:disabled):focus-visible {
   font-size: 10px;
 }
 
-.review-file-status[data-status="added"] {
+.review-file-status[data-status='added'] {
   color: #69ff94;
 }
 
-.review-file-status[data-status="deleted"] {
+.review-file-status[data-status='deleted'] {
   color: #ff6e6e;
 }
 
-.review-file-status[data-status="renamed"] {
+.review-file-status[data-status='renamed'] {
   color: #f1fa8c;
 }
 
@@ -1514,7 +1642,7 @@ button:not(:disabled):focus-visible {
   padding: 0 11px;
 }
 
-.review-header-actions button[data-active="true"] {
+.review-header-actions button[data-active='true'] {
   border-color: #50fa7b;
   background: rgb(80 250 123 / 10%);
   color: #50fa7b;
@@ -1526,7 +1654,7 @@ button:not(:disabled):focus-visible {
   background: rgb(255 85 85 / 8%);
 }
 
-.review-file-error[data-visible="false"] {
+.review-file-error[data-visible='false'] {
   height: 0;
   padding-block: 0;
   border-bottom: 0;
@@ -1542,7 +1670,7 @@ button:not(:disabled):focus-visible {
   overflow: auto;
 }
 
-.review-comments-panel[data-visible="false"] {
+.review-comments-panel[data-visible='false'] {
   height: 0;
   padding-block: 0;
   border-bottom: 0;
@@ -1634,13 +1762,13 @@ button:not(:disabled):focus-visible {
   font-size: 12px;
 }
 
-.review-kind-toggle[data-kind="question"] {
+.review-kind-toggle[data-kind='question'] {
   border-color: #d29922;
   background: rgb(210 153 34 / 14%);
   color: #d29922;
 }
 
-.review-kind-toggle[data-kind="feedback"] {
+.review-kind-toggle[data-kind='feedback'] {
   border-color: #ff6e6e;
   background: rgb(255 110 110 / 14%);
   color: #ff6e6e;

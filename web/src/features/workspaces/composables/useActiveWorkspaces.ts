@@ -47,9 +47,8 @@ export const useActiveWorkspaces = createSharedComposable(() => {
   };
 });
 
-const sortActiveWorkspaces = (workspaces: WorkspaceSummary[]): WorkspaceSummary[] => (
-  [...workspaces].sort((firstWorkspace, secondWorkspace) => (
-    firstWorkspace.name.localeCompare(secondWorkspace.name)
-    || firstWorkspace.id.localeCompare(secondWorkspace.id)
-  ))
-);
+const sortActiveWorkspaces = (workspaces: WorkspaceSummary[]): WorkspaceSummary[] =>
+  [...workspaces].sort(
+    (firstWorkspace, secondWorkspace) =>
+      firstWorkspace.name.localeCompare(secondWorkspace.name) || firstWorkspace.id.localeCompare(secondWorkspace.id)
+  );

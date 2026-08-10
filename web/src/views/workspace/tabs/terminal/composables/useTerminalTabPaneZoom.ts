@@ -8,12 +8,7 @@ type TerminalTabPaneZoomOptions = {
   focusPane: (pane: TerminalPaneId) => Promise<void>;
 };
 
-export const useTerminalTabPaneZoom = ({
-  activePane,
-  zoomedPane,
-  isActive,
-  focusPane
-}: TerminalTabPaneZoomOptions) => {
+export const useTerminalTabPaneZoom = ({ activePane, zoomedPane, isActive, focusPane }: TerminalTabPaneZoomOptions) => {
   const activeVisiblePane = computed(() => zoomedPane.value ?? activePane.value);
 
   const isAgentPaneZoomed = computed(() => zoomedPane.value === TerminalPanes.Agent);
@@ -22,12 +17,12 @@ export const useTerminalTabPaneZoom = ({
   const isAgentPaneCollapsed = computed(() => isMiscPaneZoomed.value);
   const isMiscPaneCollapsed = computed(() => isAgentPaneZoomed.value);
 
-  const isAgentPaneActive = computed(() => isActive.value
-    && !isAgentPaneCollapsed.value
-    && activeVisiblePane.value === TerminalPanes.Agent);
-  const isMiscPaneActive = computed(() => isActive.value
-    && !isMiscPaneCollapsed.value
-    && activeVisiblePane.value === TerminalPanes.Misc);
+  const isAgentPaneActive = computed(
+    () => isActive.value && !isAgentPaneCollapsed.value && activeVisiblePane.value === TerminalPanes.Agent
+  );
+  const isMiscPaneActive = computed(
+    () => isActive.value && !isMiscPaneCollapsed.value && activeVisiblePane.value === TerminalPanes.Misc
+  );
 
   const terminalTabLayout = computed(() => {
     if (isAgentPaneZoomed.value) {

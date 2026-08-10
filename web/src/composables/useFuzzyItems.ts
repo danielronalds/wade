@@ -69,7 +69,7 @@ const scoreLabel = <T>(item: T, label: string, rawQuery: string): FuzzyMatch<T> 
 
   const substringIndex = candidate.indexOf(query);
   if (substringIndex !== -1) {
-    return { item, label, score: 80000 - (substringIndex * 100) - label.length };
+    return { item, label, score: 80000 - substringIndex * 100 - label.length };
   }
 
   const sequentialMatch = findSequentialMatch(candidate, query);
@@ -80,29 +80,28 @@ const scoreLabel = <T>(item: T, label: string, rawQuery: string): FuzzyMatch<T> 
   return {
     item,
     label,
-    score: 70000
-      + (sequentialMatch.consecutiveMatches * 25)
-      - (sequentialMatch.gapPenalty * 10)
-      - (sequentialMatch.firstMatchIndex * 20)
-      - label.length
+    score:
+      70000 +
+      sequentialMatch.consecutiveMatches * 25 -
+      sequentialMatch.gapPenalty * 10 -
+      sequentialMatch.firstMatchIndex * 20 -
+      label.length
   };
 };
 
-export const useFuzzyItems = <T>(
-  items: Ref<readonly T[]>,
-  query: Ref<string>,
-  getLabel: (item: T) => string
-) => {
-  const matchingItems = computed(() => items.value
-    .map((item) => scoreLabel(item, getLabel(item), query.value))
-    .filter((match): match is FuzzyMatch<T> => Boolean(match))
-    .sort((firstMatch, secondMatch) => {
-      if (firstMatch.score !== secondMatch.score) {
-        return secondMatch.score - firstMatch.score;
-      }
+export const useFuzzyItems = <T>(items: Ref<readonly T[]>, query: Ref<string>, getLabel: (item: T) => string) => {
+  const matchingItems = computed(() =>
+    items.value
+      .map((item) => scoreLabel(item, getLabel(item), query.value))
+      .filter((match): match is FuzzyMatch<T> => Boolean(match))
+      .sort((firstMatch, secondMatch) => {
+        if (firstMatch.score !== secondMatch.score) {
+          return secondMatch.score - firstMatch.score;
+        }
 
-      return firstMatch.label.localeCompare(secondMatch.label);
-    }));
+        return firstMatch.label.localeCompare(secondMatch.label);
+      })
+  );
 
   return {
     matchingItems: readonly(matchingItems)

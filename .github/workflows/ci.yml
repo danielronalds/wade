@@ -31,7 +31,7 @@ jobs:
       - name: Install frontend dependencies
         run: npm --prefix web ci
 
-      - name: Check Go formatting
+      - name: Check formatting
         run: mise run lint:fmt
 
       - name: Check generated OpenAPI specification

@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import {
-  createRepositoryWorktree,
-  listRepositoryBranches,
-  type Branch,
-  type Worktree
-} from '@/api/generated/wade';
+import { createRepositoryWorktree, listRepositoryBranches, type Branch, type Worktree } from '@/api/generated/wade';
 import { useFuzzyItems } from '@/composables/useFuzzyItems';
 import PaletteShell from '@/features/command-palette/components/PaletteShell.vue';
 import { usePaletteRequestState } from '@/features/command-palette/composables/usePaletteRequestState';
@@ -20,11 +15,7 @@ const emit = defineEmits<{
   close: [restoreFocus?: boolean];
 }>();
 
-const {
-  closeReservedWorktreeTab,
-  openWorktree: navigateToWorktree,
-  reserveWorktreeTab
-} = useWorktreeNavigation();
+const { closeReservedWorktreeTab, openWorktree: navigateToWorktree, reserveWorktreeTab } = useWorktreeNavigation();
 const remoteBranches = ref<Branch[]>([]);
 const createdWorktree = ref<Worktree | undefined>();
 const copyWarnings = computed(() => createdWorktree.value?.ignoredFileCopyWarnings ?? []);
@@ -153,25 +144,23 @@ const remoteBranchActionLabel = (branch: Branch) => {
   return 'Checkout remote';
 };
 
-const { matchingItems: matchingRemoteBranches } = useFuzzyItems(
-  remoteBranches,
-  query,
-  (branch) => branch.name
-);
+const { matchingItems: matchingRemoteBranches } = useFuzzyItems(remoteBranches, query, (branch) => branch.name);
 
 const paletteResults = computed<PaletteResult[]>(() => {
   if (createdWorktree.value && hasCopyWarnings.value) {
-    return [{
-      id: 'open-created-worktree',
-      label: `Open ${createdWorktree.value.workspaceId}`,
-      actionLabel: 'Open worktree',
-      isDisabled: false,
-      run: () => {
-        if (createdWorktree.value) {
-          void openWorktree(createdWorktree.value, reserveWorktreeTab());
+    return [
+      {
+        id: 'open-created-worktree',
+        label: `Open ${createdWorktree.value.workspaceId}`,
+        actionLabel: 'Open worktree',
+        isDisabled: false,
+        run: () => {
+          if (createdWorktree.value) {
+            void openWorktree(createdWorktree.value, reserveWorktreeTab());
+          }
         }
       }
-    }];
+    ];
   }
 
   return matchingRemoteBranches.value.map((match) => ({

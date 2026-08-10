@@ -91,9 +91,13 @@ export const useTerminalPaneSession = ({
     terminalSession.scrollToBottom();
   };
 
-  watch([terminalSession.connectionStatusText, terminalSession.isConnected], () => {
-    publishConnectionStatus();
-  }, { immediate: true });
+  watch(
+    [terminalSession.connectionStatusText, terminalSession.isConnected],
+    () => {
+      publishConnectionStatus();
+    },
+    { immediate: true }
+  );
 
   watch(isActive, (active) => {
     if (!active) {

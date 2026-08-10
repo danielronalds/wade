@@ -39,11 +39,8 @@ type CommandPaletteKeyboardShortcutsOptions = {
   openWorkspacePicker: () => void;
 };
 
-const isCtrlShortcut = (event: KeyboardEvent, key: string) => event.ctrlKey
-  && !event.altKey
-  && !event.metaKey
-  && !event.shiftKey
-  && event.key.toLowerCase() === key;
+const isCtrlShortcut = (event: KeyboardEvent, key: string) =>
+  event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey && event.key.toLowerCase() === key;
 
 const stopEvent = (event: KeyboardEvent) => {
   event.preventDefault();

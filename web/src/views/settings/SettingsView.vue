@@ -97,7 +97,7 @@ onMounted(() => {
                 placeholder="~/Personal"
                 :aria-invalid="!isValidWorkspaceDirectory(directory)"
                 @input="updateWorkspaceDirectory(index, $event)"
-              >
+              />
               <button type="button" class="remove-action" @click="removeWorkspaceDirectory(index)">Remove</button>
             </li>
           </ul>
@@ -111,7 +111,10 @@ onMounted(() => {
           <header class="settings-section-header">
             <section>
               <h2 id="shell-title">Shell</h2>
-              <p>Leave blank to use the server's <code>$SHELL</code>. Existing terminals keep their current shell until reloaded.</p>
+              <p>
+                Leave blank to use the server's <code>$SHELL</code>. Existing terminals keep their current shell until
+                reloaded.
+              </p>
             </section>
           </header>
 
@@ -126,7 +129,7 @@ onMounted(() => {
               placeholder="$SHELL"
               :aria-invalid="hasInvalidShell"
               @input="updateShell"
-            >
+            />
           </label>
         </section>
 
@@ -152,10 +155,7 @@ onMounted(() => {
             Open worktrees in a new tab
           </Checkbox>
 
-          <Checkbox
-            id="copy-ignored-files-on-worktree-creation"
-            v-model="shouldCopyIgnoredFilesOnWorktreeCreation"
-          >
+          <Checkbox id="copy-ignored-files-on-worktree-creation" v-model="shouldCopyIgnoredFilesOnWorktreeCreation">
             Copy ignored files when creating a worktree
           </Checkbox>
 
@@ -179,7 +179,7 @@ onMounted(() => {
                   autocomplete="off"
                   placeholder="**/node_modules"
                   @input="updateWorktreeCopyExclude(index, $event)"
-                >
+                />
                 <button type="button" class="remove-action" @click="removeWorktreeCopyExclude(index)">Remove</button>
               </li>
             </ul>
@@ -194,7 +194,8 @@ onMounted(() => {
             Shell must be a program path or command without arguments.
           </p>
           <p v-else-if="!isLoading && hasInvalidAgents" class="settings-error">
-            At least one agent is required. Agent names and commands cannot be empty, names must be unique, and exactly one agent must be default.
+            At least one agent is required. Agent names and commands cannot be empty, names must be unique, and exactly
+            one agent must be default.
           </p>
           <p v-else-if="error" class="settings-error">{{ error }}</p>
           <p v-else-if="statusMessage" class="settings-status">{{ statusMessage }}</p>
@@ -295,7 +296,7 @@ onMounted(() => {
   background: var(--disconnected);
 }
 
-#connection-status[data-connected="true"] span:first-child {
+#connection-status[data-connected='true'] span:first-child {
   background: var(--connected);
 }
 
@@ -453,9 +454,9 @@ onMounted(() => {
   outline: none;
 }
 
-.workspace-directory-row input[aria-invalid="true"],
-.shell-row input[aria-invalid="true"],
-.worktree-copy-exclude-row input[aria-invalid="true"] {
+.workspace-directory-row input[aria-invalid='true'],
+.shell-row input[aria-invalid='true'],
+.worktree-copy-exclude-row input[aria-invalid='true'] {
   border-color: var(--disconnected);
 }
 

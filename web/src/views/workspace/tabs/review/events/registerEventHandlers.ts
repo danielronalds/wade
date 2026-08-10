@@ -1,6 +1,12 @@
 // NOTE: Vibecoded and not suppppppper reviewed
-import { registerCancelReviewEventHandler, type CancelReviewEventHandler } from '@/views/workspace/tabs/review/events/cancelReview';
-import { registerStartReviewEventHandler, type StartReviewEventHandler } from '@/views/workspace/tabs/review/events/startReview';
+import {
+  registerCancelReviewEventHandler,
+  type CancelReviewEventHandler
+} from '@/views/workspace/tabs/review/events/cancelReview';
+import {
+  registerStartReviewEventHandler,
+  type StartReviewEventHandler
+} from '@/views/workspace/tabs/review/events/startReview';
 
 type RegisteredEventHandlers = {
   cancelReview?: CancelReviewEventHandler;

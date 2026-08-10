@@ -3,21 +3,24 @@ import { computed } from 'vue';
 import { ArrowDownToLine, ChevronDown, Maximize2, Minimize2, RefreshCw, X } from '@lucide/vue';
 import type { Agent } from '@/types/settings';
 
-const props = withDefaults(defineProps<{
-  label: string;
-  isActive: boolean;
-  showCloseIcon?: boolean;
-  showZoomIcon?: boolean;
-  isZoomed?: boolean;
-  agents?: Agent[];
-  selectedAgentName?: string;
-}>(), {
-  showCloseIcon: false,
-  showZoomIcon: false,
-  isZoomed: false,
-  agents: undefined,
-  selectedAgentName: undefined
-});
+const props = withDefaults(
+  defineProps<{
+    label: string;
+    isActive: boolean;
+    showCloseIcon?: boolean;
+    showZoomIcon?: boolean;
+    isZoomed?: boolean;
+    agents?: Agent[];
+    selectedAgentName?: string;
+  }>(),
+  {
+    showCloseIcon: false,
+    showZoomIcon: false,
+    isZoomed: false,
+    agents: undefined,
+    selectedAgentName: undefined
+  }
+);
 
 const emit = defineEmits<{
   scrollToBottom: [];
@@ -27,9 +30,7 @@ const emit = defineEmits<{
   agentChange: [agentName: string];
 }>();
 
-const zoomButtonLabel = computed(() => props.isZoomed
-  ? 'Restore split view'
-  : `Zoom ${props.label} terminal`);
+const zoomButtonLabel = computed(() => (props.isZoomed ? 'Restore split view' : `Zoom ${props.label} terminal`));
 
 const scrollToBottom = () => {
   emit('scrollToBottom');
@@ -138,7 +139,7 @@ const updateAgent = (event: Event) => {
   user-select: none;
 }
 
-.terminal-header[data-active="true"] {
+.terminal-header[data-active='true'] {
   color: var(--text);
 }
 

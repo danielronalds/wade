@@ -11,28 +11,21 @@ import {
   type Settings
 } from '@/types/settings';
 
-const settingsHaveChanged = (current: Settings, saved: Settings) => JSON.stringify(current.workspaceDirectories)
-  !== JSON.stringify(saved.workspaceDirectories)
-  || current.shell !== saved.shell
-  || JSON.stringify(current.agents) !== JSON.stringify(saved.agents)
-  || current.copyIgnoredFilesOnWorktreeCreation !== saved.copyIgnoredFilesOnWorktreeCreation
-  || current.openWorktreesInNewTabs !== saved.openWorktreesInNewTabs
-  || JSON.stringify(current.worktreeCopyExcludes) !== JSON.stringify(saved.worktreeCopyExcludes)
-  || current.themeAccentColor !== saved.themeAccentColor;
+const settingsHaveChanged = (current: Settings, saved: Settings) =>
+  JSON.stringify(current.workspaceDirectories) !== JSON.stringify(saved.workspaceDirectories) ||
+  current.shell !== saved.shell ||
+  JSON.stringify(current.agents) !== JSON.stringify(saved.agents) ||
+  current.copyIgnoredFilesOnWorktreeCreation !== saved.copyIgnoredFilesOnWorktreeCreation ||
+  current.openWorktreesInNewTabs !== saved.openWorktreesInNewTabs ||
+  JSON.stringify(current.worktreeCopyExcludes) !== JSON.stringify(saved.worktreeCopyExcludes) ||
+  current.themeAccentColor !== saved.themeAccentColor;
 
-const inputValue = (event: Event) => event.target instanceof HTMLInputElement
-  ? event.target.value
-  : undefined;
+const inputValue = (event: Event) => (event.target instanceof HTMLInputElement ? event.target.value : undefined);
 
-const errorMessage = (error: unknown, fallback: string) => error instanceof Error
-  ? error.message
-  : fallback;
+const errorMessage = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
 export const useSettingsForm = () => {
-  const {
-    loadSettings: loadSavedSettings,
-    saveSettings
-  } = useSettingsStore();
+  const { loadSettings: loadSavedSettings, saveSettings } = useSettingsStore();
 
   const form = reactive<Settings>(createEmptySettings());
   const savedSettings = ref<Settings>(createEmptySettings());
@@ -42,18 +35,21 @@ export const useSettingsForm = () => {
   const statusMessage = ref('');
 
   const normalisedSettings = computed(() => normaliseSettings(form));
-  const hasInvalidWorkspaceDirectories = computed(() => form.workspaceDirectories.some(
-    (directory) => !isValidWorkspaceDirectory(directory)
-  ));
+  const hasInvalidWorkspaceDirectories = computed(() =>
+    form.workspaceDirectories.some((directory) => !isValidWorkspaceDirectory(directory))
+  );
   const hasInvalidShell = computed(() => !isValidShell(form.shell));
   const hasInvalidAgents = computed(() => !isValidAgents(normalisedSettings.value.agents));
   const hasChanges = computed(() => settingsHaveChanged(normalisedSettings.value, savedSettings.value));
-  const canSave = computed(() => !isLoading.value
-    && !isSaving.value
-    && hasChanges.value
-    && !hasInvalidWorkspaceDirectories.value
-    && !hasInvalidShell.value
-    && !hasInvalidAgents.value);
+  const canSave = computed(
+    () =>
+      !isLoading.value &&
+      !isSaving.value &&
+      hasChanges.value &&
+      !hasInvalidWorkspaceDirectories.value &&
+      !hasInvalidShell.value &&
+      !hasInvalidAgents.value
+  );
 
   const clearMessages = () => {
     statusMessage.value = '';
@@ -92,9 +88,9 @@ export const useSettingsForm = () => {
       return;
     }
 
-    form.workspaceDirectories = form.workspaceDirectories.map((directory, directoryIndex) => (
+    form.workspaceDirectories = form.workspaceDirectories.map((directory, directoryIndex) =>
       directoryIndex === index ? nextDirectory : directory
-    ));
+    );
     clearMessages();
   };
 
@@ -127,9 +123,7 @@ export const useSettingsForm = () => {
       return;
     }
 
-    form.agents = form.agents.map((agent, agentIndex) => (
-      agentIndex === index ? { ...agent, name: nextName } : agent
-    ));
+    form.agents = form.agents.map((agent, agentIndex) => (agentIndex === index ? { ...agent, name: nextName } : agent));
     clearMessages();
   };
 
@@ -139,9 +133,9 @@ export const useSettingsForm = () => {
       return;
     }
 
-    form.agents = form.agents.map((agent, agentIndex) => (
+    form.agents = form.agents.map((agent, agentIndex) =>
       agentIndex === index ? { ...agent, command: nextCommand } : agent
-    ));
+    );
     clearMessages();
   };
 
@@ -196,9 +190,9 @@ export const useSettingsForm = () => {
       return;
     }
 
-    form.worktreeCopyExcludes = form.worktreeCopyExcludes.map((exclude, excludeIndex) => (
+    form.worktreeCopyExcludes = form.worktreeCopyExcludes.map((exclude, excludeIndex) =>
       excludeIndex === index ? nextExclude : exclude
-    ));
+    );
     clearMessages();
   };
 

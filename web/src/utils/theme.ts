@@ -1,6 +1,6 @@
 export const themeAccentColors = ['white', 'purple', 'orange'] as const;
 
-export type ThemeAccentColor = typeof themeAccentColors[number];
+export type ThemeAccentColor = (typeof themeAccentColors)[number];
 
 export const defaultThemeAccentColor: ThemeAccentColor = 'white';
 
@@ -19,17 +19,14 @@ export const themeAccentColorOptions = themeAccentColors.map((value) => ({
   color: themeAccentColorValues[value]
 }));
 
-export const isThemeAccentColor = (value: unknown): value is ThemeAccentColor => (
-  typeof value === 'string' && themeAccentColors.includes(value as ThemeAccentColor)
-);
+export const isThemeAccentColor = (value: unknown): value is ThemeAccentColor =>
+  typeof value === 'string' && themeAccentColors.includes(value as ThemeAccentColor);
 
-export const normaliseThemeAccentColor = (value: unknown): ThemeAccentColor => isThemeAccentColor(value)
-  ? value
-  : defaultThemeAccentColor;
+export const normaliseThemeAccentColor = (value: unknown): ThemeAccentColor =>
+  isThemeAccentColor(value) ? value : defaultThemeAccentColor;
 
-export const storedThemeAccentColor = () => normaliseThemeAccentColor(
-  window.localStorage.getItem(storedThemeAccentColorKey)
-);
+export const storedThemeAccentColor = () =>
+  normaliseThemeAccentColor(window.localStorage.getItem(storedThemeAccentColorKey));
 
 export const applyThemeAccentColor = (color: unknown) => {
   const themeAccentColor = normaliseThemeAccentColor(color);
@@ -37,4 +34,3 @@ export const applyThemeAccentColor = (color: unknown) => {
   window.localStorage.setItem(storedThemeAccentColorKey, themeAccentColor);
   window.dispatchEvent(new CustomEvent(themeAccentColorChangedEvent, { detail: themeAccentColor }));
 };
-

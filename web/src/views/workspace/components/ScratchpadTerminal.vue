@@ -47,17 +47,8 @@ defineExpose({
 
 <template>
   <Teleport to="body">
-    <section
-      v-show="isOpen"
-      id="scratchpad-terminal-backdrop"
-      aria-label="Scratchpad terminal backdrop"
-    >
-      <section
-        id="scratchpad-terminal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Scratchpad terminal"
-      >
+    <section v-show="isOpen" id="scratchpad-terminal-backdrop" aria-label="Scratchpad terminal backdrop">
+      <section id="scratchpad-terminal" role="dialog" aria-modal="true" aria-label="Scratchpad terminal">
         <TerminalPane
           ref="scratchpadPane"
           :workspace-id="workspaceId"

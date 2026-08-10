@@ -24,8 +24,8 @@ description = "Builds embedded assets and installs the wade binary"
 run = "mise run gen:openapi && mise run gen:embed && go install ./cmd/wade"
 
 [tasks.fmt]
-description = "Formats Go code"
-run = "go fmt ./..."
+description = "Formats Go and frontend code"
+run = "go fmt ./... && npm --prefix web run format"
 
 [tasks."gen:embed"]
 description = "Stages embedded web assets"
@@ -47,8 +47,8 @@ diff -u internal/openapi/swagger.yaml "$tmp_dir/swagger.yaml"
 """
 
 [tasks."lint:fmt"]
-description = "Checks Go formatting"
-run = "test -z $(gofmt -l .)"
+description = "Checks Go and frontend formatting"
+run = "test -z \"$(gofmt -l .)\" && npm --prefix web run format:check"
 
 [tasks."lint:vet"]
 description = "Runs go vet"

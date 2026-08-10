@@ -147,26 +147,31 @@ const placeholderText = computed(() => {
   return '';
 });
 
-const loadScript = (src: string) => new Promise<void>((resolve, reject) => {
-  const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
-  if (existingScript?.dataset.loaded === 'true') {
-    resolve();
-    return;
-  }
+const loadScript = (src: string) =>
+  new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+    if (existingScript?.dataset.loaded === 'true') {
+      resolve();
+      return;
+    }
 
-  const script = existingScript ?? document.createElement('script');
-  script.src = src;
-  script.async = true;
-  script.addEventListener('load', () => {
-    script.dataset.loaded = 'true';
-    resolve();
-  }, { once: true });
-  script.addEventListener('error', () => reject(new Error('Could not load Monaco editor')), { once: true });
+    const script = existingScript ?? document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.addEventListener(
+      'load',
+      () => {
+        script.dataset.loaded = 'true';
+        resolve();
+      },
+      { once: true }
+    );
+    script.addEventListener('error', () => reject(new Error('Could not load Monaco editor')), { once: true });
 
-  if (!existingScript) {
-    document.head.appendChild(script);
-  }
-});
+    if (!existingScript) {
+      document.head.appendChild(script);
+    }
+  });
 
 const loadStylesheet = (href: string) => {
   if (document.querySelector<HTMLLinkElement>(`link[href="${href}"]`)) {
@@ -197,23 +202,29 @@ const loadMonaco = () => {
   loadStylesheet('/static/monaco/vs/editor/editor.main.css');
   configureMonacoEnvironment();
 
-  monacoLoadPromise = loadScript('/static/monaco/vs/loader.js')
-    .then(() => new Promise<MonacoApi>((resolve, reject) => {
-      if (!window.require) {
-        reject(new Error('Monaco loader is unavailable'));
-        return;
-      }
-
-      window.require.config({ paths: { vs: '/static/monaco/vs' } });
-      window.require(['vs/editor/editor.main'], () => {
-        if (!window.monaco) {
-          reject(new Error('Monaco editor is unavailable'));
+  monacoLoadPromise = loadScript('/static/monaco/vs/loader.js').then(
+    () =>
+      new Promise<MonacoApi>((resolve, reject) => {
+        if (!window.require) {
+          reject(new Error('Monaco loader is unavailable'));
           return;
         }
 
-        resolve(window.monaco);
-      }, reject);
-    }));
+        window.require.config({ paths: { vs: '/static/monaco/vs' } });
+        window.require(
+          ['vs/editor/editor.main'],
+          () => {
+            if (!window.monaco) {
+              reject(new Error('Monaco editor is unavailable'));
+              return;
+            }
+
+            resolve(window.monaco);
+          },
+          reject
+        );
+      })
+  );
 
   return monacoLoadPromise;
 };
@@ -244,8 +255,7 @@ const languageByFileExtension: Record<string, string> = {
 
 const inferLanguage = (filePath: string) => {
   const lowerPath = filePath.toLowerCase();
-  const languageEntry = Object.entries(languageByFileExtension)
-    .find(([extension]) => lowerPath.endsWith(extension));
+  const languageEntry = Object.entries(languageByFileExtension).find(([extension]) => lowerPath.endsWith(extension));
 
   return languageEntry?.[1] ?? 'plaintext';
 };
@@ -336,13 +346,14 @@ const scheduleScrollRestore = () => {
 
 const inlineComments = () => props.comments.filter((comment) => comment.side !== 'file' && comment.startLine != null);
 
-const commentSignature = () => inlineComments()
-  .map((comment) => `${comment.id}:${comment.side}:${comment.startLine}:${comment.kind}`)
-  .join('|');
+const commentSignature = () =>
+  inlineComments()
+    .map((comment) => `${comment.id}:${comment.side}:${comment.startLine}:${comment.kind}`)
+    .join('|');
 
-const commentKindLabel = (kind: ReviewComment['kind']) => kind === 'question' ? 'Question' : 'Feedback';
+const commentKindLabel = (kind: ReviewComment['kind']) => (kind === 'question' ? 'Question' : 'Feedback');
 
-const sideLabel = (side: InlineCommentSide) => side === 'original' ? 'Original' : 'Modified';
+const sideLabel = (side: InlineCommentSide) => (side === 'original' ? 'Original' : 'Modified');
 
 const groupedInlineComments = (side: InlineCommentSide) => {
   const groups = new Map<number, ReviewComment[]>();
@@ -529,7 +540,8 @@ const syncCommentDecorations = () => {
       options: {
         isWholeLine: true,
         className: comment.side === 'original' ? 'review-comment-line-original' : 'review-comment-line-modified',
-        glyphMarginClassName: comment.side === 'original' ? 'review-comment-glyph-original' : 'review-comment-glyph-modified'
+        glyphMarginClassName:
+          comment.side === 'original' ? 'review-comment-glyph-original' : 'review-comment-glyph-modified'
       }
     };
 
@@ -609,18 +621,19 @@ const isLineCommentTarget = (targetType: number) => {
   return targetType === mouseTargetType.GUTTER_LINE_NUMBERS || targetType === mouseTargetType.GUTTER_GLYPH_MARGIN;
 };
 
-const addLineCommentHandler = (codeEditor: MonacoCodeEditor, side: InlineCommentSide) => codeEditor.onMouseDown((event) => {
-  if (!props.contents || !isLineCommentTarget(event.target.type)) {
-    return;
-  }
+const addLineCommentHandler = (codeEditor: MonacoCodeEditor, side: InlineCommentSide) =>
+  codeEditor.onMouseDown((event) => {
+    if (!props.contents || !isLineCommentTarget(event.target.type)) {
+      return;
+    }
 
-  const lineNumber = event.target.position?.lineNumber;
-  if (!lineNumber) {
-    return;
-  }
+    const lineNumber = event.target.position?.lineNumber;
+    if (!lineNumber) {
+      return;
+    }
 
-  emit('addLineComment', { side, lineNumber });
-});
+    emit('addLineComment', { side, lineNumber });
+  });
 
 const wireLineCommentHandlers = () => {
   if (!editor) {
@@ -677,13 +690,19 @@ const createEditor = async () => {
   }
 };
 
-watch(() => [props.contents, props.filePath, props.scrollKey] as const, () => {
-  mountContents();
-});
+watch(
+  () => [props.contents, props.filePath, props.scrollKey] as const,
+  () => {
+    mountContents();
+  }
+);
 
-watch(() => [props.hideUnchanged, props.isDiff, props.renderSideBySide, props.wrapLines] as const, () => {
-  applyEditorReviewOptions();
-});
+watch(
+  () => [props.hideUnchanged, props.isDiff, props.renderSideBySide, props.wrapLines] as const,
+  () => {
+    applyEditorReviewOptions();
+  }
+);
 
 watch(commentSignature, () => {
   syncInlineReviewUI();
@@ -812,13 +831,13 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.review-diff-editor :global(.review-inline-zone button[data-kind="question"]) {
+.review-diff-editor :global(.review-inline-zone button[data-kind='question']) {
   border-color: #d29922;
   background: rgb(210 153 34 / 14%);
   color: #d29922;
 }
 
-.review-diff-editor :global(.review-inline-zone button[data-kind="feedback"]) {
+.review-diff-editor :global(.review-inline-zone button[data-kind='feedback']) {
   border-color: #ff6e6e;
   background: rgb(255 110 110 / 14%);
   color: #ff6e6e;
@@ -844,7 +863,7 @@ onBeforeUnmount(() => {
   line-height: 1.45;
 }
 
-.review-diff-editor[data-hidden="true"] {
+.review-diff-editor[data-hidden='true'] {
   visibility: hidden;
 }
 

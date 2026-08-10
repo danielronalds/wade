@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "build": "npm run gen:api && npm run typecheck && node build.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "gen:api": "orval --config orval.config.ts",
     "typecheck": "vue-tsc --noEmit"
   },
@@ -23,6 +25,7 @@
     "@vue/compiler-sfc": "^3.5.39",
     "esbuild": "^0.28.1",
     "orval": "^8.24.0",
+    "prettier": "^3.9.6",
     "typescript": "^6.0.3",
     "vue-tsc": "^3.3.5"
   }

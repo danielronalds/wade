@@ -38,7 +38,7 @@ const emit = defineEmits<{
           placeholder="Pi"
           :aria-invalid="!isLoading && agent.name.trim() === ''"
           @input="emit('updateAgentName', index, $event)"
-        >
+        />
         <input
           :id="`agent-command-${index}`"
           :value="agent.command"
@@ -49,7 +49,7 @@ const emit = defineEmits<{
           :aria-label="`Agent ${index + 1} command`"
           :aria-invalid="!isLoading && agent.command.trim() === ''"
           @input="emit('updateAgentCommand', index, $event)"
-        >
+        />
         <label class="agent-default-option" :for="`agent-default-${index}`">
           <input
             :id="`agent-default-${index}`"
@@ -57,15 +57,10 @@ const emit = defineEmits<{
             type="radio"
             name="agent-default"
             @change="emit('setDefaultAgent', index)"
-          >
+          />
           <span>Default</span>
         </label>
-        <button
-          type="button"
-          class="remove-action"
-          :disabled="agents.length <= 1"
-          @click="emit('removeAgent', index)"
-        >
+        <button type="button" class="remove-action" :disabled="agents.length <= 1" @click="emit('removeAgent', index)">
           Remove
         </button>
       </li>
@@ -162,7 +157,7 @@ button:disabled {
   outline: none;
 }
 
-.agent-row > input[aria-invalid="true"] {
+.agent-row > input[aria-invalid='true'] {
   border-color: var(--disconnected);
 }
 

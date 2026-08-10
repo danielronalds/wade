@@ -7,15 +7,9 @@ type PaletteRequestStateOptions = {
   warningMessages?: Ref<readonly string[]>;
 };
 
-const errorMessage = (error: unknown, fallback: string) => error instanceof Error
-  ? error.message
-  : fallback;
+const errorMessage = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
-export const usePaletteRequestState = ({
-  errorTitle,
-  warningTitle,
-  warningMessages
-}: PaletteRequestStateOptions) => {
+export const usePaletteRequestState = ({ errorTitle, warningTitle, warningMessages }: PaletteRequestStateOptions) => {
   const query = ref('');
   const loadError = ref('');
   const actionError = ref('');

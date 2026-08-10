@@ -1,116 +1,118 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#17181c">
-  <title>WADE</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      --window: #17181c;
-      --text: #f8f8f2;
-      --muted: #85889a;
-      --disconnected: #ff5f57;
-    }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#17181c" />
+    <title>WADE</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --window: #17181c;
+        --text: #f8f8f2;
+        --muted: #85889a;
+        --disconnected: #ff5f57;
+      }
 
-    * {
-      box-sizing: border-box;
-    }
+      * {
+        box-sizing: border-box;
+      }
 
-    html,
-    body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
 
-    body {
-      margin: 0;
-      background: var(--window);
-      color: var(--text);
-      font-family: "JetBrainsMono Nerd Font Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    }
+      body {
+        margin: 0;
+        background: var(--window);
+        color: var(--text);
+        font-family:
+          'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          monospace;
+      }
 
-    #server-unavailable {
-      width: 100vw;
-      height: 100vh;
-      display: grid;
-      gap: 24px;
-      place-content: center;
-      place-items: center;
-      padding: 24px;
-      color: var(--text);
-    }
+      #server-unavailable {
+        width: 100vw;
+        height: 100vh;
+        display: grid;
+        gap: 24px;
+        place-content: center;
+        place-items: center;
+        padding: 24px;
+        color: var(--text);
+      }
 
-    #title {
-      margin: 0;
-      font-size: clamp(48px, 12vw, 120px);
-      line-height: 1;
-    }
+      #title {
+        margin: 0;
+        font-size: clamp(48px, 12vw, 120px);
+        line-height: 1;
+      }
 
-    #subtitle {
-      margin: -12px 0 0;
-      color: var(--muted);
-      font-size: clamp(13px, 2vw, 17px);
-      text-align: center;
-    }
+      #subtitle {
+        margin: -12px 0 0;
+        color: var(--muted);
+        font-size: clamp(13px, 2vw, 17px);
+        text-align: center;
+      }
 
-    #connection-error {
-      margin: 0;
-      color: var(--disconnected);
-      text-align: center;
-    }
+      #connection-error {
+        margin: 0;
+        color: var(--disconnected);
+        text-align: center;
+      }
 
-    #connection-error code {
-      font: inherit;
-    }
+      #connection-error code {
+        font: inherit;
+      }
 
-    #connection-error a {
-      color: inherit;
-      text-underline-offset: 3px;
-    }
+      #connection-error a {
+        color: inherit;
+        text-underline-offset: 3px;
+      }
 
-    #connection-error a:focus-visible {
-      outline: 2px solid currentColor;
-      outline-offset: 3px;
-    }
-  </style>
-</head>
-<body>
-  <section id="server-unavailable" aria-labelledby="title">
-    <h1 id="title">WADE</h1>
-    <p id="subtitle">Web-based Agentic Development Environment</p>
-    <p id="connection-error">
-      Is <code>wade server</code> running? <a id="retry-connection" href="/">Retry connection</a>
-    </p>
-  </section>
-  <script>
-    const retryLink = document.querySelector('#retry-connection');
-    let connectionCheck;
+      #connection-error a:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <section id="server-unavailable" aria-labelledby="title">
+      <h1 id="title">WADE</h1>
+      <p id="subtitle">Web-based Agentic Development Environment</p>
+      <p id="connection-error">
+        Is <code>wade server</code> running? <a id="retry-connection" href="/">Retry connection</a>
+      </p>
+    </section>
+    <script>
+      const retryLink = document.querySelector('#retry-connection');
+      let connectionCheck;
 
-    retryLink.href = window.location.href;
+      retryLink.href = window.location.href;
 
-    const canConnect = () => {
-      if (connectionCheck) {
+      const canConnect = () => {
+        if (connectionCheck) {
+          return connectionCheck;
+        }
+
+        connectionCheck = fetch('/', { cache: 'no-store' })
+          .then((response) => response.ok)
+          .catch(() => false)
+          .finally(() => {
+            connectionCheck = undefined;
+          });
+
         return connectionCheck;
-      }
+      };
 
-      connectionCheck = fetch('/', { cache: 'no-store' })
-        .then((response) => response.ok)
-        .catch(() => false)
-        .finally(() => {
-          connectionCheck = undefined;
-        });
-
-      return connectionCheck;
-    };
-
-    window.setInterval(async () => {
-      if (await canConnect()) {
-        window.location.reload();
-      }
-    }, 3000);
-  </script>
-</body>
+      window.setInterval(async () => {
+        if (await canConnect()) {
+          window.location.reload();
+        }
+      }, 3000);
+    </script>
+  </body>
 </html>

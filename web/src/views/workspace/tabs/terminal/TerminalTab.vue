@@ -41,19 +41,20 @@ const miscPane = ref<TerminalPaneComponent | null>(null);
 const agentPanes = new Map<string, TerminalPaneComponent>();
 const agentConnectionStatuses = reactive<Record<string, TerminalConnectionStatus>>({});
 const miscConnectionStatus = ref<TerminalConnectionStatus>(createDisconnectedTerminalConnectionStatus());
-const openedAgents = computed(() => openedAgentNames.value
-  .map((agentName) => agents.value.find((agent) => agent.name === agentName))
-  .filter((agent): agent is Agent => Boolean(agent)));
-const selectedAgentConnectionStatus = computed(() => agentConnectionStatuses[selectedAgentName.value]
-  ?? createDisconnectedTerminalConnectionStatus());
-const combinedConnectionStatus = computed(() => combineTerminalConnectionStatuses([
-  selectedAgentConnectionStatus.value,
-  miscConnectionStatus.value
-]));
+const openedAgents = computed(() =>
+  openedAgentNames.value
+    .map((agentName) => agents.value.find((agent) => agent.name === agentName))
+    .filter((agent): agent is Agent => Boolean(agent))
+);
+const selectedAgentConnectionStatus = computed(
+  () => agentConnectionStatuses[selectedAgentName.value] ?? createDisconnectedTerminalConnectionStatus()
+);
+const combinedConnectionStatus = computed(() =>
+  combineTerminalConnectionStatuses([selectedAgentConnectionStatus.value, miscConnectionStatus.value])
+);
 
-const getPaneComponent = (pane: TerminalPaneId) => pane === TerminalPanes.Misc
-  ? miscPane.value
-  : agentPanes.get(selectedAgentName.value);
+const getPaneComponent = (pane: TerminalPaneId) =>
+  pane === TerminalPanes.Misc ? miscPane.value : agentPanes.get(selectedAgentName.value);
 
 const focusPane = async (pane: TerminalPaneId) => {
   await getPaneComponent(pane)?.focusTerminal();
@@ -89,9 +90,8 @@ const updateMiscConnectionStatus = (status: TerminalConnectionStatus) => {
   miscConnectionStatus.value = status;
 };
 
-const isTerminalPaneComponent = (pane: unknown): pane is TerminalPaneComponent => Boolean(
-  pane && typeof pane === 'object' && 'focusTerminal' in pane
-);
+const isTerminalPaneComponent = (pane: unknown): pane is TerminalPaneComponent =>
+  Boolean(pane && typeof pane === 'object' && 'focusTerminal' in pane);
 
 const setAgentPane = (agentName: string, pane: unknown) => {
   if (isTerminalPaneComponent(pane)) {
@@ -134,28 +134,36 @@ const loadAgents = async () => {
   }
 };
 
-watch(agents, (nextAgents) => {
-  if (nextAgents.length === 0) {
-    return;
-  }
+watch(
+  agents,
+  (nextAgents) => {
+    if (nextAgents.length === 0) {
+      return;
+    }
 
-  if (!nextAgents.some((agent) => agent.name === selectedAgentName.value)) {
-    const defaultAgent = nextAgents.find((agent) => agent.default);
-    selectedAgentName.value = defaultAgent?.name ?? nextAgents[0].name;
-  }
+    if (!nextAgents.some((agent) => agent.name === selectedAgentName.value)) {
+      const defaultAgent = nextAgents.find((agent) => agent.default);
+      selectedAgentName.value = defaultAgent?.name ?? nextAgents[0].name;
+    }
 
-  if (!openedAgentNames.value.includes(selectedAgentName.value)) {
-    openedAgentNames.value = [...openedAgentNames.value, selectedAgentName.value];
-  }
+    if (!openedAgentNames.value.includes(selectedAgentName.value)) {
+      openedAgentNames.value = [...openedAgentNames.value, selectedAgentName.value];
+    }
 
-  if (isAgentPaneActive.value) {
-    void focusSelectedAgentTerminal();
-  }
-}, { immediate: true });
+    if (isAgentPaneActive.value) {
+      void focusSelectedAgentTerminal();
+    }
+  },
+  { immediate: true }
+);
 
-watch(combinedConnectionStatus, (status) => {
-  emit('connectionStatusChange', status);
-}, { immediate: true });
+watch(
+  combinedConnectionStatus,
+  (status) => {
+    emit('connectionStatusChange', status);
+  },
+  { immediate: true }
+);
 
 onMounted(() => {
   void loadAgents();
@@ -171,12 +179,7 @@ defineExpose({
 
 <template>
   <section id="terminal-tab" :data-layout="terminalTabLayout" aria-label="Terminal screens">
-    <CollapsedTerminalRail
-      v-if="isAgentPaneCollapsed"
-      label="Agent"
-      side="left"
-      @restore="restoreSplitView"
-    />
+    <CollapsedTerminalRail v-if="isAgentPaneCollapsed" label="Agent" side="left" @restore="restoreSplitView" />
     <TerminalPane
       v-for="agent in openedAgents"
       :key="agent.name"
@@ -214,12 +217,7 @@ defineExpose({
       @toggle-zoom="togglePaneZoom(TerminalPanes.Misc)"
       @connection-status-change="updateMiscConnectionStatus"
     />
-    <CollapsedTerminalRail
-      v-if="isMiscPaneCollapsed"
-      label="Misc"
-      side="right"
-      @restore="restoreSplitView"
-    />
+    <CollapsedTerminalRail v-if="isMiscPaneCollapsed" label="Misc" side="right" @restore="restoreSplitView" />
   </section>
 </template>
 
@@ -233,15 +231,15 @@ defineExpose({
   min-height: 0;
   display: grid;
   grid-template-columns: 80ch minmax(0, 1fr);
-  grid-template-areas: "agent misc";
+  grid-template-areas: 'agent misc';
   overflow: hidden;
 }
 
-#terminal-tab[data-layout="agent-zoomed"] {
+#terminal-tab[data-layout='agent-zoomed'] {
   grid-template-columns: minmax(0, 1fr) var(--terminal-header-height);
 }
 
-#terminal-tab[data-layout="misc-zoomed"] {
+#terminal-tab[data-layout='misc-zoomed'] {
   grid-template-columns: var(--terminal-header-height) minmax(0, 1fr);
 }
 

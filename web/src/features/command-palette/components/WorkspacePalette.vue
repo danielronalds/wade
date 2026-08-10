@@ -50,15 +50,17 @@ const openWorkspace = async (workspaceId: string) => {
   await router.push({ name: 'workspace', params: { workspaceId } });
 };
 
-const paletteResults = computed<PaletteResult[]>(() => matchingWorkspaces.value.map((match) => ({
-  id: `workspace:${match.workspace.id}`,
-  label: match.workspace.name,
-  actionLabel: 'Open workspace',
-  isDisabled: false,
-  run: () => {
-    void openWorkspace(match.workspace.id);
-  }
-})));
+const paletteResults = computed<PaletteResult[]>(() =>
+  matchingWorkspaces.value.map((match) => ({
+    id: `workspace:${match.workspace.id}`,
+    label: match.workspace.name,
+    actionLabel: 'Open workspace',
+    isDisabled: false,
+    run: () => {
+      void openWorkspace(match.workspace.id);
+    }
+  }))
+);
 
 onMounted(() => {
   void syncWorkspaces();

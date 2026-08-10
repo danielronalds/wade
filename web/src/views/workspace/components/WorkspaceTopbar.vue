@@ -14,11 +14,7 @@ const props = defineProps<{
 }>();
 
 const workspaceDetailsStore = useWorkspaceDetailsStore();
-const {
-  clipboardAnnouncement,
-  copiedWorkspaceLink,
-  copyWorkspaceLink
-} = useWorkspaceLinkClipboard();
+const { clipboardAnnouncement, copiedWorkspaceLink, copyWorkspaceLink } = useWorkspaceLinkClipboard();
 
 const workspaceDetails = computed(() => workspaceDetailsStore.getWorkspaceDetails(props.workspaceId));
 const isWorkspaceDetailsLoading = computed(() => workspaceDetailsStore.isWorkspaceDetailsLoading(props.workspaceId));
@@ -32,33 +28,57 @@ const workspaceDisplayName = computed(() => workspaceDetails.value?.name ?? prop
 const isLinearTicketButtonDisabled = computed(() => linearTicketUrl.value === '');
 const isPullRequestButtonDisabled = computed(() => pullRequestUrl.value === '');
 const isGitHubButtonDisabled = computed(() => githubUrl.value === '');
-const linearTicketButtonTitle = computed(() => isWaitingForWorkspaceDetails.value
-  ? 'Loading Linear ticket'
-  : linearTicketUrl.value === '' ? 'No Linear ticket found' : 'Open Linear ticket');
-const linearTicketCopyButtonTitle = computed(() => copiedWorkspaceLink.value === 'linear-ticket'
-  ? 'Linear ticket link copied'
-  : isWaitingForWorkspaceDetails.value
+const linearTicketButtonTitle = computed(() =>
+  isWaitingForWorkspaceDetails.value
     ? 'Loading Linear ticket'
-    : linearTicketUrl.value === '' ? 'No Linear ticket found' : 'Copy Linear ticket link');
-const pullRequestButtonTitle = computed(() => isWaitingForWorkspaceDetails.value
-  ? 'Loading pull request'
-  : pullRequestUrl.value === '' ? 'No pull request found' : 'Open pull request');
-const pullRequestCopyButtonTitle = computed(() => copiedWorkspaceLink.value === 'pull-request'
-  ? 'Pull request link copied'
-  : isWaitingForWorkspaceDetails.value
+    : linearTicketUrl.value === ''
+      ? 'No Linear ticket found'
+      : 'Open Linear ticket'
+);
+const linearTicketCopyButtonTitle = computed(() =>
+  copiedWorkspaceLink.value === 'linear-ticket'
+    ? 'Linear ticket link copied'
+    : isWaitingForWorkspaceDetails.value
+      ? 'Loading Linear ticket'
+      : linearTicketUrl.value === ''
+        ? 'No Linear ticket found'
+        : 'Copy Linear ticket link'
+);
+const pullRequestButtonTitle = computed(() =>
+  isWaitingForWorkspaceDetails.value
     ? 'Loading pull request'
-    : pullRequestUrl.value === '' ? 'No pull request found' : 'Copy pull request link');
-const gitHubButtonTitle = computed(() => isWaitingForWorkspaceDetails.value
-  ? 'Loading GitHub page'
-  : githubUrl.value === '' ? 'No GitHub remote found' : 'Open GitHub page');
-const gitHubCopyButtonTitle = computed(() => copiedWorkspaceLink.value === 'github'
-  ? 'GitHub link copied'
-  : isWaitingForWorkspaceDetails.value
+    : pullRequestUrl.value === ''
+      ? 'No pull request found'
+      : 'Open pull request'
+);
+const pullRequestCopyButtonTitle = computed(() =>
+  copiedWorkspaceLink.value === 'pull-request'
+    ? 'Pull request link copied'
+    : isWaitingForWorkspaceDetails.value
+      ? 'Loading pull request'
+      : pullRequestUrl.value === ''
+        ? 'No pull request found'
+        : 'Copy pull request link'
+);
+const gitHubButtonTitle = computed(() =>
+  isWaitingForWorkspaceDetails.value
     ? 'Loading GitHub page'
-    : githubUrl.value === '' ? 'No GitHub remote found' : 'Copy GitHub link');
-const reloadButtonTitle = computed(() => isWorkspaceDetailsLoading.value
-  ? 'Loading workspace details'
-  : 'Reload workspace details');
+    : githubUrl.value === ''
+      ? 'No GitHub remote found'
+      : 'Open GitHub page'
+);
+const gitHubCopyButtonTitle = computed(() =>
+  copiedWorkspaceLink.value === 'github'
+    ? 'GitHub link copied'
+    : isWaitingForWorkspaceDetails.value
+      ? 'Loading GitHub page'
+      : githubUrl.value === ''
+        ? 'No GitHub remote found'
+        : 'Copy GitHub link'
+);
+const reloadButtonTitle = computed(() =>
+  isWorkspaceDetailsLoading.value ? 'Loading workspace details' : 'Reload workspace details'
+);
 const gitBranchLabel = computed(() => {
   if (isWaitingForWorkspaceDetails.value) {
     return 'Loading branch';
@@ -195,12 +215,7 @@ const reloadWorkspaceDetails = () => {
         </button>
       </span>
       <span class="visually-hidden" role="status" aria-live="polite">{{ clipboardAnnouncement }}</span>
-      <span
-        id="connection-status"
-        role="status"
-        aria-live="polite"
-        :data-connected="String(isConnected)"
-      >
+      <span id="connection-status" role="status" aria-live="polite" :data-connected="String(isConnected)">
         <span aria-hidden="true"></span>
         <span>{{ connectionStatusText }}</span>
       </span>
@@ -401,7 +416,7 @@ const reloadWorkspaceDetails = () => {
   background: var(--disconnected);
 }
 
-#connection-status[data-connected="true"] span:first-child {
+#connection-status[data-connected='true'] span:first-child {
   background: var(--connected);
 }
 </style>

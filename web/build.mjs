@@ -9,12 +9,10 @@ const root = dirname(fileURLToPath(import.meta.url));
 const distDir = join(root, '..', 'internal', 'web', '.dist');
 const staticDir = join(distDir, 'static');
 
-const createVueDescriptorId = (filePath) => createHash('sha256')
-  .update(relative(root, filePath))
-  .digest('hex')
-  .slice(0, 8);
+const createVueDescriptorId = (filePath) =>
+  createHash('sha256').update(relative(root, filePath)).digest('hex').slice(0, 8);
 
-const formatVueError = (error) => error instanceof Error ? error.message : String(error);
+const formatVueError = (error) => (error instanceof Error ? error.message : String(error));
 
 const splitVueRequest = (request) => {
   const [filePath, query = ''] = request.split('?');
@@ -42,26 +40,27 @@ const vuePlugin = {
       const styleImports = descriptor.styles
         .map((_, index) => `import ${JSON.stringify(`${args.path}?vue&type=style&index=${index}`)};`)
         .join('\n');
-      const script = descriptor.script || descriptor.scriptSetup
-        ? compileScript(descriptor, {
-          id: scopeId,
-          genDefaultAs: '__sfc__'
-        })
-        : {
-          bindings: {},
-          content: 'const __sfc__ = {}'
-        };
+      const script =
+        descriptor.script || descriptor.scriptSetup
+          ? compileScript(descriptor, {
+              id: scopeId,
+              genDefaultAs: '__sfc__'
+            })
+          : {
+              bindings: {},
+              content: 'const __sfc__ = {}'
+            };
       const template = descriptor.template
         ? compileTemplate({
-          id: scopeId,
-          source: descriptor.template.content,
-          filename: args.path,
-          scoped: hasScopedStyles,
-          isProd: true,
-          compilerOptions: {
-            bindingMetadata: script.bindings
-          }
-        })
+            id: scopeId,
+            source: descriptor.template.content,
+            filename: args.path,
+            scoped: hasScopedStyles,
+            isProd: true,
+            compilerOptions: {
+              bindingMetadata: script.bindings
+            }
+          })
         : undefined;
 
       if (template?.errors.length) {
@@ -73,7 +72,14 @@ const vuePlugin = {
       const scopeAssignment = hasScopedStyles ? `__sfc__.__scopeId = ${JSON.stringify(scopeId)};` : '';
 
       return {
-        contents: [script.content, renderCode, renderAssignment, scopeAssignment, styleImports, 'export default __sfc__;']
+        contents: [
+          script.content,
+          renderCode,
+          renderAssignment,
+          scopeAssignment,
+          styleImports,
+          'export default __sfc__;'
+        ]
           .filter(Boolean)
           .join('\n'),
         loader: 'ts',
@@ -130,7 +136,10 @@ const vuePlugin = {
   }
 };
 
-const writeIndexHtml = () => writeFile(join(distDir, 'index.html'), `<!doctype html>
+const writeIndexHtml = () =>
+  writeFile(
+    join(distDir, 'index.html'),
+    `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -149,7 +158,8 @@ const writeIndexHtml = () => writeFile(join(distDir, 'index.html'), `<!doctype h
   <div id="app"></div>
 </body>
 </html>
-`);
+`
+  );
 
 const main = async () => {
   await rm(distDir, { recursive: true, force: true });
@@ -163,7 +173,9 @@ const main = async () => {
 
   await writeFile(join(distDir, 'service-worker.js'), serviceWorker);
   await mkdir(join(staticDir, 'monaco'), { recursive: true });
-  await cp(join(root, 'node_modules', 'monaco-editor', 'min', 'vs'), join(staticDir, 'monaco', 'vs'), { recursive: true });
+  await cp(join(root, 'node_modules', 'monaco-editor', 'min', 'vs'), join(staticDir, 'monaco', 'vs'), {
+    recursive: true
+  });
 
   await esbuild.build({
     entryPoints: [join(root, 'src/main.ts')],

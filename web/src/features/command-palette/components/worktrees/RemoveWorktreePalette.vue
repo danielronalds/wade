@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, type DeepReadonly } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  deleteRepositoryWorktree,
-  listRepositoryWorktrees,
-  type Worktree
-} from '@/api/generated/wade';
+import { deleteRepositoryWorktree, listRepositoryWorktrees, type Worktree } from '@/api/generated/wade';
 import { useFuzzyItems } from '@/composables/useFuzzyItems';
 import PaletteShell from '@/features/command-palette/components/PaletteShell.vue';
 import { usePaletteRequestState } from '@/features/command-palette/composables/usePaletteRequestState';
@@ -153,9 +149,10 @@ const paletteResults = computed<PaletteResult[]>(() => {
     return [
       {
         id: 'confirm-remove-worktree',
-        label: branchName === ''
-          ? `Remove ${targetWorktree.value.workspaceId}`
-          : `Remove ${targetWorktree.value.workspaceId} and local branch ${branchName}`,
+        label:
+          branchName === ''
+            ? `Remove ${targetWorktree.value.workspaceId}`
+            : `Remove ${targetWorktree.value.workspaceId} and local branch ${branchName}`,
         actionLabel: isRemoving.value ? 'Removing' : 'Confirm remove',
         isDisabled: isRemoving.value,
         run: () => {

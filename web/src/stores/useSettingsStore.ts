@@ -1,23 +1,12 @@
 import { defineStore } from 'pinia';
 import { computed, reactive, readonly } from 'vue';
-import {
-  getSettings,
-  reloadSettings,
-  updateSettings
-} from '@/api/generated/wade';
+import { getSettings, reloadSettings, updateSettings } from '@/api/generated/wade';
 import { useRecentWorkspaces } from '@/features/workspaces/composables/useRecentWorkspaces';
 import { useWorkspaces } from '@/features/workspaces/composables/useWorkspaces';
-import {
-  cloneSettings,
-  createEmptySettings,
-  normaliseSettings,
-  type Settings
-} from '@/types/settings';
+import { cloneSettings, createEmptySettings, normaliseSettings, type Settings } from '@/types/settings';
 import { applyThemeAccentColor } from '@/utils/theme';
 
-const errorMessage = (error: unknown, fallback: string) => error instanceof Error
-  ? error.message
-  : fallback;
+const errorMessage = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
 export const useSettingsStore = defineStore('settings', () => {
   const { syncWorkspaces } = useWorkspaces();

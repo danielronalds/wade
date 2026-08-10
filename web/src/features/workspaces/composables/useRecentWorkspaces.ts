@@ -29,15 +29,11 @@ const recentWorkspacesSerializer = {
 
 export const useRecentWorkspaces = createSharedComposable(() => {
   const legacyRecentProjects = localStorage.getItem(legacyRecentProjectsStorageKey);
-  const initialWorkspaceIds = legacyRecentProjects === null
-    ? []
-    : recentWorkspacesSerializer.read(legacyRecentProjects);
-  const storedRecentWorkspaceIds = useStorage<string[]>(
-    recentWorkspacesStorageKey,
-    initialWorkspaceIds,
-    localStorage,
-    { serializer: recentWorkspacesSerializer }
-  );
+  const initialWorkspaceIds =
+    legacyRecentProjects === null ? [] : recentWorkspacesSerializer.read(legacyRecentProjects);
+  const storedRecentWorkspaceIds = useStorage<string[]>(recentWorkspacesStorageKey, initialWorkspaceIds, localStorage, {
+    serializer: recentWorkspacesSerializer
+  });
   localStorage.removeItem(legacyRecentProjectsStorageKey);
 
   const recentWorkspaceIds = computed(() => normaliseRecentWorkspaceIds(storedRecentWorkspaceIds.value));
@@ -55,9 +51,9 @@ export const useRecentWorkspaces = createSharedComposable(() => {
 
   const removeUnavailableRecentWorkspaces = (availableWorkspaces: readonly WorkspaceSummary[]) => {
     const availableWorkspaceIds = new Set(availableWorkspaces.map((workspace) => workspace.id));
-    storedRecentWorkspaceIds.value = recentWorkspaceIds.value.filter((workspaceId) => (
+    storedRecentWorkspaceIds.value = recentWorkspaceIds.value.filter((workspaceId) =>
       availableWorkspaceIds.has(workspaceId)
-    ));
+    );
   };
 
   return {

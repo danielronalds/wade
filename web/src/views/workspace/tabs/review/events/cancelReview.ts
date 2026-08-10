@@ -7,9 +7,11 @@ export type CancelReviewEventDetail = {
 export type CancelReviewEventHandler = (detail: CancelReviewEventDetail) => void | Promise<void>;
 
 export const dispatchCancelReviewEvent = (workspaceId: string) => {
-  window.dispatchEvent(new CustomEvent<CancelReviewEventDetail>(cancelReviewEventName, {
-    detail: { workspaceId }
-  }));
+  window.dispatchEvent(
+    new CustomEvent<CancelReviewEventDetail>(cancelReviewEventName, {
+      detail: { workspaceId }
+    })
+  );
 };
 
 export const registerCancelReviewEventHandler = (handler: CancelReviewEventHandler) => {

@@ -9,12 +9,7 @@ defineProps<{
 
 <template>
   <label class="checkbox" :data-disabled="String(disabled ?? false)">
-    <input
-      :id="id"
-      v-model="checked"
-      type="checkbox"
-      :disabled="disabled"
-    >
+    <input :id="id" v-model="checked" type="checkbox" :disabled="disabled" />
     <span><slot /></span>
   </label>
 </template>
@@ -30,7 +25,7 @@ defineProps<{
   cursor: pointer;
 }
 
-.checkbox[data-disabled="true"] {
+.checkbox[data-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.45;
 }

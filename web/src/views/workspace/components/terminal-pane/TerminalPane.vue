@@ -5,29 +5,32 @@ import TerminalHeader from '@/views/workspace/components/terminal-pane/component
 import type { Agent } from '@/types/settings';
 import type { TerminalConnectionStatus } from '@/types/terminalConnectionStatus';
 
-const props = withDefaults(defineProps<{
-  workspaceId: string;
-  terminalId: string;
-  label: string;
-  isActive: boolean;
-  showCloseIcon?: boolean;
-  showZoomIcon?: boolean;
-  isZoomed?: boolean;
-  isCollapsed?: boolean;
-  lazy?: boolean;
-  agentName?: string;
-  agents?: Agent[];
-  selectedAgentName?: string;
-}>(), {
-  showCloseIcon: false,
-  showZoomIcon: false,
-  isZoomed: false,
-  isCollapsed: false,
-  lazy: false,
-  agentName: undefined,
-  agents: undefined,
-  selectedAgentName: undefined
-});
+const props = withDefaults(
+  defineProps<{
+    workspaceId: string;
+    terminalId: string;
+    label: string;
+    isActive: boolean;
+    showCloseIcon?: boolean;
+    showZoomIcon?: boolean;
+    isZoomed?: boolean;
+    isCollapsed?: boolean;
+    lazy?: boolean;
+    agentName?: string;
+    agents?: Agent[];
+    selectedAgentName?: string;
+  }>(),
+  {
+    showCloseIcon: false,
+    showZoomIcon: false,
+    isZoomed: false,
+    isCollapsed: false,
+    lazy: false,
+    agentName: undefined,
+    agents: undefined,
+    selectedAgentName: undefined
+  }
+);
 
 const emit = defineEmits<{
   activate: [];
@@ -40,12 +43,7 @@ const emit = defineEmits<{
 
 const isActive = computed(() => props.isActive && !props.isCollapsed);
 const isSelectedAgent = computed(() => props.agentName !== undefined && props.selectedAgentName === props.agentName);
-const {
-  focusTerminal,
-  reloadTerminal,
-  scrollTerminalToBottom,
-  terminalElement
-} = useTerminalPaneSession({
+const { focusTerminal, reloadTerminal, scrollTerminalToBottom, terminalElement } = useTerminalPaneSession({
   workspaceId: props.workspaceId,
   terminalId: props.terminalId,
   isActive,
@@ -125,7 +123,7 @@ defineExpose({
   background: var(--window);
 }
 
-.terminal-pane[data-collapsed="true"] {
+.terminal-pane[data-collapsed='true'] {
   display: none;
 }
 </style>

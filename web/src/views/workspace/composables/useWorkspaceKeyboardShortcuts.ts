@@ -14,17 +14,15 @@ type WorkspaceKeyboardShortcutsOptions = {
   toggleTerminalZoom: () => void;
 };
 
-const isCtrlShortcut = (event: KeyboardEvent, key: string) => event.ctrlKey
-  && !event.altKey
-  && !event.metaKey
-  && !event.shiftKey
-  && event.key.toLowerCase() === key;
+const isCtrlShortcut = (event: KeyboardEvent, key: string) =>
+  event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey && event.key.toLowerCase() === key;
 
-const isCtrlAltShortcut = (event: KeyboardEvent, key: string, code?: string) => event.ctrlKey
-  && event.altKey
-  && !event.metaKey
-  && !event.shiftKey
-  && (event.key.toLowerCase() === key || event.code === code);
+const isCtrlAltShortcut = (event: KeyboardEvent, key: string, code?: string) =>
+  event.ctrlKey &&
+  event.altKey &&
+  !event.metaKey &&
+  !event.shiftKey &&
+  (event.key.toLowerCase() === key || event.code === code);
 
 const isShortcutPrefix = (event: KeyboardEvent) => isCtrlShortcut(event, workspaceShortcutPrefixKey);
 
