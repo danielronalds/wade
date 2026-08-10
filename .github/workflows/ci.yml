@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        uses: jdx/mise-action@v3
+        with:
+          cache: true
+
+      - name: Install frontend dependencies
+        run: npm --prefix web ci
+
+      - name: Check Go formatting
+        run: mise run lint:fmt
+
+      - name: Check generated OpenAPI specification
+        run: mise run lint:openapi
+
+      - name: Build frontend
+        run: npm --prefix web run build
+
+      - name: Check generated frontend API client
+        run: git diff --exit-code -- web/src/api/generated/wade.ts
+
+      - name: Run Go vet
+        run: go vet ./...
+
+      - name: Run Go tests
+        run: gotestsum -- ./...
+
+      - name: Build WADE
+        run: go build ./cmd/wade
