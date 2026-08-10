@@ -12,6 +12,7 @@ import {
   TextWrap,
   X
 } from '@lucide/vue';
+import { storeToRefs } from 'pinia';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import {
   createReviewSnapshot,
@@ -19,14 +20,11 @@ import {
   getReviewSnapshotFileContents
 } from '@/api/generated/wade';
 import { pasteIntoAgentTerminal } from '@/features/terminal-session/composables/useAgentTerminalInput';
+import { useWorkspaceSessionStore } from '@/stores/useWorkspaceSessionStore';
 import {
-  clearReviewState,
   isReviewInProgressState,
-  setReviewState,
-  type ReviewState
-} from '@/views/workspace/tabs/review/composables/useReviewState';
-import type {
-  CommentSide,
+  type CommentSide,
+  type DraftReviewComment,
   ReviewComment,
   ReviewCommentKind,
   ReviewData,
@@ -52,15 +50,6 @@ type FileRequestState = {
   isLoading: boolean;
 };
 
-type DraftComment = {
-  fileId: string;
-  filePath: string;
-  scope: ReviewScope;
-  side: CommentSide;
-  startLine: number | null;
-  endLine: number | null;
-};
-
 type ReviewFileTreeNode = {
   name: string;
   path: string;
@@ -76,26 +65,30 @@ type ReviewFileTreeRow = {
   depth: number;
 } & ({ kind: 'dir' } | { kind: 'file'; file: ReviewFile });
 
-const state = ref<ReviewState>('idle');
-const reviewData = ref<ReviewData | null>(null);
-const activeScope = ref<ReviewScope>('working-tree');
-const activeFileId = ref<string | null>(null);
-const filterText = ref('');
+const workspaceSessionStore = useWorkspaceSessionStore();
+const {
+  isReviewOverallNoteOpen: isOverallNoteOpen,
+  reviewActiveFileId: activeFileId,
+  reviewActiveScope: activeScope,
+  reviewCollapsedDirectories: collapsedDirectories,
+  reviewComments: comments,
+  reviewData,
+  reviewDraftComment: draftComment,
+  reviewDraftCommentBody: draftCommentBody,
+  reviewDraftCommentKind: draftCommentKind,
+  reviewFilterText: filterText,
+  reviewHideUnchanged: hideUnchanged,
+  reviewOverallComment: overallComment,
+  reviewOverallNoteDraft: overallNoteDraft,
+  reviewRenderSideBySide: renderSideBySide,
+  reviewReviewedFiles: reviewedFiles,
+  reviewState: state,
+  reviewWrapLines: wrapLines
+} = storeToRefs(workspaceSessionStore);
+
 const errorMessage = ref('');
 const sendErrorMessage = ref('');
 const fileRequestStates = ref<Record<string, FileRequestState>>({});
-const reviewedFiles = ref<Record<string, boolean>>({});
-const collapsedDirectories = ref<Record<string, boolean>>({});
-const comments = ref<ReviewComment[]>([]);
-const overallComment = ref('');
-const draftComment = ref<DraftComment | null>(null);
-const draftCommentBody = ref('');
-const draftCommentKind = ref<ReviewCommentKind>('feedback');
-const isOverallNoteOpen = ref(false);
-const overallNoteDraft = ref('');
-const hideUnchanged = ref(true);
-const renderSideBySide = ref(true);
-const wrapLines = ref(true);
 const isSendingPrompt = ref(false);
 const startButton = ref<HTMLButtonElement | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
@@ -346,6 +339,9 @@ const activeContents = computed(() => activeFileRequestState.value?.contents ?? 
 const isActiveFileLoading = computed(() => activeFileRequestState.value?.isLoading === true);
 const activeFileError = computed(() => activeFileRequestState.value?.error ?? '');
 const visibleErrorMessage = computed(() => sendErrorMessage.value || activeFileError.value);
+const startErrorMessage = computed(() => errorMessage.value || (state.value === 'error'
+  ? 'Could not restore the saved review. Reload to retry, or start a new review.'
+  : ''));
 const canStartReview = computed(() => state.value === 'idle' || state.value === 'error');
 const canCancelReview = computed(() => isReviewInProgressState(state.value));
 const hasReviewableFiles = computed(() => (reviewData.value?.files.length ?? 0) > 0);
@@ -551,26 +547,10 @@ const abortReviewRequests = () => {
 const resetReview = () => {
   reviewLoadRun += 1;
   abortReviewRequests();
-  state.value = 'idle';
-  reviewData.value = null;
-  activeScope.value = 'working-tree';
-  activeFileId.value = null;
-  filterText.value = '';
+  workspaceSessionStore.clearReview(props.workspaceId);
   errorMessage.value = '';
   sendErrorMessage.value = '';
   fileRequestStates.value = {};
-  reviewedFiles.value = {};
-  collapsedDirectories.value = {};
-  comments.value = [];
-  overallComment.value = '';
-  hideUnchanged.value = true;
-  renderSideBySide.value = true;
-  wrapLines.value = true;
-  draftComment.value = null;
-  draftCommentBody.value = '';
-  draftCommentKind.value = 'feedback';
-  isOverallNoteOpen.value = false;
-  overallNoteDraft.value = '';
 };
 
 const deleteActiveSnapshot = async () => {
@@ -617,17 +597,10 @@ const startReview = async () => {
   const abortController = new AbortController();
   reviewLoadAbortController = abortController;
 
-  state.value = 'loading';
+  workspaceSessionStore.beginReview(props.workspaceId);
   errorMessage.value = '';
   sendErrorMessage.value = '';
   fileRequestStates.value = {};
-  reviewedFiles.value = {};
-  collapsedDirectories.value = {};
-  comments.value = [];
-  overallComment.value = '';
-  hideUnchanged.value = true;
-  renderSideBySide.value = true;
-  wrapLines.value = true;
 
   try {
     const data = await createReviewSnapshot(
@@ -639,9 +612,7 @@ const startReview = async () => {
       return;
     }
 
-    reviewData.value = data;
-    activeScope.value = selectInitialScope(data);
-    state.value = 'ready';
+    workspaceSessionStore.initialiseReview(props.workspaceId, data, selectInitialScope(data));
     ensureActiveFile();
     await loadActiveFileContents();
   } catch (error) {
@@ -650,7 +621,7 @@ const startReview = async () => {
     }
 
     errorMessage.value = error instanceof Error ? error.message : 'Could not start review';
-    state.value = 'error';
+    workspaceSessionStore.setReviewState(props.workspaceId, 'error');
     await nextTick();
     startButton.value?.focus();
   } finally {
@@ -745,7 +716,7 @@ const toggleCommentKind = (commentId: string) => {
     : comment);
 };
 
-const openDraftComment = async (draft: DraftComment) => {
+const openDraftComment = async (draft: DraftReviewComment) => {
   draftComment.value = draft;
   draftCommentBody.value = '';
   draftCommentKind.value = 'feedback';
@@ -918,6 +889,16 @@ const focusActiveTerminal = async () => {
   }
 
   await nextTick();
+  if (draftComment.value) {
+    draftCommentTextarea.value?.focus();
+    return;
+  }
+
+  if (isOverallNoteOpen.value) {
+    overallNoteTextarea.value?.focus();
+    return;
+  }
+
   startButton.value?.focus();
 };
 
@@ -927,19 +908,23 @@ const switchToNextTerminal = async () => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleReviewKeydown, true);
+
+  if (state.value === 'ready') {
+    ensureActiveFile();
+    void loadActiveFileContents();
+  }
+
+  void focusActiveTerminal();
 });
 
 onBeforeUnmount(() => {
   reviewLoadRun += 1;
   abortReviewRequests();
-  void deleteActiveSnapshot();
-  clearReviewState(props.workspaceId);
+  if (workspaceSessionStore.getReviewState(props.workspaceId) === 'loading') {
+    workspaceSessionStore.clearReview(props.workspaceId);
+  }
   window.removeEventListener('keydown', handleReviewKeydown, true);
 });
-
-watch(state, (nextState) => {
-  setReviewState(props.workspaceId, nextState);
-}, { immediate: true });
 
 watch(activeScope, () => {
   ensureActiveFile();
@@ -980,7 +965,7 @@ defineExpose({
         <button ref="startButton" type="button" :disabled="state === 'loading'" @click="startReview">
           {{ state === 'loading' ? 'Starting review' : 'Start Review' }}
         </button>
-        <p v-if="errorMessage" class="review-error" role="alert">{{ errorMessage }}</p>
+        <p v-if="startErrorMessage" class="review-error" role="alert">{{ startErrorMessage }}</p>
       </div>
     </section>
 

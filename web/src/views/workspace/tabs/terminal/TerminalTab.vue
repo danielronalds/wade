@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { storeToRefs } from 'pinia';
 import { computed, nextTick, onMounted, reactive, ref, toRef, watch } from 'vue';
 import { useSettingsStore } from '@/stores/useSettingsStore';
-import { loadSelectedAgentName, storeSelectedAgentName } from '@/features/terminal-session/composables/useSelectedAgent';
+import { useWorkspaceSessionStore } from '@/stores/useWorkspaceSessionStore';
 import { defaultAgents, type Agent } from '@/types/settings';
 import { useTerminalTabPaneZoom } from '@/views/workspace/tabs/terminal/composables/useTerminalTabPaneZoom';
 import { TerminalPanes, type TerminalPaneId } from '@/types/terminalPanes';
@@ -23,13 +24,18 @@ const emit = defineEmits<{
 }>();
 
 const { loadSettings } = useSettingsStore();
+const workspaceSessionStore = useWorkspaceSessionStore();
+const {
+  selectedAgentName,
+  terminalActivePane: activePane,
+  terminalZoomedPane: zoomedPane
+} = storeToRefs(workspaceSessionStore);
 
 type TerminalPaneComponent = {
   focusTerminal: () => Promise<void>;
 };
 
 const agents = ref<Agent[]>([]);
-const selectedAgentName = ref('');
 const openedAgentNames = ref<string[]>([]);
 const miscPane = ref<TerminalPaneComponent | null>(null);
 const agentPanes = new Map<string, TerminalPaneComponent>();
@@ -69,6 +75,8 @@ const {
   toggleActivePaneZoom,
   togglePaneZoom
 } = useTerminalTabPaneZoom({
+  activePane,
+  zoomedPane,
   isActive: toRef(props, 'isActive'),
   focusPane
 });
@@ -109,7 +117,6 @@ const selectAgent = async (agentName: string) => {
   }
 
   selectedAgentName.value = agentName;
-  storeSelectedAgentName(props.workspaceId, agentName);
   activatePane(TerminalPanes.Agent);
   if (!openedAgentNames.value.includes(agentName)) {
     openedAgentNames.value = [...openedAgentNames.value, agentName];
@@ -133,11 +140,8 @@ watch(agents, (nextAgents) => {
   }
 
   if (!nextAgents.some((agent) => agent.name === selectedAgentName.value)) {
-    const storedAgentName = loadSelectedAgentName(props.workspaceId);
-    const storedAgent = nextAgents.find((agent) => agent.name === storedAgentName);
     const defaultAgent = nextAgents.find((agent) => agent.default);
-    selectedAgentName.value = storedAgent?.name ?? defaultAgent?.name ?? nextAgents[0].name;
-    storeSelectedAgentName(props.workspaceId, selectedAgentName.value);
+    selectedAgentName.value = defaultAgent?.name ?? nextAgents[0].name;
   }
 
   if (!openedAgentNames.value.includes(selectedAgentName.value)) {
