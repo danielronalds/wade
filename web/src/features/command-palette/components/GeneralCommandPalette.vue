@@ -107,6 +107,7 @@ const closeCurrentWorkspaceTerminals = async () => {
 
   try {
     await deleteWorkspaceTerminals(workspaceId);
+    workspaceSessionStore.clearWorkspaceSession(workspaceId);
     void syncActiveWorkspaces();
     closePaletteWithoutRestoringFocus();
     await router.push({ name: 'home' });

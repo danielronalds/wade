@@ -264,9 +264,13 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
     entry.reviewState.value = 'idle';
   };
 
-  const resetWorkspaceSession = (workspaceId: string) => {
+  const clearWorkspaceSession = (workspaceId: string) => {
     const entry = ensureWorkspaceSessionEntry(workspaceId);
-    const snapshotId = entry.state.review?.snapshotId;
+    const storedState = parseCheckpoint(getStoredValue(workspaceSessionStorageKey(workspaceId)));
+    const snapshotIds = new Set([
+      entry.state.review?.snapshotId,
+      storedState?.review?.snapshotId
+    ].filter((snapshotId): snapshotId is string => Boolean(snapshotId)));
     const freshState = createFreshWorkspaceSession();
 
     entry.isInitialised = false;
@@ -277,9 +281,9 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
     entry.lastSerialisedCheckpoint = serialiseCheckpoint(entry.state);
     entry.isInitialised = true;
 
-    if (snapshotId) {
+    snapshotIds.forEach((snapshotId) => {
       void deleteReviewSnapshot(snapshotId).catch(() => undefined);
-    }
+    });
   };
 
   const prepareWorkspaceSession = (workspaceId: string) => {
@@ -296,7 +300,7 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
         ));
 
         if (!hasRunningTerminals) {
-          resetWorkspaceSession(workspaceId);
+          clearWorkspaceSession(workspaceId);
           return;
         }
 
@@ -411,13 +415,13 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
     activateWorkspaceSession,
     beginReview,
     clearReview,
+    clearWorkspaceSession,
     getReviewState,
     getSelectedAgentName,
     initialiseReview,
     isReviewOverallNoteOpen,
     isScratchpadOpen,
     prepareWorkspaceSession,
-    resetWorkspaceSession,
     reviewActiveFileId,
     reviewActiveScope,
     reviewCollapsedDirectories,

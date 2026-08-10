@@ -11,6 +11,7 @@ import PaletteShell from '@/features/command-palette/components/PaletteShell.vue
 import { usePaletteRequestState } from '@/features/command-palette/composables/usePaletteRequestState';
 import type { PaletteResult } from '@/features/command-palette/types';
 import { useWorkspaces } from '@/features/workspaces/composables/useWorkspaces';
+import { useWorkspaceSessionStore } from '@/stores/useWorkspaceSessionStore';
 
 const props = defineProps<{
   repositoryId: string;
@@ -23,6 +24,7 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const { syncWorkspaces } = useWorkspaces();
+const workspaceSessionStore = useWorkspaceSessionStore();
 const worktrees = ref<Worktree[]>([]);
 const targetWorktree = ref<DeepReadonly<Worktree> | undefined>();
 const {
@@ -112,6 +114,7 @@ const removeSelectedWorktree = async () => {
 
   try {
     await deleteRepositoryWorktree(props.repositoryId, target.id);
+    workspaceSessionStore.clearWorkspaceSession(target.workspaceId);
     await syncWorkspaces();
 
     if (target.workspaceId === props.workspaceId) {
