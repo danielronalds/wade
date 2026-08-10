@@ -1,5 +1,6 @@
+import { watchDebounced } from '@vueuse/core';
 import { defineStore } from 'pinia';
-import { computed, reactive, ref, watch, type Ref } from 'vue';
+import { computed, reactive, ref, type Ref } from 'vue';
 import {
   deleteReviewSnapshot,
   getReviewSnapshot,
@@ -345,7 +346,7 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
       reviewState: ref('idle')
     };
 
-    watch(state, () => {
+    watchDebounced(state, () => {
       if (!entry.isInitialised) {
         return;
       }
@@ -357,7 +358,7 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
 
       storeValue(workspaceSessionStorageKey(workspaceId), serialisedCheckpoint);
       entry.lastSerialisedCheckpoint = serialisedCheckpoint;
-    }, { deep: true });
+    }, { debounce: 300, deep: true });
 
     workspaceSessions.set(workspaceId, entry);
     return entry;
