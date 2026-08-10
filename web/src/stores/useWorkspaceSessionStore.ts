@@ -8,14 +8,17 @@ import {
   TerminalStatus
 } from '@/api/generated/wade';
 import { WadeHTTPError } from '@/api/httpClient';
-import type {
-  DraftReviewComment,
-  ReviewCheckpoint,
-  ReviewComment,
-  ReviewCommentKind,
-  ReviewData,
-  ReviewScope,
-  ReviewState
+import {
+  commentSides,
+  reviewCommentKinds,
+  reviewScopes,
+  type DraftReviewComment,
+  type ReviewCheckpoint,
+  type ReviewComment,
+  type ReviewCommentKind,
+  type ReviewData,
+  type ReviewScope,
+  type ReviewState
 } from '@/types/review';
 import { TerminalPanes, terminalPanes, type TerminalPaneId } from '@/types/terminalPanes';
 import { WorkspaceTabs, workspaceTabs, type WorkspaceTab } from '@/types/workspaceTabs';
@@ -457,9 +460,6 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
   };
 });
 
-const reviewScopes: readonly ReviewScope[] = ['pull-request', 'working-tree', 'last-commit', 'current'];
-const reviewCommentKinds: readonly ReviewCommentKind[] = ['feedback', 'question'];
-const commentSides = ['original', 'modified', 'file'] as const;
 const workspaceSessionStorageKey = (workspaceId: string) => `wade:workspace-session:${workspaceId}`;
 
 const createFreshReviewCheckpoint = (

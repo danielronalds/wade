@@ -1,6 +1,6 @@
 // NOTE: Vibecoded and not suppppppper reviewed
+import { GetReviewSnapshotFileContentsScope } from '@/api/generated/wade';
 import type {
-  GetReviewSnapshotFileContentsScope,
   ReviewChangeStatus,
   ReviewFile,
   ReviewFileComparison,
@@ -9,15 +9,18 @@ import type {
   ReviewSnapshotPullRequest
 } from '@/api/generated/wade';
 
+export const reviewScopes = Object.values(GetReviewSnapshotFileContentsScope);
 export type ReviewScope = GetReviewSnapshotFileContentsScope;
 export type ChangeStatus = ReviewChangeStatus;
 export type ReviewData = ReviewSnapshot;
 export type ReviewPullRequest = ReviewSnapshotPullRequest;
 export type { ReviewFile, ReviewFileComparison, ReviewFileContents };
 
-export type CommentSide = 'original' | 'modified' | 'file';
+export const commentSides = ['original', 'modified', 'file'] as const;
+export type CommentSide = typeof commentSides[number];
 
-export type ReviewCommentKind = 'feedback' | 'question';
+export const reviewCommentKinds = ['feedback', 'question'] as const;
+export type ReviewCommentKind = typeof reviewCommentKinds[number];
 
 export type ReviewState = 'idle' | 'loading' | 'ready' | 'error';
 
