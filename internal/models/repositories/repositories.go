@@ -5,7 +5,11 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 )
+
+// Eight workers kept measured multi-workspace scan latency close to one inspection while bounding concurrent Git subprocesses.
+const workspaceInspectionConcurrency = 8
 
 type workspaceRecord struct {
 	id              string
@@ -225,7 +229,12 @@ func (model *Model) scan(ctx context.Context) ([]workspaceRecord, error) {
 		return nil, err
 	}
 
-	records := make([]workspaceRecord, 0, len(workspaceIDs))
+	type workspaceInput struct {
+		id            string
+		path          string
+		canonicalPath string
+	}
+	workspaceInputs := make([]workspaceInput, 0, len(workspaceIDs))
 	for _, workspaceID := range workspaceIDs {
 		workspacePath, found, err := model.workspaces.Resolve(workspaceID)
 		if err != nil {
@@ -243,11 +252,59 @@ func (model *Model) scan(ctx context.Context) ([]workspaceRecord, error) {
 			continue
 		}
 
-		record, err := model.inspectWorkspace(ctx, workspaceID, workspacePath, canonicalPath)
-		if err != nil {
-			return nil, err
-		}
-		records = append(records, record)
+		workspaceInputs = append(workspaceInputs, workspaceInput{
+			id:            workspaceID,
+			path:          workspacePath,
+			canonicalPath: canonicalPath,
+		})
+	}
+
+	inspectionContext, cancelInspections := context.WithCancel(ctx)
+	defer cancelInspections()
+
+	records := make([]workspaceRecord, len(workspaceInputs))
+	workspaceIndexes := make(chan int, len(workspaceInputs))
+	for index := range workspaceInputs {
+		workspaceIndexes <- index
+	}
+	close(workspaceIndexes)
+
+	workerCount := min(workspaceInspectionConcurrency, len(workspaceInputs))
+	var workers sync.WaitGroup
+	var firstInspectionError error
+	var inspectionErrorOnce sync.Once
+	for range workerCount {
+		workers.Go(func() {
+			for index := range workspaceIndexes {
+				if inspectionContext.Err() != nil {
+					return
+				}
+
+				input := workspaceInputs[index]
+				record, err := model.inspectWorkspace(
+					inspectionContext,
+					input.id,
+					input.path,
+					input.canonicalPath,
+				)
+				if err != nil {
+					inspectionErrorOnce.Do(func() {
+						firstInspectionError = err
+						cancelInspections()
+					})
+					return
+				}
+				records[index] = record
+			}
+		})
+	}
+	workers.Wait()
+
+	if firstInspectionError != nil {
+		return nil, firstInspectionError
+	}
+	if err := inspectionContext.Err(); err != nil {
+		return nil, err
 	}
 
 	return records, nil
