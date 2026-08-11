@@ -2,223 +2,149 @@
 
 ![WADE's Review tab showing a side-by-side working tree diff, reviewed files and inline feedback](.github/assets/wade_review_window.png)
 
-<p align="center"><sub>Review working-tree changes side by side and leave inline feedback.</sub></p>
+<p align="center"><sub>Review working-tree changes side by side and send inline feedback back to your coding agent.</sub></p>
 
-WADE is a Web-based Agentic Development Environment. It is a local-first
-browser workspace for agentic coding sessions, backed by real workspace shells
-through Go, PTYs, WebSockets and xterm.js.
+WADE is a Web-based Agentic Development Environment. It gives coding agents a
+local, project-focused browser workspace backed by real shells on your machine.
 
-WADE started as a simple browser terminal, but its purpose is now broader: make
-it easy to open a workspace, reconnect to long-lived terminals, and keep
-useful workspace context close to the work.
+Instead of managing separate terminal windows, worktrees, diffs and repository
+links, WADE keeps the tools for an agentic coding session together. Terminals
+remain available when you navigate away and reconnect when you return.
 
-WADE is intended to be keyboard driven. Mouse interactions are useful, but the
-primary workflow should feel fast from the keyboard, especially workspace search,
-tab switching, pane switching and terminal focus.
+WADE is local-first and keyboard driven. The server binds to your machine, your
+shells stay local, and the main workflows are accessible without reaching for
+the mouse.
 
-## What it provides
+## What you can do
 
-- A keyboard-first home screen with recent workspaces, a workspace command palette
-  and a general command palette.
-- Workspace discovery from local development directories.
-- Persistent workspace terminals for the lifetime of the server.
-- Agent and Misc terminal panes for workspace work.
-- A Server terminal tab for running the application under development.
-- A workspace topbar with current branch, Linear ticket and pull request links.
-- Embedded Nerd Font support for terminal icons.
-- A local-only HTTP server with same-origin WebSocket checks.
+- Find and open repositories across your configured workspace directories.
+- Run a coding agent alongside miscellaneous and application server shells.
+- Reconnect to terminals for as long as the WADE server is running.
+- Review pull request, working tree and last-commit changes side by side.
+- Leave line-level feedback or questions and send them directly to the agent.
+- Create, open and remove Git worktrees from the command palette.
+- Clone repositories visible to the GitHub CLI.
+- Keep branch, pull request and issue context close to the workspace.
+- Use a workspace scratchpad terminal without leaving the current screen.
 
-## Setup
+## Install
+
+WADE is currently installed from source. You will need:
+
+- macOS or another Unix-like environment
+- [Git](https://git-scm.com/)
+- [mise](https://mise.jdx.dev/)
+- at least one coding-agent CLI, such as [Pi](https://github.com/badlogic/pi-mono)
+  or Claude Code
+- optionally, an authenticated [GitHub CLI](https://cli.github.com/) for GitHub
+  links, pull requests and repository cloning
 
 ```sh
+git clone https://github.com/danielronalds/wade.git
+cd wade
 mise install
-mise run dev
+mise run build:install
 ```
 
-Open <http://editor-dev.localhost:8090>.
+The final command installs `wade` into Go's binary directory. If your shell
+cannot find it, add `$(go env GOPATH)/bin` to your `PATH`.
 
-`mise run dev` starts Air, which runs the binary with `WADE_DEV=1`. Development
-mode uses <http://editor-dev.localhost:8090>, taking precedence over an inherited
-`WADE_ADDR`. A directly built binary started with `wade server` uses
-<http://editor.localhost:8765> by default.
+## Get started
 
-Running `wade` with no command prints the help menu. Use `wade server` to start
-the web server in the background, `wade status` to inspect it, and `wade stop`
-to stop it gracefully. Repeating `wade server` reports the existing managed
-daemon instead of starting another one. Use `wade config` to open
-`~/.config/wade/config.json` in your editor.
-
-WADE writes background server output to
-`${XDG_STATE_HOME:-~/.local/state}/wade/server.log` and uses
-`${XDG_STATE_HOME:-~/.local/state}/wade/server.sock` for daemon lifecycle
-management. Use `wade server --foreground` to keep the server attached to the
-terminal. Foreground servers are intentionally unmanaged, so they do not appear
-in `wade status` and are not affected by `wade stop`.
-
-To use a different address for a normal server:
+Start WADE as a background service:
 
 ```sh
-WADE_ADDR=127.0.0.1:8765 wade server
+wade server
 ```
 
-## Workspaces
+Open <http://editor.localhost:8765>, then open Settings from `Ctrl + K` and set
+the directories that contain your repositories. Press `Ctrl + P` to search for
+a workspace.
 
-The root path shows the five most recently opened workspaces from browser
-`localStorage`. Press `Ctrl + P` to open the workspace picker and search all
-workspaces WADE can see. Press `Ctrl + S` to open active workspaces for the current
-WADE server lifetime.
+WADE starts with `~/Personal` and `~/Work` as its workspace directories. Missing
+directories are harmless and are skipped during discovery.
 
-Workspace pages use the workspace ID as the path:
+Use the CLI to manage the service:
 
-```text
-http://editor-dev.localhost:8090/workspaces/wade
+```sh
+wade status
+wade stop
 ```
 
-The workspace ID is resolved against workspace directories from
-`~/.config/wade/config.json`. WADE creates this file on first server start or
-when you run `wade config` if it does not exist:
+Running `wade server` again reports the existing managed server rather than
+starting a second one. Logs and daemon state live under
+`${XDG_STATE_HOME:-~/.local/state}/wade`.
+
+To keep the server attached to your terminal, use:
+
+```sh
+wade server --foreground
+```
+
+A foreground server is unmanaged, so it does not appear in `wade status` and is
+not stopped by `wade stop`.
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl + K` | Open the command palette |
+| `Ctrl + P` | Open the workspace picker |
+| `Ctrl + S` | Open the active-workspace picker |
+| `Ctrl + Alt + T` | Toggle the scratchpad (`Ctrl + Option + T` on macOS) |
+| `Ctrl + B`, then `1` | Switch to Terminal |
+| `Ctrl + B`, then `2` | Switch to Server |
+| `Ctrl + B`, then `3` | Switch to Review |
+| `Ctrl + B`, then `4` | Open the scratchpad |
+| `Ctrl + B`, then `o` | Focus the next terminal pane |
+| `Ctrl + B`, then `z` | Zoom or restore the active Terminal pane |
+
+## Settings
+
+Settings are available in the application or at
+`~/.config/wade/config.json`. Run `wade config` to create and open the file in
+`$EDITOR` (`nvim` is used when `$EDITOR` is unset).
+
+A complete configuration looks like this:
 
 ```json
 {
+  "workspaceDirectories": ["~/Personal", "~/Work"],
+  "shell": "",
   "agents": [
     { "name": "Pi", "command": "pi -c", "default": true },
     { "name": "Claude", "command": "claude", "default": false }
   ],
-  "workspaceDirectories": [
-    "~/Personal",
-    "~/Work"
-  ],
+  "copyIgnoredFilesOnWorktreeCreation": false,
   "openWorktreesInNewTabs": false,
+  "worktreeCopyExcludes": [],
   "themeAccentColor": "white"
 }
 ```
 
-Workspace directories can use `~` or absolute paths. Missing directories are
-allowed and are skipped during discovery. Edit settings at `/settings`, or edit
-the JSON file directly and run `Reload Settings` from the general command palette
-to apply safe settings changes without restarting WADE.
+Workspace directories may use `~` or absolute paths. Leave `shell` empty to use
+the server's `$SHELL`. Exactly one configured agent must be the default. Safe
+changes can be applied without restarting through **Reload Settings** in the
+command palette.
 
-Workspace terminals are kept alive for the lifetime of the server. Reopening a
-workspace reconnects to the existing terminals rather than starting new ones.
-The Agent pane starts the selected configured agent command through
-your shell. Misc and Server terminals start your normal shell.
+## Server address
 
-## Keyboard shortcuts
-
-Keyboard shortcuts are a core part of WADE's interaction model. New workflows
-should prefer shortcuts and predictable focus behaviour over mouse-only flows.
-
-- `Ctrl + K`: open the general command palette.
-- `Ctrl + P`: open the workspace picker.
-- `Ctrl + S`: open the active workspace picker.
-- `Ctrl + Alt + T`: toggle the workspace scratchpad terminal (`Ctrl + Option + T` on macOS).
-- `Ctrl + B`, then `1`: switch to the Terminal tab.
-- `Ctrl + B`, then `2`: switch to the Server tab.
-- `Ctrl + B`, then `3`: switch to the Review tab.
-- `Ctrl + B`, then `4`: open the workspace scratchpad terminal.
-- `Ctrl + B`, then `o`: switch to the next terminal pane in the active tab.
-
-## Terminal behaviour
-
-WADE uses xterm.js with the fit addon and WebGL renderer. The frontend sends
-binary WebSocket messages as terminal input. Text WebSocket messages are JSON
-control messages, currently used for resize events:
-
-```json
-{ "type": "resize", "cols": 120, "rows": 40 }
-```
-
-Escape has special handling. The frontend captures document `keydown` events in
-the capture phase for the active terminal and sends raw `\x1b` to the PTY. This
-keeps Escape reliable before xterm or browser focus handling can consume it.
-
-## Development
+The managed server uses <http://editor.localhost:8765> by default. Override the
+address when starting it:
 
 ```sh
-mise run dev
+WADE_ADDR=127.0.0.1:9000 wade server
 ```
 
-This installs frontend dependencies, builds embedded assets, and starts Air.
-Air reloads the Go server when Go, HTML, CSS, JavaScript, TypeScript, Vue,
-JSON, TOML, Markdown or font files change.
+Development mode uses <http://editor-dev.localhost:8090>. WADE provides access
+to real shells, so do not bind it to a public interface or expose it through a
+public tunnel.
 
-## Build
+## Contributing
 
-```sh
-mise run build
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local development, architecture,
+testing and pull request guidance.
 
-This writes the binary to `.tmp/wade`. Start the background server with
-`.tmp/wade server`, inspect it with `.tmp/wade status`, and stop it with
-`.tmp/wade stop`. Use `.tmp/wade server --foreground` to keep an unmanaged
-server attached to the terminal.
+## Licence
 
-## Test
-
-```sh
-mise run test
-```
-
-For a lifecycle smoke test, use an isolated `XDG_STATE_HOME` and temporary port,
-then run `wade server`, `wade status`, `wade stop`, and `wade status`. The final
-status command should exit with status `1`. Also verify foreground mode does not
-create a control socket and check that no stale `go run .` or `wade` processes
-remain on test ports.
-
-## Build process
-
-Vue and TypeScript source files live in `web/src`. Static public assets live in
-`web/static`. xterm.js, Vue and the frontend build tools are fetched by npm into
-`web/node_modules`.
-
-`go generate ./...` runs `npm --prefix ../../web run build` from
-`internal/web`. That regenerates the TypeScript API client with Orval,
-typechecks with `vue-tsc`, bundles the frontend with esbuild into
-`internal/web/.dist`, and the Go binary embeds that directory with `go:embed`.
-There is no Vite dev server. Go serves the built assets.
-
-The generated `internal/web/.dist` directory and `web/node_modules` are ignored
-by git.
-
-## OpenAPI generation
-
-The HTTP API annotations generate a Swagger/OpenAPI spec at
-`internal/openapi/swagger.json` and
-`internal/openapi/swagger.yaml`.
-
-```sh
-mise run gen:openapi
-```
-
-The frontend generates a fetch-based TypeScript client from that spec at
-`web/src/api/generated/wade.ts`.
-
-```sh
-npm --prefix web run gen:api
-```
-
-API docs are available at `/api/docs`, with the OpenAPI JSON served at
-`/api/openapi.json`. Static asset and page routes are intentionally excluded
-from the client API surface.
-
-Use this before committing API changes to check the generated files are current:
-
-```sh
-mise run lint:openapi
-```
-
-## Nerd Fonts
-
-The frontend includes `JetBrainsMonoNerdFontMono-Regular.ttf` so Nerd Font
-icons work without installing a local font. xterm uses this embedded font first,
-then falls back to locally installed Nerd Fonts and normal monospace fonts.
-
-Only the regular weight is bundled. Bold terminal text is browser-synthesised
-from the regular face. If true bold rendering becomes important, we can also
-bundle `JetBrainsMonoNerdFontMono-Bold.ttf`.
-
-You can force a specific installed font with the `font` query parameter:
-
-```text
-http://editor-dev.localhost:8090/?font=JetBrainsMono%20Nerd%20Font
-```
+WADE is available under the [MIT License](LICENSE).
