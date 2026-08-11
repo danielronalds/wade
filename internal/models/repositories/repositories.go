@@ -303,7 +303,7 @@ func (model *Model) scan(ctx context.Context) ([]workspaceRecord, error) {
 	if firstInspectionError != nil {
 		return nil, firstInspectionError
 	}
-	if err := ctx.Err(); err != nil {
+	if err := inspectionContext.Err(); err != nil {
 		return nil, err
 	}
 
