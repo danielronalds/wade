@@ -8,6 +8,7 @@ import (
 	"sync"
 )
 
+// Eight workers kept measured multi-workspace scan latency close to one inspection while bounding concurrent Git subprocesses.
 const workspaceInspectionConcurrency = 8
 
 type workspaceRecord struct {
