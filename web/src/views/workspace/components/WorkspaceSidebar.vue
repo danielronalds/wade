@@ -112,16 +112,16 @@ nav {
   left: 0;
   width: 2px;
   background: transparent;
-  content: "";
+  content: '';
 }
 
 .workspace-tab:hover,
 .workspace-tab:focus-visible,
-.workspace-tab[data-active="true"] {
+.workspace-tab[data-active='true'] {
   color: var(--text);
 }
 
-.workspace-tab[data-active="true"]::before {
+.workspace-tab[data-active='true']::before {
   background: var(--text);
 }
 </style>

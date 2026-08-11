@@ -14,11 +14,7 @@ const emit = defineEmits<{
   close: [restoreFocus?: boolean];
 }>();
 
-const {
-  closeReservedWorktreeTab,
-  openWorktree: navigateToWorktree,
-  reserveWorktreeTab
-} = useWorktreeNavigation();
+const { closeReservedWorktreeTab, openWorktree: navigateToWorktree, reserveWorktreeTab } = useWorktreeNavigation();
 const createdWorktree = ref<Worktree | undefined>();
 const copyWarnings = computed(() => createdWorktree.value?.ignoredFileCopyWarnings ?? []);
 const hasCopyWarnings = computed(() => copyWarnings.value.length > 0);
@@ -81,32 +77,36 @@ const createOrOpenWorktree = async () => {
 
 const paletteResults = computed<PaletteResult[]>(() => {
   if (createdWorktree.value && hasCopyWarnings.value) {
-    return [{
-      id: 'open-created-worktree',
-      label: `Open ${createdWorktree.value.workspaceId}`,
-      actionLabel: 'Open worktree',
-      isDisabled: false,
-      run: () => {
-        if (createdWorktree.value) {
-          void openWorktree(createdWorktree.value, reserveWorktreeTab());
+    return [
+      {
+        id: 'open-created-worktree',
+        label: `Open ${createdWorktree.value.workspaceId}`,
+        actionLabel: 'Open worktree',
+        isDisabled: false,
+        run: () => {
+          if (createdWorktree.value) {
+            void openWorktree(createdWorktree.value, reserveWorktreeTab());
+          }
         }
       }
-    }];
+    ];
   }
 
   if (branchName.value === '') {
     return [];
   }
 
-  return [{
-    id: 'create-worktree',
-    label: branchName.value,
-    actionLabel: isCreating.value ? 'Creating' : 'Create or open worktree',
-    isDisabled: isCreating.value,
-    run: () => {
-      void createOrOpenWorktree();
+  return [
+    {
+      id: 'create-worktree',
+      label: branchName.value,
+      actionLabel: isCreating.value ? 'Creating' : 'Create or open worktree',
+      isDisabled: isCreating.value,
+      run: () => {
+        void createOrOpenWorktree();
+      }
     }
-  }];
+  ];
 });
 </script>
 

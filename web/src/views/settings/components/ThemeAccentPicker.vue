@@ -28,7 +28,7 @@ const themeAccentColor = defineModel<ThemeAccentColor>('themeAccentColor', { req
           v-model="themeAccentColor"
           :value="option.value"
           :aria-label="option.label"
-        >
+        />
         <span class="theme-accent-swatch" :style="{ '--theme-accent-option-color': option.color }">
           <span aria-hidden="true"></span>
         </span>

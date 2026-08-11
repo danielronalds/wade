@@ -17,10 +17,10 @@ export type ReviewPullRequest = ReviewSnapshotPullRequest;
 export type { ReviewFile, ReviewFileComparison, ReviewFileContents };
 
 export const commentSides = ['original', 'modified', 'file'] as const;
-export type CommentSide = typeof commentSides[number];
+export type CommentSide = (typeof commentSides)[number];
 
 export const reviewCommentKinds = ['feedback', 'question'] as const;
-export type ReviewCommentKind = typeof reviewCommentKinds[number];
+export type ReviewCommentKind = (typeof reviewCommentKinds)[number];
 
 export type ReviewState = 'idle' | 'loading' | 'ready' | 'error';
 

@@ -7,9 +7,11 @@ export type StartReviewEventDetail = {
 export type StartReviewEventHandler = (detail: StartReviewEventDetail) => void | Promise<void>;
 
 export const dispatchStartReviewEvent = (workspaceId: string) => {
-  window.dispatchEvent(new CustomEvent<StartReviewEventDetail>(startReviewEventName, {
-    detail: { workspaceId }
-  }));
+  window.dispatchEvent(
+    new CustomEvent<StartReviewEventDetail>(startReviewEventName, {
+      detail: { workspaceId }
+    })
+  );
 };
 
 export const registerStartReviewEventHandler = (handler: StartReviewEventHandler) => {

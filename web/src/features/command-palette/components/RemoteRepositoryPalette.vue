@@ -2,11 +2,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, type DeepReadonly } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  listRemoteRepositories,
-  materialiseWorkspace,
-  type RemoteRepository
-} from '@/api/generated/wade';
+import { listRemoteRepositories, materialiseWorkspace, type RemoteRepository } from '@/api/generated/wade';
 import { useFuzzyItems } from '@/composables/useFuzzyItems';
 import PaletteShell from '@/features/command-palette/components/PaletteShell.vue';
 import { usePaletteRequestState } from '@/features/command-palette/composables/usePaletteRequestState';
@@ -44,10 +40,12 @@ const {
   errorTitle: 'Remote repository request failed'
 });
 
-const directoryChoices = computed<DirectoryChoice[]>(() => workspaceDirectories.value.map((directory, index) => ({
-  index,
-  directory
-})));
+const directoryChoices = computed<DirectoryChoice[]>(() =>
+  workspaceDirectories.value.map((directory, index) => ({
+    index,
+    directory
+  }))
+);
 
 const isChoosingDirectory = computed(() => Boolean(selectedRemoteRepository.value));
 
@@ -100,13 +98,11 @@ const statusMessage = computed(() => {
   return 'No matching GitHub repositories';
 });
 
-const searchPlaceholder = computed(() => isChoosingDirectory.value
-  ? 'Search workspace directories'
-  : 'Search GitHub repositories');
+const searchPlaceholder = computed(() =>
+  isChoosingDirectory.value ? 'Search workspace directories' : 'Search GitHub repositories'
+);
 
-const resultsAriaLabel = computed(() => isChoosingDirectory.value
-  ? 'Workspace directories'
-  : 'GitHub repositories');
+const resultsAriaLabel = computed(() => (isChoosingDirectory.value ? 'Workspace directories' : 'GitHub repositories'));
 
 const openWorkspace = async (workspaceId: string, syncFirst = false) => {
   if (syncFirst) {
@@ -170,10 +166,7 @@ const loadRemoteRepositories = async () => {
   clearErrors();
 
   try {
-    const [{ items }, settings] = await Promise.all([
-      listRemoteRepositories(),
-      loadSettings({ force: true })
-    ]);
+    const [{ items }, settings] = await Promise.all([listRemoteRepositories(), loadSettings({ force: true })]);
 
     remoteRepositories.value = items;
     workspaceDirectories.value = settings.workspaceDirectories;
@@ -200,9 +193,10 @@ const remoteRepositoryActionLabel = (repository: DeepReadonly<RemoteRepository>)
   return workspaceDirectories.value.length === 1 ? 'Clone repository' : 'Choose location';
 };
 
-const isRemoteRepositoryDisabled = (repository: DeepReadonly<RemoteRepository>) => isLoading.value
-  || isCloning.value
-  || (repository.localWorkspaceIds.length === 0 && workspaceDirectories.value.length === 0);
+const isRemoteRepositoryDisabled = (repository: DeepReadonly<RemoteRepository>) =>
+  isLoading.value ||
+  isCloning.value ||
+  (repository.localWorkspaceIds.length === 0 && workspaceDirectories.value.length === 0);
 
 const { matchingItems: matchingRemoteRepositories } = useFuzzyItems(
   remoteRepositories,
@@ -210,37 +204,37 @@ const { matchingItems: matchingRemoteRepositories } = useFuzzyItems(
   (repository) => repository.id
 );
 
-const { matchingItems: matchingDirectoryChoices } = useFuzzyItems(
-  directoryChoices,
-  query,
-  directoryLabel
+const { matchingItems: matchingDirectoryChoices } = useFuzzyItems(directoryChoices, query, directoryLabel);
+
+const remoteRepositoryResults = computed<PaletteResult[]>(() =>
+  matchingRemoteRepositories.value.map((match) => ({
+    id: `remote-repository:${match.item.id}`,
+    label: match.item.id,
+    actionLabel: remoteRepositoryActionLabel(match.item),
+    isDisabled: isRemoteRepositoryDisabled(match.item),
+    run: () => {
+      void selectRemoteRepository(match.item);
+    }
+  }))
 );
 
-const remoteRepositoryResults = computed<PaletteResult[]>(() => matchingRemoteRepositories.value.map((match) => ({
-  id: `remote-repository:${match.item.id}`,
-  label: match.item.id,
-  actionLabel: remoteRepositoryActionLabel(match.item),
-  isDisabled: isRemoteRepositoryDisabled(match.item),
-  run: () => {
-    void selectRemoteRepository(match.item);
-  }
-})));
-
-const directoryResults = computed<PaletteResult[]>(() => matchingDirectoryChoices.value.map((match) => ({
-  id: `remote-workspace-directory:${match.item.index}`,
-  label: directoryLabel(match.item),
-  actionLabel: isCloning.value ? 'Cloning' : 'Clone here',
-  isDisabled: isCloning.value,
-  run: () => {
-    if (selectedRemoteRepository.value) {
-      void cloneRepository(selectedRemoteRepository.value, match.item.directory);
+const directoryResults = computed<PaletteResult[]>(() =>
+  matchingDirectoryChoices.value.map((match) => ({
+    id: `remote-workspace-directory:${match.item.index}`,
+    label: directoryLabel(match.item),
+    actionLabel: isCloning.value ? 'Cloning' : 'Clone here',
+    isDisabled: isCloning.value,
+    run: () => {
+      if (selectedRemoteRepository.value) {
+        void cloneRepository(selectedRemoteRepository.value, match.item.directory);
+      }
     }
-  }
-})));
+  }))
+);
 
-const paletteResults = computed<PaletteResult[]>(() => isChoosingDirectory.value
-  ? directoryResults.value
-  : remoteRepositoryResults.value);
+const paletteResults = computed<PaletteResult[]>(() =>
+  isChoosingDirectory.value ? directoryResults.value : remoteRepositoryResults.value
+);
 
 onMounted(() => {
   void loadRemoteRepositories();

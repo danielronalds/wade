@@ -46,9 +46,7 @@ const nerdFontStack = [
   'monospace'
 ];
 
-const quoteFontFamily = (font: string) => font === 'monospace'
-  ? font
-  : `"${font.replace(/["\\]/g, '')}"`;
+const quoteFontFamily = (font: string) => (font === 'monospace' ? font : `"${font.replace(/["\\]/g, '')}"`);
 
 const getFontFamily = () => {
   const queryFont = new URLSearchParams(window.location.search).get('font');
@@ -82,42 +80,43 @@ const openHttpLink = (_event: MouseEvent, uri: string) => {
   window.open(url.toString(), '_blank', 'noopener,noreferrer');
 };
 
-const createTerminal = () => new Terminal({
-  cursorBlink: true,
-  cursorStyle: 'block',
-  customGlyphs: true,
-  fontFamily: getFontFamily(),
-  fontSize: 14,
-  fontWeight: 400,
-  fontWeightBold: 400,
-  letterSpacing: 0,
-  lineHeight: 1,
-  rescaleOverlappingGlyphs: true,
-  scrollback: 10000,
-  theme: {
-    background: '#17181c',
-    foreground: '#f8f8f2',
-    cursor: '#f8f8f0',
-    cursorAccent: '#17181c',
-    selectionBackground: '#45475a',
-    black: '#21222c',
-    red: '#ff5555',
-    green: '#50fa7b',
-    yellow: '#f1fa8c',
-    blue: '#bd93f9',
-    magenta: '#ff79c6',
-    cyan: '#8be9fd',
-    white: '#f8f8f2',
-    brightBlack: '#6272a4',
-    brightRed: '#ff6e6e',
-    brightGreen: '#69ff94',
-    brightYellow: '#ffffa5',
-    brightBlue: '#d6acff',
-    brightMagenta: '#ff92df',
-    brightCyan: '#a4ffff',
-    brightWhite: '#ffffff'
-  }
-});
+const createTerminal = () =>
+  new Terminal({
+    cursorBlink: true,
+    cursorStyle: 'block',
+    customGlyphs: true,
+    fontFamily: getFontFamily(),
+    fontSize: 14,
+    fontWeight: 400,
+    fontWeightBold: 400,
+    letterSpacing: 0,
+    lineHeight: 1,
+    rescaleOverlappingGlyphs: true,
+    scrollback: 10000,
+    theme: {
+      background: '#17181c',
+      foreground: '#f8f8f2',
+      cursor: '#f8f8f0',
+      cursorAccent: '#17181c',
+      selectionBackground: '#45475a',
+      black: '#21222c',
+      red: '#ff5555',
+      green: '#50fa7b',
+      yellow: '#f1fa8c',
+      blue: '#bd93f9',
+      magenta: '#ff79c6',
+      cyan: '#8be9fd',
+      white: '#f8f8f2',
+      brightBlack: '#6272a4',
+      brightRed: '#ff6e6e',
+      brightGreen: '#69ff94',
+      brightYellow: '#ffffa5',
+      brightBlue: '#d6acff',
+      brightMagenta: '#ff92df',
+      brightCyan: '#a4ffff',
+      brightWhite: '#ffffff'
+    }
+  });
 
 export const useTerminalSession = ({
   workspaceId,
@@ -161,11 +160,13 @@ export const useTerminalSession = ({
       return;
     }
 
-    socket.send(JSON.stringify({
-      type: 'resize',
-      cols: terminal.cols,
-      rows: terminal.rows
-    }));
+    socket.send(
+      JSON.stringify({
+        type: 'resize',
+        cols: terminal.cols,
+        rows: terminal.rows
+      })
+    );
   };
 
   const sendAgentActivation = () => {

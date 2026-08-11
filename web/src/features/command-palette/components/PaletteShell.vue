@@ -23,7 +23,7 @@ const resultId = (index: number) => `command-palette-result-${index}`;
 const selectedIndex = ref(0);
 const searchInput = ref<HTMLInputElement | null>(null);
 const selectedResult = computed(() => props.results[selectedIndex.value]);
-const activeDescendant = computed(() => selectedResult.value ? resultId(selectedIndex.value) : undefined);
+const activeDescendant = computed(() => (selectedResult.value ? resultId(selectedIndex.value) : undefined));
 
 const updateQuery = (event: Event) => {
   if (!(event.target instanceof HTMLInputElement)) {
@@ -90,17 +90,23 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 };
 
-watch(() => props.query, () => {
-  selectedIndex.value = 0;
-});
-
-watch(() => props.results, () => {
-  if (selectedIndex.value < props.results.length) {
-    return;
+watch(
+  () => props.query,
+  () => {
+    selectedIndex.value = 0;
   }
+);
 
-  selectedIndex.value = Math.max(0, props.results.length - 1);
-});
+watch(
+  () => props.results,
+  () => {
+    if (selectedIndex.value < props.results.length) {
+      return;
+    }
+
+    selectedIndex.value = Math.max(0, props.results.length - 1);
+  }
+);
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown, true);
@@ -117,17 +123,8 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <section
-      id="command-palette-backdrop"
-      aria-label="Command palette backdrop"
-      @mousedown.self="closePalette()"
-    >
-      <section
-        id="command-palette"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="command-palette-title"
-      >
+    <section id="command-palette-backdrop" aria-label="Command palette backdrop" @mousedown.self="closePalette()">
+      <section id="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-palette-title">
         <header id="command-palette-header">
           <h2 id="command-palette-title">{{ title }}</h2>
           <p>{{ summary }}</p>
@@ -148,14 +145,9 @@ onBeforeUnmount(() => {
             aria-expanded="true"
             :placeholder="searchPlaceholder"
             @input="updateQuery"
-          >
+          />
         </form>
-        <section
-          v-if="notice"
-          id="command-palette-notice"
-          role="status"
-          :data-tone="notice.tone"
-        >
+        <section v-if="notice" id="command-palette-notice" role="status" :data-tone="notice.tone">
           <h3>{{ notice.title }}</h3>
           <ul>
             <li v-for="(message, index) in notice.messages" :key="`${index}:${message}`">{{ message }}</li>
@@ -275,12 +267,12 @@ onBeforeUnmount(() => {
   line-height: 1.4;
 }
 
-#command-palette-notice[data-tone="warning"] {
+#command-palette-notice[data-tone='warning'] {
   border-color: #d29922;
   background: rgb(210 153 34 / 14%);
 }
 
-#command-palette-notice[data-tone="error"] {
+#command-palette-notice[data-tone='error'] {
   border-color: #ff6e6e;
   background: rgb(255 110 110 / 14%);
 }
@@ -295,11 +287,11 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 
-#command-palette-notice[data-tone="warning"] h3 {
+#command-palette-notice[data-tone='warning'] h3 {
   color: #d29922;
 }
 
-#command-palette-notice[data-tone="error"] h3 {
+#command-palette-notice[data-tone='error'] h3 {
   color: #ff6e6e;
 }
 
@@ -342,7 +334,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.command-palette-result[data-selected="true"] {
+.command-palette-result[data-selected='true'] {
   background: rgb(var(--accent-rgb) / 10%);
 }
 

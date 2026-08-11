@@ -8,9 +8,7 @@ type WorkspaceDetailsState = {
   isLoading: boolean;
 };
 
-const errorMessage = (error: unknown) => error instanceof Error
-  ? error.message
-  : 'Workspace details request failed';
+const errorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Workspace details request failed');
 
 export const useWorkspaceDetailsStore = defineStore('workspace-details', () => {
   const workspaceStates = reactive(new Map<string, WorkspaceDetailsState>());

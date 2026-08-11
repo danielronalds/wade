@@ -45,9 +45,9 @@ const isWorkspaceScreenActive = computed(() => !isScratchpadOpen.value);
 const isTerminalTabActive = computed(() => isWorkspaceScreenActive.value && activeTab.value === WorkspaceTabs.Terminal);
 const isServerTabActive = computed(() => isWorkspaceScreenActive.value && activeTab.value === WorkspaceTabs.Server);
 const isReviewTabActive = computed(() => isWorkspaceScreenActive.value && activeTab.value === WorkspaceTabs.Review);
-const activeConnectionStatus = computed(() => isScratchpadOpen.value
-  ? scratchpadConnectionStatus.value
-  : connectionStatuses[activeTab.value]);
+const activeConnectionStatus = computed(() =>
+  isScratchpadOpen.value ? scratchpadConnectionStatus.value : connectionStatuses[activeTab.value]
+);
 
 const getActiveWorkspaceScreen = () => {
   if (activeTab.value === WorkspaceTabs.Server) {

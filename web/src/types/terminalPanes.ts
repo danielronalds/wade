@@ -5,4 +5,4 @@ export const TerminalPanes = {
 
 export const terminalPanes = [TerminalPanes.Agent, TerminalPanes.Misc] as const;
 
-export type TerminalPaneId = typeof TerminalPanes[keyof typeof TerminalPanes];
+export type TerminalPaneId = (typeof TerminalPanes)[keyof typeof TerminalPanes];

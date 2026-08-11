@@ -21,16 +21,14 @@ const PaletteModes = {
   RemoveWorktree: 'remove-worktree'
 } as const;
 
-type PaletteMode = typeof PaletteModes[keyof typeof PaletteModes];
+type PaletteMode = (typeof PaletteModes)[keyof typeof PaletteModes];
 
 const route = useRoute();
 const workspaceDetailsStore = useWorkspaceDetailsStore();
 const activePalette = ref<PaletteMode | undefined>();
 let previouslyFocusedElement: HTMLElement | null = null;
 
-const currentWorkspaceId = computed(() => route.name === 'workspace'
-  ? String(route.params.workspaceId ?? '')
-  : '');
+const currentWorkspaceId = computed(() => (route.name === 'workspace' ? String(route.params.workspaceId ?? '') : ''));
 const currentWorkspace = computed(() => workspaceDetailsStore.getWorkspaceDetails(currentWorkspaceId.value));
 const currentRepositoryId = computed(() => currentWorkspace.value?.repositoryId ?? '');
 
@@ -84,14 +82,8 @@ useCommandPaletteKeyboardShortcuts({
 </script>
 
 <template>
-  <WorkspacePalette
-    v-if="activePalette === PaletteModes.Workspaces"
-    @close="closePalette"
-  />
-  <ActiveWorkspacePalette
-    v-if="activePalette === PaletteModes.ActiveWorkspaces"
-    @close="closePalette"
-  />
+  <WorkspacePalette v-if="activePalette === PaletteModes.Workspaces" @close="closePalette" />
+  <ActiveWorkspacePalette v-if="activePalette === PaletteModes.ActiveWorkspaces" @close="closePalette" />
   <GeneralCommandPalette
     v-if="activePalette === PaletteModes.Commands"
     @close="closePalette"
@@ -102,10 +94,7 @@ useCommandPaletteKeyboardShortcuts({
     @open-remote-worktree-picker="openRepositoryWorktreePalette(PaletteModes.RemoteWorktree)"
     @open-remove-worktree="openRepositoryWorktreePalette(PaletteModes.RemoveWorktree)"
   />
-  <RemoteRepositoryPalette
-    v-if="activePalette === PaletteModes.RemoteRepository"
-    @close="closePalette"
-  />
+  <RemoteRepositoryPalette v-if="activePalette === PaletteModes.RemoteRepository" @close="closePalette" />
   <CreateWorktreePalette
     v-if="activePalette === PaletteModes.CreateWorktree"
     :repository-id="currentRepositoryId"

@@ -38,13 +38,11 @@ const query = ref('');
 const isClosingTerminals = ref(false);
 const closeTerminalsError = ref('');
 
-const currentWorkspaceId = computed(() => route.name === 'workspace'
-  ? String(route.params.workspaceId ?? '')
-  : '');
+const currentWorkspaceId = computed(() => (route.name === 'workspace' ? String(route.params.workspaceId ?? '') : ''));
 const workspaceDetails = computed(() => workspaceDetailsStore.getWorkspaceDetails(currentWorkspaceId.value));
-const isWorkspaceDetailsLoading = computed(() => (
+const isWorkspaceDetailsLoading = computed(() =>
   workspaceDetailsStore.isWorkspaceDetailsLoading(currentWorkspaceId.value)
-));
+);
 const isWaitingForWorkspaceDetails = computed(() => isWorkspaceDetailsLoading.value && !workspaceDetails.value);
 const currentReviewState = computed(() => workspaceSessionStore.getReviewState(currentWorkspaceId.value));
 const isReviewInProgress = computed(() => isReviewInProgressState(currentReviewState.value));
@@ -87,9 +85,7 @@ const closePaletteWithoutRestoringFocus = () => {
   emit('close', false);
 };
 
-const errorMessage = (error: unknown, fallback: string) => error instanceof Error
-  ? error.message
-  : fallback;
+const errorMessage = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
 const updateQuery = (nextQuery: string) => {
   query.value = nextQuery;
@@ -213,9 +209,9 @@ const reviewCommand = computed<PaletteResult>(() => {
   };
 });
 
-const repositoryActionLabel = computed(() => unavailableCommandLabel(
-  hasRepository.value ? 'Select' : 'Not a Git workspace'
-));
+const repositoryActionLabel = computed(() =>
+  unavailableCommandLabel(hasRepository.value ? 'Select' : 'Not a Git workspace')
+);
 
 const commandDefinitions = computed<PaletteResult[]>(() => [
   {
@@ -311,11 +307,7 @@ const commandDefinitions = computed<PaletteResult[]>(() => [
   )
 ]);
 
-const { matchingItems: matchingCommands } = useFuzzyItems(
-  commandDefinitions,
-  query,
-  (command) => command.label
-);
+const { matchingItems: matchingCommands } = useFuzzyItems(commandDefinitions, query, (command) => command.label);
 
 const paletteSummary = computed(() => {
   if (currentWorkspaceId.value === '') {
@@ -325,18 +317,22 @@ const paletteSummary = computed(() => {
   return isWaitingForWorkspaceDetails.value ? `Loading ${currentWorkspaceId.value}` : currentWorkspaceId.value;
 });
 
-const paletteResults = computed<PaletteResult[]>(() => matchingCommands.value.map((match) => ({
-  ...match.item,
-  id: `command:${match.item.id}`
-})));
+const paletteResults = computed<PaletteResult[]>(() =>
+  matchingCommands.value.map((match) => ({
+    ...match.item,
+    id: `command:${match.item.id}`
+  }))
+);
 
-const notice = computed<PaletteNotice | undefined>(() => closeTerminalsError.value === ''
-  ? undefined
-  : {
-    tone: 'error',
-    title: 'Terminal close failed',
-    messages: [closeTerminalsError.value]
-  });
+const notice = computed<PaletteNotice | undefined>(() =>
+  closeTerminalsError.value === ''
+    ? undefined
+    : {
+        tone: 'error',
+        title: 'Terminal close failed',
+        messages: [closeTerminalsError.value]
+      }
+);
 </script>
 
 <template>

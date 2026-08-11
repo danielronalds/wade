@@ -1,6 +1,6 @@
 @font-face {
-  font-family: "WebTerminalJetBrainsMonoNerdFont";
-  src: url("/static/fonts/JetBrainsMonoNerdFontMono-Regular.ttf") format("truetype");
+  font-family: 'WebTerminalJetBrainsMonoNerdFont';
+  src: url('/static/fonts/JetBrainsMonoNerdFontMono-Regular.ttf') format('truetype');
   font-style: normal;
   font-weight: 400;
   font-display: block;
@@ -17,12 +17,12 @@
   --disconnected: #ff5f57;
 }
 
-:root[data-theme-accent-color="orange"] {
+:root[data-theme-accent-color='orange'] {
   --accent: #ffb86c;
   --accent-rgb: 255 184 108;
 }
 
-:root[data-theme-accent-color="purple"] {
+:root[data-theme-accent-color='purple'] {
   --accent: #bd93f9;
   --accent-rgb: 189 147 249;
 }
@@ -43,7 +43,9 @@ body {
   margin: 0;
   background: var(--window);
   color: var(--text);
-  font-family: "WebTerminalJetBrainsMonoNerdFont", "JetBrainsMono Nerd Font Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family:
+    'WebTerminalJetBrainsMonoNerdFont', 'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular,
+    Menlo, Monaco, Consolas, monospace;
 }
 
 [hidden] {

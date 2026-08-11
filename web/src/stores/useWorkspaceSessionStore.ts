@@ -1,12 +1,7 @@
 import { watchDebounced } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import { computed, reactive, ref, shallowReactive, type Ref } from 'vue';
-import {
-  deleteReviewSnapshot,
-  getReviewSnapshot,
-  listWorkspaceTerminals,
-  TerminalStatus
-} from '@/api/generated/wade';
+import { deleteReviewSnapshot, getReviewSnapshot, listWorkspaceTerminals, TerminalStatus } from '@/api/generated/wade';
 import { WadeHTTPError } from '@/api/httpClient';
 import {
   commentSides,
@@ -93,12 +88,8 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
       }
     }
   });
-  const reviewState = computed(() => (
-    workspaceSessions.get(activeWorkspaceId.value)?.reviewState.value ?? 'idle'
-  ));
-  const reviewData = computed(() => (
-    workspaceSessions.get(activeWorkspaceId.value)?.reviewData.value ?? null
-  ));
+  const reviewState = computed(() => workspaceSessions.get(activeWorkspaceId.value)?.reviewState.value ?? 'idle');
+  const reviewData = computed(() => workspaceSessions.get(activeWorkspaceId.value)?.reviewData.value ?? null);
   const reviewActiveScope = computed<ReviewScope>({
     get: () => getActiveReview()?.activeScope ?? defaultReview.activeScope,
     set: (activeScope) => {
@@ -247,11 +238,7 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
     entry.reviewState.value = 'loading';
   };
 
-  const initialiseReview = (
-    workspaceId: string,
-    data: ReviewData,
-    activeScope: ReviewScope
-  ) => {
+  const initialiseReview = (workspaceId: string, data: ReviewData, activeScope: ReviewScope) => {
     const entry = ensureWorkspaceSessionEntry(workspaceId);
     entry.state.review = createFreshReviewCheckpoint(data.id, activeScope);
     entry.reviewData.value = data;
@@ -272,10 +259,11 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
   const clearWorkspaceSession = (workspaceId: string) => {
     const entry = ensureWorkspaceSessionEntry(workspaceId);
     const storedState = parseCheckpoint(getStoredValue(workspaceSessionStorageKey(workspaceId)));
-    const snapshotIds = new Set([
-      entry.state.review?.snapshotId,
-      storedState?.review?.snapshotId
-    ].filter((snapshotId): snapshotId is string => Boolean(snapshotId)));
+    const snapshotIds = new Set(
+      [entry.state.review?.snapshotId, storedState?.review?.snapshotId].filter((snapshotId): snapshotId is string =>
+        Boolean(snapshotId)
+      )
+    );
     const freshState = createFreshWorkspaceSession();
 
     entry.isInitialised = false;
@@ -300,9 +288,9 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
     const preparationRequest = (async () => {
       try {
         const terminalList = await listWorkspaceTerminals(workspaceId);
-        const hasRunningTerminals = terminalList.items.some((terminal) => (
-          terminal.status === TerminalStatus.TerminalStatusRunning
-        ));
+        const hasRunningTerminals = terminalList.items.some(
+          (terminal) => terminal.status === TerminalStatus.TerminalStatusRunning
+        );
 
         if (!hasRunningTerminals) {
           clearWorkspaceSession(workspaceId);
@@ -323,17 +311,13 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
     return preparationRequest;
   };
 
-  const getReviewState = (workspaceId: string): ReviewState => (
-    workspaceSessions.get(workspaceId)?.reviewState.value ?? 'idle'
-  );
+  const getReviewState = (workspaceId: string): ReviewState =>
+    workspaceSessions.get(workspaceId)?.reviewState.value ?? 'idle';
 
-  const getSelectedAgentName = (workspaceId: string) => (
-    workspaceSessions.get(workspaceId)?.state.terminal.selectedAgentName ?? ''
-  );
+  const getSelectedAgentName = (workspaceId: string) =>
+    workspaceSessions.get(workspaceId)?.state.terminal.selectedAgentName ?? '';
 
-  const getActiveReview = () => (
-    workspaceSessions.get(activeWorkspaceId.value)?.state.review ?? null
-  );
+  const getActiveReview = () => workspaceSessions.get(activeWorkspaceId.value)?.state.review ?? null;
 
   const ensureWorkspaceSessionEntry = (workspaceId: string) => {
     const existingEntry = workspaceSessions.get(workspaceId);
@@ -350,19 +334,23 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
       reviewState: ref('idle')
     };
 
-    watchDebounced(state, () => {
-      if (!entry.isInitialised) {
-        return;
-      }
+    watchDebounced(
+      state,
+      () => {
+        if (!entry.isInitialised) {
+          return;
+        }
 
-      const serialisedCheckpoint = serialiseCheckpoint(state);
-      if (serialisedCheckpoint === entry.lastSerialisedCheckpoint) {
-        return;
-      }
+        const serialisedCheckpoint = serialiseCheckpoint(state);
+        if (serialisedCheckpoint === entry.lastSerialisedCheckpoint) {
+          return;
+        }
 
-      storeValue(workspaceSessionStorageKey(workspaceId), serialisedCheckpoint);
-      entry.lastSerialisedCheckpoint = serialisedCheckpoint;
-    }, { debounce: 300, deep: true });
+        storeValue(workspaceSessionStorageKey(workspaceId), serialisedCheckpoint);
+        entry.lastSerialisedCheckpoint = serialisedCheckpoint;
+      },
+      { debounce: 300, deep: true }
+    );
 
     workspaceSessions.set(workspaceId, entry);
     return entry;
@@ -527,10 +515,7 @@ const createCheckpoint = (state: WorkspaceSessionCheckpoint): WorkspaceSessionCh
 
 const serialiseCheckpoint = (state: WorkspaceSessionCheckpoint) => JSON.stringify(createCheckpoint(state));
 
-const replaceWorkspaceSession = (
-  state: WorkspaceSessionCheckpoint,
-  nextState: WorkspaceSessionCheckpoint
-) => {
+const replaceWorkspaceSession = (state: WorkspaceSessionCheckpoint, nextState: WorkspaceSessionCheckpoint) => {
   state.activeTab = nextState.activeTab;
   state.isScratchpadOpen = nextState.isScratchpadOpen;
   state.terminal.activePane = nextState.terminal.activePane;
@@ -539,33 +524,26 @@ const replaceWorkspaceSession = (
   state.review = nextState.review ? cloneReviewCheckpoint(nextState.review) : null;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-);
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const isWorkspaceTab = (value: unknown): value is WorkspaceTab => (
-  typeof value === 'string' && (workspaceTabs as readonly string[]).includes(value)
-);
+const isWorkspaceTab = (value: unknown): value is WorkspaceTab =>
+  typeof value === 'string' && (workspaceTabs as readonly string[]).includes(value);
 
-const isTerminalPane = (value: unknown): value is TerminalPaneId => (
-  typeof value === 'string' && (terminalPanes as readonly string[]).includes(value)
-);
+const isTerminalPane = (value: unknown): value is TerminalPaneId =>
+  typeof value === 'string' && (terminalPanes as readonly string[]).includes(value);
 
-const isReviewScope = (value: unknown): value is ReviewScope => (
-  typeof value === 'string' && (reviewScopes as readonly string[]).includes(value)
-);
+const isReviewScope = (value: unknown): value is ReviewScope =>
+  typeof value === 'string' && (reviewScopes as readonly string[]).includes(value);
 
-const isReviewCommentKind = (value: unknown): value is ReviewCommentKind => (
-  typeof value === 'string' && (reviewCommentKinds as readonly string[]).includes(value)
-);
+const isReviewCommentKind = (value: unknown): value is ReviewCommentKind =>
+  typeof value === 'string' && (reviewCommentKinds as readonly string[]).includes(value);
 
-const isCommentSide = (value: unknown): value is ReviewComment['side'] => (
-  typeof value === 'string' && (commentSides as readonly string[]).includes(value)
-);
+const isCommentSide = (value: unknown): value is ReviewComment['side'] =>
+  typeof value === 'string' && (commentSides as readonly string[]).includes(value);
 
-const isLineNumber = (value: unknown): value is number | null => (
-  value === null || (typeof value === 'number' && Number.isInteger(value) && value > 0)
-);
+const isLineNumber = (value: unknown): value is number | null =>
+  value === null || (typeof value === 'number' && Number.isInteger(value) && value > 0);
 
 const parseBooleanRecord = (value: unknown): Record<string, boolean> | undefined => {
   if (!isRecord(value) || !Object.values(value).every((entry) => typeof entry === 'boolean')) {
@@ -576,15 +554,17 @@ const parseBooleanRecord = (value: unknown): Record<string, boolean> | undefined
 };
 
 const parseReviewComment = (value: unknown): ReviewComment | undefined => {
-  if (!isRecord(value)
-    || typeof value.id !== 'string'
-    || typeof value.fileId !== 'string'
-    || !isReviewScope(value.scope)
-    || !isCommentSide(value.side)
-    || !isReviewCommentKind(value.kind)
-    || !isLineNumber(value.startLine)
-    || !isLineNumber(value.endLine)
-    || typeof value.body !== 'string') {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== 'string' ||
+    typeof value.fileId !== 'string' ||
+    !isReviewScope(value.scope) ||
+    !isCommentSide(value.side) ||
+    !isReviewCommentKind(value.kind) ||
+    !isLineNumber(value.startLine) ||
+    !isLineNumber(value.endLine) ||
+    typeof value.body !== 'string'
+  ) {
     return undefined;
   }
 
@@ -605,13 +585,15 @@ const parseDraftReviewComment = (value: unknown): DraftReviewComment | null | un
     return null;
   }
 
-  if (!isRecord(value)
-    || typeof value.fileId !== 'string'
-    || typeof value.filePath !== 'string'
-    || !isReviewScope(value.scope)
-    || !isCommentSide(value.side)
-    || !isLineNumber(value.startLine)
-    || !isLineNumber(value.endLine)) {
+  if (
+    !isRecord(value) ||
+    typeof value.fileId !== 'string' ||
+    typeof value.filePath !== 'string' ||
+    !isReviewScope(value.scope) ||
+    !isCommentSide(value.side) ||
+    !isLineNumber(value.startLine) ||
+    !isLineNumber(value.endLine)
+  ) {
     return undefined;
   }
 
@@ -630,21 +612,23 @@ const parseReviewCheckpoint = (value: unknown): ReviewCheckpoint | null | undefi
     return null;
   }
 
-  if (!isRecord(value)
-    || typeof value.snapshotId !== 'string'
-    || value.snapshotId === ''
-    || !isReviewScope(value.activeScope)
-    || (value.activeFileId !== null && typeof value.activeFileId !== 'string')
-    || typeof value.filterText !== 'string'
-    || !Array.isArray(value.comments)
-    || typeof value.overallComment !== 'string'
-    || typeof value.draftCommentBody !== 'string'
-    || !isReviewCommentKind(value.draftCommentKind)
-    || typeof value.isOverallNoteOpen !== 'boolean'
-    || typeof value.overallNoteDraft !== 'string'
-    || typeof value.hideUnchanged !== 'boolean'
-    || typeof value.renderSideBySide !== 'boolean'
-    || typeof value.wrapLines !== 'boolean') {
+  if (
+    !isRecord(value) ||
+    typeof value.snapshotId !== 'string' ||
+    value.snapshotId === '' ||
+    !isReviewScope(value.activeScope) ||
+    (value.activeFileId !== null && typeof value.activeFileId !== 'string') ||
+    typeof value.filterText !== 'string' ||
+    !Array.isArray(value.comments) ||
+    typeof value.overallComment !== 'string' ||
+    typeof value.draftCommentBody !== 'string' ||
+    !isReviewCommentKind(value.draftCommentKind) ||
+    typeof value.isOverallNoteOpen !== 'boolean' ||
+    typeof value.overallNoteDraft !== 'string' ||
+    typeof value.hideUnchanged !== 'boolean' ||
+    typeof value.renderSideBySide !== 'boolean' ||
+    typeof value.wrapLines !== 'boolean'
+  ) {
     return undefined;
   }
 
@@ -652,10 +636,7 @@ const parseReviewCheckpoint = (value: unknown): ReviewCheckpoint | null | undefi
   const collapsedDirectories = parseBooleanRecord(value.collapsedDirectories);
   const comments = value.comments.map(parseReviewComment);
   const draftComment = parseDraftReviewComment(value.draftComment);
-  if (!reviewedFiles
-    || !collapsedDirectories
-    || comments.some((comment) => !comment)
-    || draftComment === undefined) {
+  if (!reviewedFiles || !collapsedDirectories || comments.some((comment) => !comment) || draftComment === undefined) {
     return undefined;
   }
 
@@ -691,13 +672,15 @@ const parseCheckpoint = (storedCheckpoint: string | null): WorkspaceSessionCheck
     return undefined;
   }
 
-  if (!isRecord(value)
-    || !isWorkspaceTab(value.activeTab)
-    || typeof value.isScratchpadOpen !== 'boolean'
-    || !isRecord(value.terminal)
-    || !isTerminalPane(value.terminal.activePane)
-    || (value.terminal.zoomedPane !== null && !isTerminalPane(value.terminal.zoomedPane))
-    || typeof value.terminal.selectedAgentName !== 'string') {
+  if (
+    !isRecord(value) ||
+    !isWorkspaceTab(value.activeTab) ||
+    typeof value.isScratchpadOpen !== 'boolean' ||
+    !isRecord(value.terminal) ||
+    !isTerminalPane(value.terminal.activePane) ||
+    (value.terminal.zoomedPane !== null && !isTerminalPane(value.terminal.zoomedPane)) ||
+    typeof value.terminal.selectedAgentName !== 'string'
+  ) {
     return undefined;
   }
 
