@@ -1,5 +1,9 @@
 # WADE
 
+> [!WARNING]
+> WADE is under active development. Features, configuration and behaviour may
+> change as the project evolves.
+
 ![WADE's Review tab showing a side-by-side working tree diff, reviewed files and inline feedback](.github/assets/wade_review_window.png)
 
 <p align="center"><sub>Review working-tree changes side by side and send inline feedback back to your coding agent.</sub></p>
