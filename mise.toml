@@ -56,4 +56,4 @@ run = "mise run gen:openapi && mise run gen:embed && go vet ./..."
 
 [tasks.test]
 description = "Runs tests"
-run = "mise run gen:openapi && mise run gen:embed && gotestsum -- ./..."
+run = "mise run gen:openapi && mise run gen:embed && gotestsum -- -race ./..."
