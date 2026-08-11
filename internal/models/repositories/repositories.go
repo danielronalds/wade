@@ -274,10 +274,7 @@ func (model *Model) scan(ctx context.Context) ([]workspaceRecord, error) {
 	var firstInspectionError error
 	var inspectionErrorOnce sync.Once
 	for range workerCount {
-		workers.Add(1)
-		go func() {
-			defer workers.Done()
-
+		workers.Go(func() {
 			for index := range workspaceIndexes {
 				if inspectionContext.Err() != nil {
 					return
@@ -299,7 +296,7 @@ func (model *Model) scan(ctx context.Context) ([]workspaceRecord, error) {
 				}
 				records[index] = record
 			}
-		}()
+		})
 	}
 	workers.Wait()
 
