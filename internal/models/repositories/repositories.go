@@ -283,12 +283,12 @@ func (model *Model) scan(ctx context.Context) ([]workspaceRecord, error) {
 					return
 				}
 
-				workspaceInput := workspaceInputs[index]
+				input := workspaceInputs[index]
 				record, err := model.inspectWorkspace(
 					inspectionContext,
-					workspaceInput.id,
-					workspaceInput.path,
-					workspaceInput.canonicalPath,
+					input.id,
+					input.path,
+					input.canonicalPath,
 				)
 				if err != nil {
 					inspectionErrorOnce.Do(func() {
