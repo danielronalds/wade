@@ -30,12 +30,12 @@ func helpText() string {
 WADE is a local-first browser workspace for agentic coding sessions.
 
 Commands
-  server    Start the WADE web server in the background
-  status    Show the background server status
-  stop      Stop the background server
+  start     Start the WADE daemon
+  status    Show the WADE daemon status
+  stop      Stop the WADE daemon
   config    Open the WADE config in your editor
   help      Show this menu
 
-Run wade server --foreground to keep the server attached to the terminal.
+Run wade start --foreground to keep the server attached to the terminal.
 `
 }

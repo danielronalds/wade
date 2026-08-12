@@ -1,4 +1,4 @@
-package server
+package lifecycle
 
 import (
 	"bytes"
@@ -11,24 +11,24 @@ import (
 	"wade/internal/models/settings"
 )
 
-type serverSettingsModelStub struct {
+type lifecycleSettingsModelStub struct {
 	configuration settings.RuntimeConfiguration
 	err           error
 }
 
-func (stub serverSettingsModelStub) EnsureFile() (string, error) {
+func (stub lifecycleSettingsModelStub) EnsureFile() (string, error) {
 	return "", stub.err
 }
-func (stub serverSettingsModelStub) Get() (settings.Settings, error) {
+func (stub lifecycleSettingsModelStub) Get() (settings.Settings, error) {
 	return settings.Settings{}, stub.err
 }
-func (stub serverSettingsModelStub) LoadRuntimeConfiguration() (settings.RuntimeConfiguration, error) {
+func (stub lifecycleSettingsModelStub) LoadRuntimeConfiguration() (settings.RuntimeConfiguration, error) {
 	return stub.configuration, stub.err
 }
-func (stub serverSettingsModelStub) Update(settings.Settings) (settings.UpdateResult, error) {
+func (stub lifecycleSettingsModelStub) Update(settings.Settings) (settings.UpdateResult, error) {
 	return settings.UpdateResult{}, stub.err
 }
-func (stub serverSettingsModelStub) Reload() (settings.UpdateResult, error) {
+func (stub lifecycleSettingsModelStub) Reload() (settings.UpdateResult, error) {
 	return settings.UpdateResult{}, stub.err
 }
 
@@ -74,15 +74,15 @@ func TestControllerStartsBackgroundDaemon(t *testing.T) {
 		daemon: daemonStub{startStatus: status, foregroundCommand: &foregroundCommand},
 	}
 
-	exitCode, err := controller.HandleArgs([]string{"server"})
+	exitCode, err := controller.HandleArgs([]string{"start"})
 	if err != nil {
 		t.Fatalf("HandleArgs() error = %v, want nil", err)
 	}
 	if exitCode != 0 {
 		t.Fatalf("HandleArgs() exit code = %d, want 0", exitCode)
 	}
-	if len(foregroundCommand) != 2 || foregroundCommand[0] != ServerCommand || foregroundCommand[1] != foregroundFlag {
-		t.Fatalf("Start() foreground command = %#v, want server foreground command", foregroundCommand)
+	if len(foregroundCommand) != 2 || foregroundCommand[0] != StartCommand || foregroundCommand[1] != foregroundFlag {
+		t.Fatalf("Start() foreground command = %#v, want start foreground command", foregroundCommand)
 	}
 
 	want := "WADE server listening on test.localhost:1234\nVersion: v0.1.0\nPID: 12345\nLog: /tmp/wade/server.log\n"
@@ -99,7 +99,7 @@ func TestControllerReportsExistingDaemon(t *testing.T) {
 		daemon: daemonStub{startError: daemon.AlreadyRunningError{Status: status}},
 	}
 
-	exitCode, err := controller.HandleArgs([]string{"server"})
+	exitCode, err := controller.HandleArgs([]string{"start"})
 	if err != nil {
 		t.Fatalf("HandleArgs() error = %v, want nil", err)
 	}
@@ -203,7 +203,7 @@ func TestControllerRejectsUnexpectedArguments(t *testing.T) {
 		args      []string
 		wantError string
 	}{
-		{args: []string{"server", "unexpected"}, wantError: "usage: wade server [--foreground]"},
+		{args: []string{"start", "unexpected"}, wantError: "usage: wade start [--foreground]"},
 		{args: []string{"status", "unexpected"}, wantError: "usage: wade status"},
 		{args: []string{"stop", "unexpected"}, wantError: "usage: wade stop"},
 	}
@@ -222,7 +222,7 @@ func TestControllerRejectsUnexpectedArguments(t *testing.T) {
 
 func TestControllerLoadsStartupConfigurationFromSettingsModel(t *testing.T) {
 	wantError := errors.New("settings failure")
-	controller := Controller{settings: serverSettingsModelStub{err: wantError}}
+	controller := Controller{settings: lifecycleSettingsModelStub{err: wantError}}
 
 	err := controller.runServer(nil)
 	if !errors.Is(err, wantError) {
@@ -237,7 +237,7 @@ func TestControllerReturnsStartupFailure(t *testing.T) {
 		daemon: daemonStub{startError: wantError},
 	}
 
-	_, err := controller.HandleArgs([]string{"server"})
+	_, err := controller.HandleArgs([]string{"start"})
 	if err == nil || !strings.Contains(err.Error(), fmt.Sprint(wantError)) {
 		t.Fatalf("HandleArgs() error = %v, want startup failure", err)
 	}

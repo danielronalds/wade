@@ -1,4 +1,4 @@
-package server
+package lifecycle
 
 import (
 	"context"
@@ -20,9 +20,9 @@ import (
 	"wade/internal/web"
 )
 
-// Command names handled by the server lifecycle controller.
+// Command names handled by the daemon lifecycle controller.
 const (
-	ServerCommand = "server"
+	StartCommand  = "start"
 	StatusCommand = "status"
 	StopCommand   = "stop"
 
@@ -36,45 +36,45 @@ type daemonLifecycle interface {
 	Stop() error
 }
 
-// Controller manages foreground and background server lifecycle commands.
+// Controller manages daemon lifecycle commands and foreground server execution.
 type Controller struct {
 	stdout   io.Writer
 	daemon   daemonLifecycle
 	settings controllers.SettingsModel
 }
 
-// NewController constructs the server lifecycle controller.
+// NewController constructs the daemon lifecycle controller.
 func NewController(stdout io.Writer, settingsModel controllers.SettingsModel) Controller {
 	return Controller{stdout: stdout, daemon: daemon.NewManager(), settings: settingsModel}
 }
 
-// HandleArgs executes a server, status, or stop command.
+// HandleArgs executes a start, status, or stop command.
 func (c Controller) HandleArgs(args []string) (int, error) {
 	if len(args) == 0 {
-		return 0, fmt.Errorf("usage: wade server [%s]", foregroundFlag)
+		return 0, fmt.Errorf("usage: wade start [%s]", foregroundFlag)
 	}
 
 	switch args[0] {
-	case ServerCommand:
-		return c.handleServer(args)
+	case StartCommand:
+		return c.handleStart(args)
 	case StatusCommand:
 		return c.handleStatus(args)
 	case StopCommand:
 		return c.handleStop(args)
 	default:
-		return 0, fmt.Errorf("unsupported server lifecycle command: %s", args[0])
+		return 0, fmt.Errorf("unsupported daemon lifecycle command: %s", args[0])
 	}
 }
 
-func (c Controller) handleServer(args []string) (int, error) {
+func (c Controller) handleStart(args []string) (int, error) {
 	if len(args) == 2 && args[1] == foregroundFlag {
 		return 0, c.runForeground()
 	}
 	if len(args) != 1 {
-		return 0, fmt.Errorf("usage: wade server [%s]", foregroundFlag)
+		return 0, fmt.Errorf("usage: wade start [%s]", foregroundFlag)
 	}
 
-	status, err := c.daemon.Start(ServerCommand, foregroundFlag)
+	status, err := c.daemon.Start(StartCommand, foregroundFlag)
 	var alreadyRunningError daemon.AlreadyRunningError
 	if errors.As(err, &alreadyRunningError) {
 		_, writeError := fmt.Fprintf(
