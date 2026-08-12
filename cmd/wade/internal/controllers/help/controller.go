@@ -36,6 +36,6 @@ Commands
   config    Open the WADE config in your editor
   help      Show this menu
 
-Run wade start --foreground to run the server attached to the terminal.
+Run wade start --foreground to keep the server attached to the terminal.
 `
 }
