@@ -14,7 +14,7 @@ flowchart TB
         direction TB
         Main["main.go<br/>Top-level composition"]
         Router["CLI router"]
-        Commands["CLI controllers<br/>config, help and server lifecycle"]
+        Commands["CLI controllers<br/>config, help and daemon lifecycle"]
         Main --> Router --> Commands
     end
 
@@ -25,7 +25,7 @@ flowchart TB
         Controllers["controllers<br/>Transport and orchestration"]
         Models["models<br/>Domain behaviour and state"]
         Infrastructure["infrastructure<br/>External IO"]
-        Daemon["daemon<br/>Background server lifecycle"]
+        Daemon["daemon<br/>Managed daemon lifecycle"]
 
         App --> Server --> Controllers --> Models --> Infrastructure
     end
@@ -39,7 +39,7 @@ flowchart TB
 ## Architecture Details
 
 - [HTTP Controllers](backend-controllers.md) describes API transport boundaries, Model orchestration and error mapping.
-- [CLI Controllers](backend-cli-controllers.md) describes command routing and server lifecycle operations.
+- [CLI Controllers](backend-cli-controllers.md) describes command routing and daemon lifecycle operations.
 - [Backend Domain](backend-domain.md) describes resource identities, relationships and API conventions.
 - [Aggregate Models](backend-models.md) describes domain ownership, state, concurrency and cross-aggregate boundaries.
 - [Infrastructure Modules](backend-infrastructure.md) describes external IO capabilities and their boundary with Models.

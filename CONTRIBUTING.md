@@ -88,7 +88,7 @@ Use `mise run fmt` to format Go and frontend files. The complete required checks
 are defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 Changes to daemon lifecycle behaviour also require an isolated smoke test using
-a temporary `XDG_STATE_HOME` and port. Exercise `wade server`, `wade status` and
+a temporary `XDG_STATE_HOME` and port. Exercise `wade start`, `wade status` and
 `wade stop`; confirm foreground mode creates no control socket and no stale WADE
 process remains.
 

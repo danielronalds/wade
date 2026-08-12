@@ -6,7 +6,7 @@ import (
 
 	"wade/cmd/wade/internal/controllers/config"
 	"wade/cmd/wade/internal/controllers/help"
-	"wade/cmd/wade/internal/controllers/server"
+	"wade/cmd/wade/internal/controllers/lifecycle"
 	httpcontrollers "wade/internal/controllers"
 )
 
@@ -27,14 +27,14 @@ type Router struct {
 
 // NewRouter constructs the command-line router with shared dependencies.
 func NewRouter(stdout io.Writer, settingsModel httpcontrollers.SettingsModel) Router {
-	serverController := server.NewController(stdout, settingsModel)
+	lifecycleController := lifecycle.NewController(stdout, settingsModel)
 
 	return Router{controllers: map[string]Controller{
-		configCommand:        config.NewController(settingsModel),
-		helpCommand:          help.NewController(stdout),
-		server.ServerCommand: serverController,
-		server.StatusCommand: serverController,
-		server.StopCommand:   serverController,
+		configCommand:           config.NewController(settingsModel),
+		helpCommand:             help.NewController(stdout),
+		lifecycle.StartCommand:  lifecycleController,
+		lifecycle.StatusCommand: lifecycleController,
+		lifecycle.StopCommand:   lifecycleController,
 	}}
 }
 

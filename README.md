@@ -55,10 +55,10 @@ cannot find it, add `$(go env GOPATH)/bin` to your `PATH`.
 
 ## Get started
 
-Start WADE as a background service:
+Start the WADE daemon:
 
 ```sh
-wade server
+wade start
 ```
 
 Open <http://editor.localhost:8765>, then open Settings from `Ctrl + K` and set
@@ -68,21 +68,21 @@ a workspace.
 WADE starts with `~/Personal` and `~/Work` as its workspace directories. Missing
 directories are harmless and are skipped during discovery.
 
-Use the CLI to manage the service:
+Use the CLI to manage the daemon:
 
 ```sh
 wade status
 wade stop
 ```
 
-Running `wade server` again reports the existing managed server rather than
-starting a second one. Logs and daemon state live under
+Running `wade start` again reports the existing daemon rather than starting a
+second one. Logs and daemon state live under
 `${XDG_STATE_HOME:-~/.local/state}/wade`.
 
-To keep the server attached to your terminal, use:
+To run the server directly without daemon management, use:
 
 ```sh
-wade server --foreground
+wade start --foreground
 ```
 
 A foreground server is unmanaged, so it does not appear in `wade status` and is
@@ -137,7 +137,7 @@ The managed server uses <http://editor.localhost:8765> by default. Override the
 address when starting it:
 
 ```sh
-WADE_ADDR=127.0.0.1:9000 wade server
+WADE_ADDR=127.0.0.1:9000 wade start
 ```
 
 Development mode uses <http://editor-dev.localhost:8090>. WADE provides access
