@@ -109,18 +109,23 @@ func (c Controller) writeCommandList(operations []Operation) error {
 }
 
 func (c Controller) writeOperationHelp(operation Operation) error {
-	flags := make([][2]string, 0, len(operation.Parameters)+2)
+	type flagHelp struct {
+		name  string
+		usage string
+	}
+
+	flags := make([]flagHelp, 0, len(operation.Parameters)+2)
 	for _, parameter := range operation.Parameters {
-		flags = append(flags, [2]string{parameter.Flag, parameterUsage(parameter)})
+		flags = append(flags, flagHelp{name: parameter.Flag, usage: parameterUsage(parameter)})
 	}
 	if operation.HasBody {
-		flags = append(flags, [2]string{bodyFlag, bodyUsage(operation)})
+		flags = append(flags, flagHelp{name: bodyFlag, usage: bodyUsage(operation)})
 	}
-	flags = append(flags, [2]string{addressFlag, addressFlagUsage})
+	flags = append(flags, flagHelp{name: addressFlag, usage: addressFlagUsage})
 
 	widest := 0
 	for _, entry := range flags {
-		widest = max(widest, len(entry[0]))
+		widest = max(widest, len(entry.name))
 	}
 
 	var help strings.Builder
@@ -130,7 +135,7 @@ func (c Controller) writeOperationHelp(operation Operation) error {
 	}
 	fmt.Fprintf(&help, "%s %s\n\nFlags\n", operation.Method, operation.Path)
 	for _, entry := range flags {
-		fmt.Fprintf(&help, "  --%-*s  %s\n", widest, entry[0], entry[1])
+		fmt.Fprintf(&help, "  --%-*s  %s\n", widest, entry.name, entry.usage)
 	}
 
 	_, err := io.WriteString(c.stdout, help.String())
