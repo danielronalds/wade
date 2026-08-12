@@ -6,7 +6,7 @@ WADE's CLI controller set includes:
 
 - [`config`](#config)
 - [`help`](#help)
-- [daemon lifecycle](#daemon-lifecycle)
+- [`lifecycle`](#lifecycle)
 
 ## Config
 
@@ -16,8 +16,8 @@ The `config` controller ensures the settings file exists through the shared `set
 
 The `help` controller writes command usage and the available WADE commands. It has no Model or runtime dependencies.
 
-## Daemon Lifecycle
+## Lifecycle
 
-The lifecycle controller handles the `start`, `status` and `stop` commands. It starts the managed background daemon, reports lifecycle state and the daemon's embedded build version, and requests graceful shutdown through `daemon`. The `start --foreground` mode runs the HTTP server directly without daemon management.
+The `lifecycle` controller handles the `start`, `status` and `stop` commands. It starts the managed background daemon, reports lifecycle state and the daemon's embedded build version, and requests graceful shutdown through `daemon`. The `start --foreground` mode runs the HTTP server directly without daemon management.
 
 When running the HTTP server, the controller loads runtime configuration from `settings`, loads embedded web assets and constructs the application through `internal/app`. It owns listener setup, operating-system signal handling and graceful HTTP shutdown, while `internal/app` constructs the Models and HTTP controllers.
