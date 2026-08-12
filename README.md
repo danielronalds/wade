@@ -79,7 +79,7 @@ Running `wade start` again reports the existing daemon rather than starting a
 second one. Logs and daemon state live under
 `${XDG_STATE_HOME:-~/.local/state}/wade`.
 
-To run the server directly without daemon management, use:
+To keep the server attached to your terminal, use:
 
 ```sh
 wade start --foreground
