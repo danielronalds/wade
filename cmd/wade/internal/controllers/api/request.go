@@ -115,7 +115,7 @@ func (c Controller) executeRequest(operation Operation, address string, path str
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
-		return 0, fmt.Errorf("cannot reach WADE at http://%s: %w\nStart the server with \"wade server\" or pass --%s", address, err, addressFlag)
+		return 0, fmt.Errorf("cannot reach WADE at http://%s: %w\nStart the server with \"wade start\" or pass --%s", address, err, addressFlag)
 	}
 	defer response.Body.Close()
 

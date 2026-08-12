@@ -246,7 +246,7 @@ func TestRunOperationReportsUnreachableServer(t *testing.T) {
 	if err == nil {
 		t.Fatal("HandleArgs() error = nil, want unreachable server error")
 	}
-	for _, expected := range []string{"cannot reach WADE at http://" + address, "wade server"} {
+	for _, expected := range []string{"cannot reach WADE at http://" + address, "wade start"} {
 		if !strings.Contains(err.Error(), expected) {
 			t.Fatalf("error %q does not contain %q", err.Error(), expected)
 		}
