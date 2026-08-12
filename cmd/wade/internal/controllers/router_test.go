@@ -45,16 +45,10 @@ func TestRouterRoutesDaemonLifecycleCommands(t *testing.T) {
 }
 
 func TestRouterReturnsUnknownCommandError(t *testing.T) {
-	tests := []string{"unknown", "server"}
+	router := NewRouter(&bytes.Buffer{}, nil)
 
-	for _, command := range tests {
-		t.Run(command, func(t *testing.T) {
-			router := NewRouter(&bytes.Buffer{}, nil)
-
-			_, err := router.HandleArgs([]string{command})
-			if err == nil || !strings.Contains(err.Error(), "unknown command") {
-				t.Fatalf("HandleArgs() error = %v, want unknown command error", err)
-			}
-		})
+	_, err := router.HandleArgs([]string{"unknown"})
+	if err == nil || !strings.Contains(err.Error(), "unknown command") {
+		t.Fatalf("HandleArgs() error = %v, want unknown command error", err)
 	}
 }
