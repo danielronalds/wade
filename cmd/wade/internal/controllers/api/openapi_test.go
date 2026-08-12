@@ -112,6 +112,16 @@ func TestParseOperationsRejectsUnsupportedShapes(t *testing.T) {
 			wantError: "more than one body parameter",
 		},
 		{
+			name:      "parameter colliding with a reserved flag",
+			spec:      `{"paths":{"/api/v1/things":{"get":{"operationId":"listThings","parameters":[{"name":"address","in":"query","type":"string"}]}}}}`,
+			wantError: "maps to flag --address",
+		},
+		{
+			name:      "parameters sharing a flag name",
+			spec:      `{"paths":{"/api/v1/things/{thingId}":{"get":{"operationId":"getThing","parameters":[{"name":"thingId","in":"path","type":"string","required":true},{"name":"thingID","in":"query","type":"string"}]}}}}`,
+			wantError: "maps to flag --thing-id",
+		},
+		{
 			name:      "duplicate command names",
 			spec:      `{"paths":{"/api/v1/things":{"get":{"operationId":"listThings"}},"/api/v2/things":{"get":{"operationId":"list-things"}}}}`,
 			wantError: "same command list-things",

@@ -95,15 +95,21 @@ func newOperation(method string, path string, operationSpec specOperation) (Oper
 		Path:    path,
 		Summary: operationSpec.Summary,
 	}
+	flagNames := map[string]bool{addressFlag: true, bodyFlag: true}
 	for _, parameterSpec := range operationSpec.Parameters {
 		switch parameterSpec.In {
 		case "path", "query":
 			if parameterSpec.Type != "string" {
 				return Operation{}, fmt.Errorf("operation %s has unsupported %s parameter type %s for %s", operationSpec.ID, parameterSpec.In, parameterSpec.Type, parameterSpec.Name)
 			}
+			flagName := kebabCase(parameterSpec.Name)
+			if flagNames[flagName] {
+				return Operation{}, fmt.Errorf("operation %s parameter %s maps to flag --%s, which is already taken", operationSpec.ID, parameterSpec.Name, flagName)
+			}
+			flagNames[flagName] = true
 			operation.Parameters = append(operation.Parameters, Parameter{
 				Name:        parameterSpec.Name,
-				Flag:        kebabCase(parameterSpec.Name),
+				Flag:        flagName,
 				In:          parameterSpec.In,
 				Description: parameterSpec.Description,
 				Required:    parameterSpec.Required,
