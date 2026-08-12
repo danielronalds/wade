@@ -581,6 +581,7 @@ paths:
       summary: Get OpenAPI spec
       tags:
       - OpenAPI
+      x-wade-cli-ignore: true
   /api/v1/remote-repositories:
     get:
       operationId: listRemoteRepositories
@@ -1350,6 +1351,7 @@ paths:
       summary: Connect to a workspace terminal
       tags:
       - Terminals
+      x-wade-cli-ignore: true
 produces:
 - application/json
 schemes:

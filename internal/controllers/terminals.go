@@ -175,6 +175,7 @@ func (h Terminals) Input(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {string} string "Terminal not found"
 // @Failure 422 {string} string "Invalid terminal ID"
 // @Failure 500 {string} string "Connection failed"
+// @x-wade-cli-ignore true
 // @Router /api/v1/workspaces/{workspaceId}/terminals/{terminalId}/socket [get]
 func (h Terminals) Connect(w http.ResponseWriter, r *http.Request) {
 	session, err := h.terminals.Connect(r.Context(), r.PathValue("workspaceId"), r.PathValue("terminalId"))

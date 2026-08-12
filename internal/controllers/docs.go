@@ -24,6 +24,7 @@ func NewDocs() Docs {
 // @Tags OpenAPI
 // @Produce json
 // @Success 200 {object} object
+// @x-wade-cli-ignore true
 // @Router /api/openapi.json [get]
 func (h Docs) OpenAPISpec(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")

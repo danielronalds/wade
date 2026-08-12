@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"wade/cmd/wade/internal/controllers/api"
 	"wade/cmd/wade/internal/controllers/config"
 	"wade/cmd/wade/internal/controllers/help"
 	"wade/cmd/wade/internal/controllers/lifecycle"
@@ -30,6 +31,7 @@ func NewRouter(stdout io.Writer, settingsModel httpcontrollers.SettingsModel) Ro
 	lifecycleController := lifecycle.NewController(stdout, settingsModel)
 
 	return Router{controllers: map[string]Controller{
+		api.Command:             api.NewController(stdout),
 		configCommand:           config.NewController(settingsModel),
 		helpCommand:             help.NewController(stdout),
 		lifecycle.StartCommand:  lifecycleController,

@@ -33,6 +33,7 @@ Commands
   start     Start the WADE daemon
   status    Show the WADE daemon status
   stop      Stop the WADE daemon
+  api       Call the WADE HTTP API
   config    Open the WADE config in your editor
   help      Show this menu
 

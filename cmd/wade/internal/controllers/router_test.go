@@ -44,6 +44,22 @@ func TestRouterRoutesDaemonLifecycleCommands(t *testing.T) {
 	}
 }
 
+func TestRouterRoutesAPICommand(t *testing.T) {
+	var output bytes.Buffer
+	router := NewRouter(&output, nil)
+
+	exitCode, err := router.HandleArgs([]string{"api"})
+	if err != nil {
+		t.Fatalf("HandleArgs() error = %v, want nil", err)
+	}
+	if exitCode != 0 {
+		t.Fatalf("HandleArgs() exit code = %d, want 0", exitCode)
+	}
+	if !strings.Contains(output.String(), "list-workspaces") {
+		t.Fatalf("output %q does not list API commands", output.String())
+	}
+}
+
 func TestRouterReturnsUnknownCommandError(t *testing.T) {
 	router := NewRouter(&bytes.Buffer{}, nil)
 
