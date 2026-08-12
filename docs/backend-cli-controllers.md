@@ -4,9 +4,25 @@ Command-line controllers live in `cmd/wade/internal/controllers` and own argumen
 
 WADE's CLI controller set includes:
 
+- [`api`](#api)
 - [`config`](#config)
 - [`help`](#help)
 - [`lifecycle`](#lifecycle)
+
+## API
+
+The `api` controller exposes WADE's HTTP API operations as commands for
+scripts and coding agents. It parses the embedded OpenAPI specification at
+runtime, derives kebab-case command names from operation IDs and maps path,
+query and body parameters to string flags. Operations annotated with
+`x-wade-cli-ignore` are excluded, and `wade api` lists the generated commands.
+
+Requests target the first configured address among `--address`, the
+development address when `WADE_DEV` is enabled, `WADE_ADDR`, the managed
+daemon address and the standard local address. The controller never starts
+the server. Successful response bodies stream unchanged to stdout, `204 No
+Content` produces no output, and non-2xx responses surface the problem
+payload through the process error path with a non-zero exit status.
 
 ## Config
 

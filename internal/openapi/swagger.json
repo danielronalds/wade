@@ -34,7 +34,8 @@
                             "type": "object"
                         }
                     }
-                }
+                },
+                "x-wade-cli-ignore": true
             }
         },
         "/api/v1/remote-repositories": {
@@ -1189,7 +1190,8 @@
                             "type": "string"
                         }
                     }
-                }
+                },
+                "x-wade-cli-ignore": true
             }
         }
     },
