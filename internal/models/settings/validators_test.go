@@ -124,6 +124,30 @@ func TestNormaliseAndValidateSettingsTrimsValuesAndDefaultsTheme(t *testing.T) {
 	}
 }
 
+func TestNormaliseAndValidateSettingsValidatesLinearOnlyWhenEnabled(t *testing.T) {
+	request := validSettings("~/Code")
+	request.Linear = LinearSettings{Enabled: false, Workspace: " invalid/workspace "}
+
+	normalised, err := normaliseAndValidateSettings(request, "/home/test", &settingsFileSystemStub{}, testEnvironment())
+	if err != nil {
+		t.Fatalf("disabled Linear configuration error = %v", err)
+	}
+	if normalised.Linear.Workspace != "invalid/workspace" {
+		t.Fatalf("Linear workspace = %q", normalised.Linear.Workspace)
+	}
+
+	request.Linear.Enabled = true
+	if _, err := normaliseAndValidateSettings(request, "/home/test", &settingsFileSystemStub{}, testEnvironment()); err == nil {
+		t.Fatal("enabled invalid Linear configuration error = nil")
+	}
+
+	request.Linear.Workspace = " Mixed_Case.~123 "
+	normalised, err = normaliseAndValidateSettings(request, "/home/test", &settingsFileSystemStub{}, testEnvironment())
+	if err != nil || normalised.Linear.Workspace != "Mixed_Case.~123" {
+		t.Fatalf("enabled Linear configuration = %#v, %v", normalised.Linear, err)
+	}
+}
+
 func TestInvalidSettingsErrorUnwrapsCause(t *testing.T) {
 	cause := errors.New("invalid")
 	if !errors.Is(InvalidSettingsError{Err: cause}, cause) {

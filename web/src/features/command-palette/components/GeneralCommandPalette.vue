@@ -30,9 +30,9 @@ const router = useRouter();
 const { syncActiveWorkspaces } = useActiveWorkspaces();
 const { syncWorkspaces } = useWorkspaces();
 const { removeUnavailableRecentWorkspaces } = useRecentWorkspaces();
+const settingsStore = useSettingsStore();
 const workspaceDetailsStore = useWorkspaceDetailsStore();
 const workspaceSessionStore = useWorkspaceSessionStore();
-const { reloadSettingsFromDisk } = useSettingsStore();
 
 const query = ref('');
 const isClosingTerminals = ref(false);
@@ -162,7 +162,7 @@ const openSettings = async () => {
 
 const reloadSettings = async () => {
   try {
-    await reloadSettingsFromDisk();
+    await settingsStore.reloadSettingsFromDisk();
 
     const availableWorkspaces = await syncWorkspaces();
     if (availableWorkspaces) {
@@ -284,13 +284,17 @@ const commandDefinitions = computed<PaletteResult[]>(() => [
       void reloadSettings();
     }
   },
-  createExternalCommand(
-    'open-issue',
-    'Open Issue',
-    'Open issue',
-    unavailableCommandLabel('No issue found'),
-    workspaceDetails.value?.links.issue?.url ?? ''
-  ),
+  ...(settingsStore.settings.linear.enabled
+    ? [
+        createExternalCommand(
+          'open-issue',
+          'Open Issue',
+          'Open issue',
+          isWorkspaceDetailsLoading.value ? 'Loading' : unavailableCommandLabel('No issue found'),
+          isWorkspaceDetailsLoading.value ? '' : (workspaceDetails.value?.links.issue?.url ?? '')
+        )
+      ]
+    : []),
   createExternalCommand(
     'open-pr',
     'Open PR',

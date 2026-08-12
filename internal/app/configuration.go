@@ -16,7 +16,13 @@ func workspaceConfiguration(configuration settings.RuntimeConfiguration) workspa
 		}
 		workspaceDirectories = append(workspaceDirectories, workspaces.WorkspaceDirectory{Setting: setting, Path: path})
 	}
-	return workspaces.Configuration{WorkspaceDirectories: workspaceDirectories}
+	return workspaces.Configuration{
+		WorkspaceDirectories: workspaceDirectories,
+		Linear: workspaces.LinearConfiguration{
+			Enabled:   configuration.Linear.Enabled,
+			Workspace: configuration.Linear.Workspace,
+		},
+	}
 }
 
 func repositoryConfiguration(configuration settings.RuntimeConfiguration) repositories.Configuration {

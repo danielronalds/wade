@@ -90,18 +90,18 @@ not stopped by `wade stop`.
 
 ## Keyboard shortcuts
 
-| Shortcut | Action |
-| --- | --- |
-| `Ctrl + K` | Open the command palette |
-| `Ctrl + P` | Open the workspace picker |
-| `Ctrl + S` | Open the active-workspace picker |
-| `Ctrl + Alt + T` | Toggle the scratchpad (`Ctrl + Option + T` on macOS) |
-| `Ctrl + B`, then `1` | Switch to Terminal |
-| `Ctrl + B`, then `2` | Switch to Server |
-| `Ctrl + B`, then `3` | Switch to Review |
-| `Ctrl + B`, then `4` | Open the scratchpad |
-| `Ctrl + B`, then `o` | Focus the next terminal pane |
-| `Ctrl + B`, then `z` | Zoom or restore the active Terminal pane |
+| Shortcut             | Action                                               |
+| -------------------- | ---------------------------------------------------- |
+| `Ctrl + K`           | Open the command palette                             |
+| `Ctrl + P`           | Open the workspace picker                            |
+| `Ctrl + S`           | Open the active-workspace picker                     |
+| `Ctrl + Alt + T`     | Toggle the scratchpad (`Ctrl + Option + T` on macOS) |
+| `Ctrl + B`, then `1` | Switch to Terminal                                   |
+| `Ctrl + B`, then `2` | Switch to Server                                     |
+| `Ctrl + B`, then `3` | Switch to Review                                     |
+| `Ctrl + B`, then `4` | Open the scratchpad                                  |
+| `Ctrl + B`, then `o` | Focus the next terminal pane                         |
+| `Ctrl + B`, then `z` | Zoom or restore the active Terminal pane             |
 
 ## Settings
 
@@ -122,14 +122,23 @@ A complete configuration looks like this:
   "copyIgnoredFilesOnWorktreeCreation": false,
   "openWorktreesInNewTabs": false,
   "worktreeCopyExcludes": [],
-  "themeAccentColor": "white"
+  "themeAccentColor": "white",
+  "linear": {
+    "enabled": false,
+    "workspace": ""
+  }
 }
 ```
 
-Workspace directories may use `~` or absolute paths. Leave `shell` empty to use
-the server's `$SHELL`. Exactly one configured agent must be the default. Safe
-changes can be applied without restarting through **Reload Settings** in the
-command palette.
+Workspace directories may use `~` or absolute paths. Missing directories are
+allowed and are skipped during discovery. Leave `shell` empty to use the
+server's `$SHELL`. Exactly one configured agent must be the default.
+
+Linear integration is optional. When enabled, `linear.workspace` must be the
+workspace slug from `linear.app/<workspace>`, such as `signinsolutions`.
+
+Safe changes can be applied without restarting through **Reload Settings** in
+the command palette.
 
 ## Server address
 

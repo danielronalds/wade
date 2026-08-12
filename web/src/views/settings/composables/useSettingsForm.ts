@@ -5,6 +5,7 @@ import {
   cloneSettings,
   createEmptySettings,
   isValidAgents,
+  isValidLinearWorkspace,
   isValidWorkspaceDirectory,
   isValidShell,
   normaliseSettings,
@@ -18,7 +19,9 @@ const settingsHaveChanged = (current: Settings, saved: Settings) =>
   current.copyIgnoredFilesOnWorktreeCreation !== saved.copyIgnoredFilesOnWorktreeCreation ||
   current.openWorktreesInNewTabs !== saved.openWorktreesInNewTabs ||
   JSON.stringify(current.worktreeCopyExcludes) !== JSON.stringify(saved.worktreeCopyExcludes) ||
-  current.themeAccentColor !== saved.themeAccentColor;
+  current.themeAccentColor !== saved.themeAccentColor ||
+  current.linear.enabled !== saved.linear.enabled ||
+  current.linear.workspace !== saved.linear.workspace;
 
 const inputValue = (event: Event) => (event.target instanceof HTMLInputElement ? event.target.value : undefined);
 
@@ -40,6 +43,9 @@ export const useSettingsForm = () => {
   );
   const hasInvalidShell = computed(() => !isValidShell(form.shell));
   const hasInvalidAgents = computed(() => !isValidAgents(normalisedSettings.value.agents));
+  const hasInvalidLinearWorkspace = computed(
+    () => form.linear.enabled && !isValidLinearWorkspace(form.linear.workspace)
+  );
   const hasChanges = computed(() => settingsHaveChanged(normalisedSettings.value, savedSettings.value));
   const canSave = computed(
     () =>
@@ -48,7 +54,8 @@ export const useSettingsForm = () => {
       hasChanges.value &&
       !hasInvalidWorkspaceDirectories.value &&
       !hasInvalidShell.value &&
-      !hasInvalidAgents.value
+      !hasInvalidAgents.value &&
+      !hasInvalidLinearWorkspace.value
   );
 
   const clearMessages = () => {
@@ -64,6 +71,7 @@ export const useSettingsForm = () => {
     form.openWorktreesInNewTabs = settings.openWorktreesInNewTabs;
     form.worktreeCopyExcludes = [...settings.worktreeCopyExcludes];
     form.themeAccentColor = settings.themeAccentColor;
+    form.linear = { ...settings.linear };
   };
 
   const loadSettings = async () => {
@@ -178,6 +186,21 @@ export const useSettingsForm = () => {
     clearMessages();
   };
 
+  const updateLinearEnabled = (enabled: boolean) => {
+    form.linear.enabled = enabled;
+    clearMessages();
+  };
+
+  const updateLinearWorkspace = (event: Event) => {
+    const nextWorkspace = inputValue(event);
+    if (nextWorkspace === undefined) {
+      return;
+    }
+
+    form.linear.workspace = nextWorkspace;
+    clearMessages();
+  };
+
   const updateThemeAccentColor = (themeAccentColor: ThemeAccentColor) => {
     form.themeAccentColor = themeAccentColor;
     applyThemeAccentColor(themeAccentColor);
@@ -254,6 +277,7 @@ export const useSettingsForm = () => {
     hasInvalidWorkspaceDirectories,
     hasInvalidShell,
     hasInvalidAgents,
+    hasInvalidLinearWorkspace,
     canSave,
     isValidWorkspaceDirectory,
     updateWorkspaceDirectory,
@@ -267,6 +291,8 @@ export const useSettingsForm = () => {
     removeAgent,
     updateCopyIgnoredFilesOnWorktreeCreation,
     updateOpenWorktreesInNewTabs,
+    updateLinearEnabled,
+    updateLinearWorkspace,
     updateThemeAccentColor,
     updateWorktreeCopyExclude,
     addWorktreeCopyExclude,

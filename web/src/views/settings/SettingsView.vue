@@ -15,6 +15,7 @@ const {
   hasInvalidWorkspaceDirectories,
   hasInvalidShell,
   hasInvalidAgents,
+  hasInvalidLinearWorkspace,
   canSave,
   isValidWorkspaceDirectory,
   updateWorkspaceDirectory,
@@ -28,6 +29,8 @@ const {
   removeAgent,
   updateCopyIgnoredFilesOnWorktreeCreation,
   updateOpenWorktreesInNewTabs,
+  updateLinearEnabled,
+  updateLinearWorkspace,
   updateThemeAccentColor,
   updateWorktreeCopyExclude,
   addWorktreeCopyExclude,
@@ -43,6 +46,11 @@ const shouldOpenWorktreesInNewTabs = computed({
 const shouldCopyIgnoredFilesOnWorktreeCreation = computed({
   get: () => form.copyIgnoredFilesOnWorktreeCreation,
   set: updateCopyIgnoredFilesOnWorktreeCreation
+});
+
+const isLinearEnabled = computed({
+  get: () => form.linear.enabled,
+  set: updateLinearEnabled
 });
 
 const selectedThemeAccentColor = computed({
@@ -186,6 +194,35 @@ onMounted(() => {
           </section>
         </section>
 
+        <section id="linear-section" aria-labelledby="linear-title">
+          <header class="settings-section-header">
+            <section>
+              <h2 id="linear-title">Linear Integration</h2>
+              <p>Resolve ticket keys in branch names against a Linear workspace.</p>
+            </section>
+          </header>
+
+          <Checkbox id="linear-enabled" v-model="isLinearEnabled"> Enable Linear integration </Checkbox>
+
+          <label class="linear-workspace-row" for="linear-workspace">
+            <span>Workspace</span>
+            <input
+              id="linear-workspace"
+              :value="form.linear.workspace"
+              type="text"
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="workspace-slug"
+              :disabled="!form.linear.enabled"
+              :aria-invalid="hasInvalidLinearWorkspace ? 'true' : undefined"
+              @input="updateLinearWorkspace"
+            />
+          </label>
+          <p class="settings-message">
+            Use the slug from <code>linear.app/&lt;workspace&gt;</code>, for example <code>signinsolutions</code>.
+          </p>
+        </section>
+
         <footer id="settings-actions">
           <p v-if="!isLoading && hasInvalidWorkspaceDirectories" class="settings-error">
             Workspace directories must use ~ or an absolute path.
@@ -196,6 +233,9 @@ onMounted(() => {
           <p v-else-if="!isLoading && hasInvalidAgents" class="settings-error">
             At least one agent is required. Agent names and commands cannot be empty, names must be unique, and exactly
             one agent must be default.
+          </p>
+          <p v-else-if="!isLoading && hasInvalidLinearWorkspace" class="settings-error">
+            An enabled Linear integration requires a workspace slug using only letters, numbers, -, ., _, or ~.
           </p>
           <p v-else-if="error" class="settings-error">{{ error }}</p>
           <p v-else-if="statusMessage" class="settings-status">{{ statusMessage }}</p>
@@ -318,7 +358,8 @@ onMounted(() => {
 
 #workspace-directories-section,
 #shell-section,
-#worktrees-section {
+#worktrees-section,
+#linear-section {
   width: min(860px, 100%);
   display: grid;
   gap: 18px;
@@ -413,6 +454,7 @@ onMounted(() => {
 
 .workspace-directory-row,
 .shell-row,
+.linear-workspace-row,
 .worktree-copy-exclude-row {
   display: grid;
   align-items: center;
@@ -424,12 +466,14 @@ onMounted(() => {
   grid-template-columns: 120px minmax(0, 1fr) auto;
 }
 
-.shell-row {
+.shell-row,
+.linear-workspace-row {
   grid-template-columns: 120px minmax(0, 1fr);
 }
 
 .workspace-directory-row label,
 .shell-row span,
+.linear-workspace-row span,
 .worktree-copy-exclude-row label {
   color: var(--muted);
   font-size: 13px;
@@ -437,6 +481,7 @@ onMounted(() => {
 
 .workspace-directory-row input,
 .shell-row input,
+.linear-workspace-row input,
 .worktree-copy-exclude-row input {
   min-width: 0;
   border: 1px solid rgb(var(--accent-rgb) / 30%);
@@ -449,6 +494,7 @@ onMounted(() => {
 
 .workspace-directory-row input:focus,
 .shell-row input:focus,
+.linear-workspace-row input:focus,
 .worktree-copy-exclude-row input:focus {
   border-color: var(--text);
   outline: none;
@@ -456,8 +502,14 @@ onMounted(() => {
 
 .workspace-directory-row input[aria-invalid='true'],
 .shell-row input[aria-invalid='true'],
+.linear-workspace-row input[aria-invalid='true'],
 .worktree-copy-exclude-row input[aria-invalid='true'] {
   border-color: var(--disconnected);
+}
+
+.linear-workspace-row input:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .remove-action {
@@ -497,6 +549,7 @@ onMounted(() => {
 
   .workspace-directory-row,
   .shell-row,
+  .linear-workspace-row,
   .worktree-copy-exclude-row {
     grid-template-columns: 1fr;
   }

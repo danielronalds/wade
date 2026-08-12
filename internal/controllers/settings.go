@@ -109,7 +109,13 @@ func (controller *Settings) applyRuntimeConfiguration(configuration settings.Run
 		}
 		workspaceDirectories = append(workspaceDirectories, workspaces.WorkspaceDirectory{Setting: setting, Path: path})
 	}
-	controller.workspaces.Configure(workspaces.Configuration{WorkspaceDirectories: workspaceDirectories})
+	controller.workspaces.Configure(workspaces.Configuration{
+		WorkspaceDirectories: workspaceDirectories,
+		Linear: workspaces.LinearConfiguration{
+			Enabled:   configuration.Linear.Enabled,
+			Workspace: configuration.Linear.Workspace,
+		},
+	})
 	controller.repositories.Configure(repositories.Configuration{
 		CopyIgnoredFilesOnWorktreeCreation: configuration.CopyIgnoredFilesOnWorktreeCreation,
 		WorktreeCopyExcludes:               append([]string(nil), configuration.WorktreeCopyExcludes...),

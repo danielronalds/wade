@@ -3,6 +3,7 @@ import { computed, reactive, readonly } from 'vue';
 import { getSettings, reloadSettings, updateSettings } from '@/api/generated/wade';
 import { useRecentWorkspaces } from '@/features/workspaces/composables/useRecentWorkspaces';
 import { useWorkspaces } from '@/features/workspaces/composables/useWorkspaces';
+import { useWorkspaceDetailsStore } from '@/stores/useWorkspaceDetailsStore';
 import { cloneSettings, createEmptySettings, normaliseSettings, type Settings } from '@/types/settings';
 import { applyThemeAccentColor } from '@/utils/theme';
 
@@ -11,6 +12,7 @@ const errorMessage = (error: unknown, fallback: string) => (error instanceof Err
 export const useSettingsStore = defineStore('settings', () => {
   const { syncWorkspaces } = useWorkspaces();
   const { removeUnavailableRecentWorkspaces } = useRecentWorkspaces();
+  const workspaceDetailsStore = useWorkspaceDetailsStore();
 
   const state = reactive({
     hasLoaded: false,
@@ -30,7 +32,15 @@ export const useSettingsStore = defineStore('settings', () => {
   let saveRequest: Promise<Settings> | undefined;
 
   const replaceSettings = (nextSettings: Settings) => {
-    state.settings = cloneSettings(normaliseSettings(nextSettings));
+    const replacement = cloneSettings(normaliseSettings(nextSettings));
+    const linearConfigurationChanged =
+      state.settings.linear.enabled !== replacement.linear.enabled ||
+      state.settings.linear.workspace !== replacement.linear.workspace;
+
+    state.settings = replacement;
+    if (linearConfigurationChanged) {
+      workspaceDetailsStore.invalidateLinearIssueLinks();
+    }
   };
 
   const currentSettings = () => cloneSettings(state.settings);
@@ -83,14 +93,15 @@ export const useSettingsStore = defineStore('settings', () => {
       try {
         const savedSettings = await updateSettings(cloneSettings(settingsToSave));
 
+        replaceSettings(savedSettings);
+        state.hasLoaded = true;
+        applyThemeAccentColor(state.settings.themeAccentColor);
+
         const availableWorkspaces = await syncWorkspaces();
         if (availableWorkspaces) {
           removeUnavailableRecentWorkspaces(availableWorkspaces);
         }
 
-        replaceSettings(savedSettings);
-        state.hasLoaded = true;
-        applyThemeAccentColor(state.settings.themeAccentColor);
         state.statusMessage = 'Settings saved';
 
         return currentSettings();

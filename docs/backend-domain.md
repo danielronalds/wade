@@ -59,7 +59,9 @@ Snapshots retain pinned Git revisions and captured file identity until they are 
 
 ## Settings
 
-`Settings` is the persisted editable configuration for workspace directories, agents, worktree behaviour and interface preferences. Workspace materialisation requests identify one of the configured workspace directory strings, which the backend validates before cloning.
+`Settings` is the persisted editable configuration for workspace directories, agents, worktree behaviour, optional provider integrations and interface preferences. Workspace materialisation requests identify one of the configured workspace directory strings, which the backend validates before cloning.
+
+Linear settings contain an enablement flag and workspace slug. The slug is required and validated only when the integration is enabled, and is retained while disabled so the integration can be re-enabled later.
 
 Configured values may resolve into runtime paths and commands, but the persisted representation remains suitable for editing and round-tripping. Runtime configuration is derived from settings rather than exposed as a separate API resource.
 

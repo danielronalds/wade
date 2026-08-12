@@ -30,6 +30,14 @@ func resolveRuntimeConfiguration(settings Settings, homeDirectory string, files 
 		return RuntimeConfiguration{}, err
 	}
 
+	linearSettings := LinearSettings{
+		Enabled:   settings.Linear.Enabled,
+		Workspace: strings.TrimSpace(settings.Linear.Workspace),
+	}
+	if err := validateLinearSettings(linearSettings); err != nil {
+		return RuntimeConfiguration{}, err
+	}
+
 	shell := strings.TrimSpace(settings.Shell)
 	if shell == "" {
 		shell = environment.InheritedShell()
@@ -51,6 +59,7 @@ func resolveRuntimeConfiguration(settings Settings, homeDirectory string, files 
 		Agents:                             cloneAgents(agents),
 		CopyIgnoredFilesOnWorktreeCreation: settings.CopyIgnoredFilesOnWorktreeCreation,
 		WorktreeCopyExcludes:               append([]string(nil), worktreeCopyExcludes...),
+		Linear:                             linearSettings,
 	}, nil
 }
 

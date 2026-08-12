@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, nextTick, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useWorkspaceDetailsStore } from '@/stores/useWorkspaceDetailsStore';
 import { useWorkspaceSessionStore } from '@/stores/useWorkspaceSessionStore';
 import type { ReviewScreenComponent, WorkspaceScreenComponent } from '@/types/workspaceScreens';
@@ -22,6 +23,7 @@ const props = defineProps<{
   workspaceId: string;
 }>();
 
+const settingsStore = useSettingsStore();
 const workspaceDetailsStore = useWorkspaceDetailsStore();
 const workspaceSessionStore = useWorkspaceSessionStore();
 workspaceSessionStore.activateWorkspaceSession(props.workspaceId);
@@ -177,6 +179,15 @@ useWorkspaceKeyboardShortcuts({
   toggleScratchpadTerminal,
   toggleTerminalZoom
 });
+
+watch(
+  () => [settingsStore.settings.linear.enabled, settingsStore.settings.linear.workspace] as const,
+  ([enabled]) => {
+    if (enabled) {
+      void workspaceDetailsStore.refreshWorkspaceDetails(props.workspaceId);
+    }
+  }
+);
 
 onMounted(async () => {
   void workspaceDetailsStore.loadWorkspaceDetails(props.workspaceId);

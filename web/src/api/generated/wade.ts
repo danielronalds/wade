@@ -34,6 +34,11 @@ export interface IssueReference {
   url: string;
 }
 
+export interface LinearSettings {
+  enabled: boolean;
+  workspace: string;
+}
+
 export interface MaterialiseWorkspaceRequest {
   remoteRepositoryId: string;
   workspaceDirectory: string;
@@ -141,6 +146,7 @@ export const SettingsThemeAccentColor = {
 export interface Settings {
   agents: Agent[];
   copyIgnoredFilesOnWorktreeCreation: boolean;
+  linear: LinearSettings;
   openWorktreesInNewTabs: boolean;
   shell: string;
   themeAccentColor: SettingsThemeAccentColor;

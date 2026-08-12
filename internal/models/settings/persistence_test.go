@@ -13,7 +13,7 @@ func TestParseSettingsAppliesMissingFieldDefaults(t *testing.T) {
 	if !reflect.DeepEqual(persisted.settings.Agents, defaultAgents) {
 		t.Fatalf("Agents = %#v, want defaults", persisted.settings.Agents)
 	}
-	if persisted.settings.Shell != "" || persisted.settings.OpenWorktreesInNewTabs {
+	if persisted.settings.Shell != "" || persisted.settings.OpenWorktreesInNewTabs || persisted.settings.Linear.Enabled || persisted.settings.Linear.Workspace != "" {
 		t.Fatalf("default settings = %#v", persisted.settings)
 	}
 }
@@ -26,7 +26,8 @@ func TestParseSettingsAppliesConfiguredValues(t *testing.T) {
 		"copyIgnoredFilesOnWorktreeCreation":true,
 		"openWorktreesInNewTabs":true,
 		"worktreeCopyExcludes":["node_modules"],
-		"themeAccentColor":"purple"
+		"themeAccentColor":"purple",
+		"linear":{"enabled":true,"workspace":" Example_Workspace "}
 	}`))
 	if err != nil {
 		t.Fatalf("parseSettings() error = %v", err)
@@ -41,6 +42,9 @@ func TestParseSettingsAppliesConfiguredValues(t *testing.T) {
 	}
 	if !reflect.DeepEqual(settings.WorktreeCopyExcludes, []string{"node_modules"}) || settings.ThemeAccentColor != ThemeAccentColorPurple {
 		t.Fatalf("settings = %#v", settings)
+	}
+	if !settings.Linear.Enabled || settings.Linear.Workspace != "Example_Workspace" {
+		t.Fatalf("Linear = %#v", settings.Linear)
 	}
 }
 

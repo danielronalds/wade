@@ -20,9 +20,16 @@ type WorkspaceDirectory struct {
 	Path    string
 }
 
-// Configuration controls workspace discovery and materialisation destinations.
+// LinearConfiguration controls optional Linear issue resolution.
+type LinearConfiguration struct {
+	Enabled   bool
+	Workspace string
+}
+
+// Configuration controls workspace discovery, materialisation, and provider integration.
 type Configuration struct {
 	WorkspaceDirectories []WorkspaceDirectory
+	Linear               LinearConfiguration
 }
 
 // MaterialiseRequest creates a workspace from a remote repository.
@@ -176,6 +183,7 @@ func (model *Model) Materialise(ctx context.Context, request MaterialiseRequest)
 
 // ResolveLinks returns all successfully resolved links and any optional provider failures.
 func (model *Model) ResolveLinks(ctx context.Context, linkContext LinkContext) (WorkspaceLinks, error) {
+	configuration := model.configurationSnapshot()
 	links := WorkspaceLinks{}
 	var linkErrors []error
 
@@ -191,8 +199,8 @@ func (model *Model) ResolveLinks(ctx context.Context, linkContext LinkContext) (
 		}
 	}
 
-	if model.linear != nil {
-		ticket, err := model.linear.TicketForBranch(linkContext.BranchName)
+	if model.linear != nil && configuration.Linear.Enabled {
+		ticket, err := model.linear.TicketForBranch(configuration.Linear.Workspace, linkContext.BranchName)
 		if err != nil {
 			linkErrors = append(linkErrors, fmt.Errorf("resolving issue link: %w", err))
 		} else if ticket != nil {
@@ -204,9 +212,13 @@ func (model *Model) ResolveLinks(ctx context.Context, linkContext LinkContext) (
 }
 
 func (model *Model) workspaceDirectories() []WorkspaceDirectory {
+	return model.configurationSnapshot().WorkspaceDirectories
+}
+
+func (model *Model) configurationSnapshot() Configuration {
 	model.configurationMu.RLock()
 	defer model.configurationMu.RUnlock()
-	return append([]WorkspaceDirectory(nil), model.configuration.WorkspaceDirectories...)
+	return cloneConfiguration(model.configuration)
 }
 
 func (model *Model) materialisationLock(key string) *sync.Mutex {
@@ -214,9 +226,6 @@ func (model *Model) materialisationLock(key string) *sync.Mutex {
 	return lock.(*sync.Mutex)
 }
 
-func cloneConfiguration(configuration Configuration) Configuration {
-	return Configuration{WorkspaceDirectories: append([]WorkspaceDirectory(nil), configuration.WorkspaceDirectories...)}
-}
 func (model *Model) workspaceDirectory(setting string) (WorkspaceDirectory, bool) {
 	for _, directory := range model.workspaceDirectories() {
 		if directory.Setting == setting {
@@ -224,6 +233,13 @@ func (model *Model) workspaceDirectory(setting string) (WorkspaceDirectory, bool
 		}
 	}
 	return WorkspaceDirectory{}, false
+}
+
+func cloneConfiguration(configuration Configuration) Configuration {
+	return Configuration{
+		WorkspaceDirectories: append([]WorkspaceDirectory(nil), configuration.WorkspaceDirectories...),
+		Linear:               configuration.Linear,
+	}
 }
 
 func newWorkspace(workspaceID string) Workspace {

@@ -3,6 +3,7 @@ import { Check, Copy, GitBranch, RefreshCw } from '@lucide/vue';
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useWorkspaceLinkClipboard } from '@/views/workspace/composables/useWorkspaceLinkClipboard';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useWorkspaceDetailsStore } from '@/stores/useWorkspaceDetailsStore';
 import GitHubIcon from '@/components/icons/GitHubIcon.vue';
 import LinearIcon from '@/components/icons/LinearIcon.vue';
@@ -13,23 +14,25 @@ const props = defineProps<{
   isConnected: boolean;
 }>();
 
+const settingsStore = useSettingsStore();
 const workspaceDetailsStore = useWorkspaceDetailsStore();
 const { clipboardAnnouncement, copiedWorkspaceLink, copyWorkspaceLink } = useWorkspaceLinkClipboard();
 
 const workspaceDetails = computed(() => workspaceDetailsStore.getWorkspaceDetails(props.workspaceId));
 const isWorkspaceDetailsLoading = computed(() => workspaceDetailsStore.isWorkspaceDetailsLoading(props.workspaceId));
 const isWaitingForWorkspaceDetails = computed(() => isWorkspaceDetailsLoading.value && !workspaceDetails.value);
+const isLinearEnabled = computed(() => settingsStore.settings.linear.enabled);
 const gitBranch = computed(() => workspaceDetails.value?.branch?.name ?? '');
 const githubUrl = computed(() => workspaceDetails.value?.links.repository ?? '');
 const linearTicketUrl = computed(() => workspaceDetails.value?.links.issue?.url ?? '');
 const pullRequestUrl = computed(() => workspaceDetails.value?.links.pullRequest ?? '');
 
 const workspaceDisplayName = computed(() => workspaceDetails.value?.name ?? props.workspaceId);
-const isLinearTicketButtonDisabled = computed(() => linearTicketUrl.value === '');
+const isLinearTicketButtonDisabled = computed(() => isWorkspaceDetailsLoading.value || linearTicketUrl.value === '');
 const isPullRequestButtonDisabled = computed(() => pullRequestUrl.value === '');
 const isGitHubButtonDisabled = computed(() => githubUrl.value === '');
 const linearTicketButtonTitle = computed(() =>
-  isWaitingForWorkspaceDetails.value
+  isWorkspaceDetailsLoading.value
     ? 'Loading Linear ticket'
     : linearTicketUrl.value === ''
       ? 'No Linear ticket found'
@@ -38,7 +41,7 @@ const linearTicketButtonTitle = computed(() =>
 const linearTicketCopyButtonTitle = computed(() =>
   copiedWorkspaceLink.value === 'linear-ticket'
     ? 'Linear ticket link copied'
-    : isWaitingForWorkspaceDetails.value
+    : isWorkspaceDetailsLoading.value
       ? 'Loading Linear ticket'
       : linearTicketUrl.value === ''
         ? 'No Linear ticket found'
@@ -145,7 +148,7 @@ const reloadWorkspaceDetails = () => {
       >
         <RefreshCw :size="14" :stroke-width="1.7" aria-hidden="true" />
       </button>
-      <span class="workspace-action">
+      <span v-if="isLinearEnabled" class="workspace-action">
         <button
           class="workspace-action-button workspace-action-open"
           type="button"
