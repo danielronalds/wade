@@ -92,10 +92,10 @@ func (c Controller) handleStart(args []string) (int, error) {
 
 	_, err = fmt.Fprintf(
 		c.stdout,
-		"WADE started\nVersion: %s\nPID: %d\nAddress: %s\nLog: %s\n",
+		"WADE server listening on %s\nVersion: %s\nPID: %d\nLog: %s\n",
+		status.Address,
 		displayVersion(status.Version),
 		status.PID,
-		status.Address,
 		status.LogPath,
 	)
 	return 0, err

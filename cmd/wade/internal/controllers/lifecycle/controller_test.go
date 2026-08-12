@@ -85,7 +85,7 @@ func TestControllerStartsBackgroundDaemon(t *testing.T) {
 		t.Fatalf("Start() foreground command = %#v, want start foreground command", foregroundCommand)
 	}
 
-	want := "WADE started\nVersion: v0.1.0\nPID: 12345\nAddress: test.localhost:1234\nLog: /tmp/wade/server.log\n"
+	want := "WADE server listening on test.localhost:1234\nVersion: v0.1.0\nPID: 12345\nLog: /tmp/wade/server.log\n"
 	if output.String() != want {
 		t.Fatalf("output = %q, want %q", output.String(), want)
 	}
