@@ -15,6 +15,9 @@ func TestParseOperationsParsesEmbeddedSpecification(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parseOperations() error = %v, want nil", err)
 	}
+	// The exact count is a deliberate tripwire: adding or removing an API
+	// operation must include a conscious decision to expose it as a command
+	// or annotate it with x-wade-cli-ignore, then update this count.
 	if len(operations) != 22 {
 		t.Fatalf("parseOperations() returned %d operations, want 22", len(operations))
 	}
