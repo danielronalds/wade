@@ -14,6 +14,8 @@ import (
 	"strings"
 )
 
+const maxProblemResponseBytes = 1 << 20
+
 func (c Controller) runOperation(operation Operation, arguments []string) (int, error) {
 	flagSet := flag.NewFlagSet(operation.Command, flag.ContinueOnError)
 	flagSet.SetOutput(io.Discard)
@@ -119,13 +121,12 @@ func (c Controller) executeRequest(operation Operation, address string, path str
 	}
 	defer response.Body.Close()
 
-	responseBody, err := io.ReadAll(response.Body)
-	if err != nil {
-		return 0, fmt.Errorf("reading response from WADE: %w", err)
-	}
-
 	requestSucceeded := response.StatusCode >= 200 && response.StatusCode <= 299
 	if !requestSucceeded {
+		responseBody, err := io.ReadAll(io.LimitReader(response.Body, maxProblemResponseBytes))
+		if err != nil {
+			return 0, fmt.Errorf("reading response from WADE: %w", err)
+		}
 		problem := strings.TrimSpace(string(responseBody))
 		if problem == "" {
 			return 0, fmt.Errorf("HTTP %s", response.Status)
@@ -133,9 +134,8 @@ func (c Controller) executeRequest(operation Operation, address string, path str
 		return 0, fmt.Errorf("HTTP %s\n%s", response.Status, problem)
 	}
 
-	if len(responseBody) == 0 {
-		return 0, nil
+	if _, err := io.Copy(c.stdout, response.Body); err != nil {
+		return 0, fmt.Errorf("reading response from WADE: %w", err)
 	}
-	_, err = c.stdout.Write(responseBody)
-	return 0, err
+	return 0, nil
 }
