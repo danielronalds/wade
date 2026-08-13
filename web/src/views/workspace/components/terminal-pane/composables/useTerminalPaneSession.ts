@@ -7,7 +7,6 @@ type TerminalPaneSessionOptions = {
   terminalId: string;
   isActive: Readonly<Ref<boolean>>;
   isSelectedAgent: Readonly<Ref<boolean>>;
-  lazy?: boolean;
   onConnectionStatusChange: (status: TerminalConnectionStatus) => void;
   onTerminalEnd?: () => void;
 };
@@ -17,7 +16,6 @@ export const useTerminalPaneSession = ({
   terminalId,
   isActive,
   isSelectedAgent,
-  lazy = false,
   onConnectionStatusChange,
   onTerminalEnd
 }: TerminalPaneSessionOptions) => {
@@ -31,9 +29,6 @@ export const useTerminalPaneSession = ({
     onTerminalEnd
   });
 
-  let hasStarted = false;
-  let startPromise: Promise<void> | undefined;
-
   const publishConnectionStatus = () => {
     onConnectionStatusChange({
       connectionStatusText: terminalSession.connectionStatusText.value,
@@ -41,30 +36,9 @@ export const useTerminalPaneSession = ({
     });
   };
 
-  const startTerminal = async () => {
-    if (hasStarted) {
-      return;
-    }
-
-    if (startPromise) {
-      await startPromise;
-      return;
-    }
-
-    startPromise = terminalSession.start().finally(() => {
-      startPromise = undefined;
-    });
-    hasStarted = true;
-    await startPromise;
-  };
-
   const fitAndFocusTerminal = async () => {
     if (!isActive.value) {
       return;
-    }
-
-    if (lazy) {
-      await startTerminal();
     }
 
     await nextTick();
@@ -74,19 +48,11 @@ export const useTerminalPaneSession = ({
   };
 
   const reloadTerminal = async () => {
-    if (lazy) {
-      await startTerminal();
-    }
-
     await terminalSession.reload();
     await fitAndFocusTerminal();
   };
 
   const scrollTerminalToBottom = async () => {
-    if (lazy) {
-      await startTerminal();
-    }
-
     await nextTick();
     terminalSession.scrollToBottom();
   };
@@ -108,11 +74,7 @@ export const useTerminalPaneSession = ({
   });
 
   onMounted(() => {
-    if (!lazy) {
-      hasStarted = true;
-      void terminalSession.start();
-    }
-
+    void terminalSession.start();
     void fitAndFocusTerminal();
   });
 

@@ -196,7 +196,6 @@ defineExpose({
       :is-active="isAgentPaneActive && selectedAgentName === agent.name"
       :is-collapsed="isAgentPaneCollapsed"
       :is-zoomed="isAgentPaneZoomed"
-      lazy
       show-zoom-icon
       @activate="activatePane(TerminalPanes.Agent)"
       @agent-change="selectAgent"

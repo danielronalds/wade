@@ -15,7 +15,6 @@ const props = withDefaults(
     showZoomIcon?: boolean;
     isZoomed?: boolean;
     isCollapsed?: boolean;
-    lazy?: boolean;
     agentName?: string;
     agents?: Agent[];
     selectedAgentName?: string;
@@ -25,7 +24,6 @@ const props = withDefaults(
     showZoomIcon: false,
     isZoomed: false,
     isCollapsed: false,
-    lazy: false,
     agentName: undefined,
     agents: undefined,
     selectedAgentName: undefined
@@ -48,7 +46,6 @@ const { focusTerminal, reloadTerminal, scrollTerminalToBottom, terminalElement }
   terminalId: props.terminalId,
   isActive,
   isSelectedAgent,
-  lazy: props.lazy,
   onConnectionStatusChange: (status) => emit('connectionStatusChange', status),
   onTerminalEnd: () => emit('terminalEnd')
 });
