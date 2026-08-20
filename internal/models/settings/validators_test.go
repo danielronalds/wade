@@ -141,9 +141,14 @@ func TestNormaliseAndValidateSettingsValidatesLinearOnlyWhenEnabled(t *testing.T
 		t.Fatal("enabled invalid Linear configuration error = nil")
 	}
 
-	request.Linear.Workspace = " Mixed_Case.~123 "
+	request.Linear.Workspace = " "
+	if _, err := normaliseAndValidateSettings(request, "/home/test", &settingsFileSystemStub{}, testEnvironment()); err == nil || err.Error() != "linear workspace is required when the integration is enabled" {
+		t.Fatalf("enabled empty Linear configuration error = %v", err)
+	}
+
+	request.Linear.Workspace = " Mixed-Case_.~123 "
 	normalised, err = normaliseAndValidateSettings(request, "/home/test", &settingsFileSystemStub{}, testEnvironment())
-	if err != nil || normalised.Linear.Workspace != "Mixed_Case.~123" {
+	if err != nil || normalised.Linear.Workspace != "Mixed-Case_.~123" {
 		t.Fatalf("enabled Linear configuration = %#v, %v", normalised.Linear, err)
 	}
 }
