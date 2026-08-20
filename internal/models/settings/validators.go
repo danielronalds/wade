@@ -158,6 +158,9 @@ func validateLinearSettings(linear LinearSettings) error {
 	if linear.Workspace == "" {
 		return errors.New("linear workspace is required when the integration is enabled")
 	}
+	if linear.Workspace == "." || linear.Workspace == ".." {
+		return fmt.Errorf("linear workspace %q is not a valid workspace slug", linear.Workspace)
+	}
 	if !linearWorkspacePattern.MatchString(linear.Workspace) {
 		return fmt.Errorf("linear workspace %q contains unsupported characters", linear.Workspace)
 	}

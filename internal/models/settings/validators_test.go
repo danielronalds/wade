@@ -124,32 +124,55 @@ func TestNormaliseAndValidateSettingsTrimsValuesAndDefaultsTheme(t *testing.T) {
 	}
 }
 
-func TestNormaliseAndValidateSettingsValidatesLinearOnlyWhenEnabled(t *testing.T) {
+func TestNormaliseAndValidateSettingsAllowsInvalidLinearWorkspaceWhenDisabled(t *testing.T) {
 	request := validSettings("~/Code")
 	request.Linear = LinearSettings{Enabled: false, Workspace: " invalid/workspace "}
 
 	normalised, err := normaliseAndValidateSettings(request, "/home/test", &settingsFileSystemStub{}, testEnvironment())
 	if err != nil {
-		t.Fatalf("disabled Linear configuration error = %v", err)
+		t.Fatalf("normaliseAndValidateSettings() error = %v", err)
 	}
 	if normalised.Linear.Workspace != "invalid/workspace" {
 		t.Fatalf("Linear workspace = %q", normalised.Linear.Workspace)
 	}
+}
 
-	request.Linear.Enabled = true
-	if _, err := normaliseAndValidateSettings(request, "/home/test", &settingsFileSystemStub{}, testEnvironment()); err == nil {
-		t.Fatal("enabled invalid Linear configuration error = nil")
-	}
+func TestNormaliseAndValidateSettingsRejectsEmptyLinearWorkspaceWhenEnabled(t *testing.T) {
+	request := validSettings("~/Code")
+	request.Linear = LinearSettings{Enabled: true, Workspace: " "}
 
-	request.Linear.Workspace = " "
 	if _, err := normaliseAndValidateSettings(request, "/home/test", &settingsFileSystemStub{}, testEnvironment()); err == nil || err.Error() != "linear workspace is required when the integration is enabled" {
-		t.Fatalf("enabled empty Linear configuration error = %v", err)
+		t.Fatalf("normaliseAndValidateSettings() error = %v", err)
 	}
+}
 
-	request.Linear.Workspace = " Mixed-Case_.~123 "
-	normalised, err = normaliseAndValidateSettings(request, "/home/test", &settingsFileSystemStub{}, testEnvironment())
-	if err != nil || normalised.Linear.Workspace != "Mixed-Case_.~123" {
-		t.Fatalf("enabled Linear configuration = %#v, %v", normalised.Linear, err)
+func TestNormaliseAndValidateSettingsRejectsInvalidLinearWorkspaceWhenEnabled(t *testing.T) {
+	for name, workspace := range map[string]string{
+		"unsupported character":     "invalid/workspace",
+		"current directory segment": ".",
+		"parent directory segment":  "..",
+	} {
+		t.Run(name, func(t *testing.T) {
+			request := validSettings("~/Code")
+			request.Linear = LinearSettings{Enabled: true, Workspace: workspace}
+
+			if _, err := normaliseAndValidateSettings(request, "/home/test", &settingsFileSystemStub{}, testEnvironment()); err == nil {
+				t.Fatal("normaliseAndValidateSettings() error = nil")
+			}
+		})
+	}
+}
+
+func TestNormaliseAndValidateSettingsTrimsValidLinearWorkspace(t *testing.T) {
+	request := validSettings("~/Code")
+	request.Linear = LinearSettings{Enabled: true, Workspace: " Mixed-Case_.~123 "}
+
+	normalised, err := normaliseAndValidateSettings(request, "/home/test", &settingsFileSystemStub{}, testEnvironment())
+	if err != nil {
+		t.Fatalf("normaliseAndValidateSettings() error = %v", err)
+	}
+	if normalised.Linear.Workspace != "Mixed-Case_.~123" {
+		t.Fatalf("Linear workspace = %q", normalised.Linear.Workspace)
 	}
 }
 

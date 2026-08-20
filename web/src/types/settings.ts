@@ -64,7 +64,11 @@ export const normaliseSettings = (settings: Settings): Settings => ({
   }
 });
 
-export const isValidLinearWorkspace = (workspace: string) => /^[A-Za-z0-9._~-]+$/.test(workspace.trim());
+export const isValidLinearWorkspace = (workspace: string) => {
+  const trimmedWorkspace = workspace.trim();
+
+  return trimmedWorkspace !== '.' && trimmedWorkspace !== '..' && /^[A-Za-z0-9._~-]+$/.test(trimmedWorkspace);
+};
 
 export const isValidShell = (shell: string) => shell.trim().split(/\s+/).filter(Boolean).length <= 1;
 
