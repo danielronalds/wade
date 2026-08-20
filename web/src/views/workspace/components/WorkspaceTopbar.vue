@@ -51,7 +51,6 @@ const workspacePresentation = computed<WorkspacePresentation>(() => {
   return getWorkspacePresentation(workspaceDetails.value);
 });
 
-const workspaceDisplayName = computed(() => workspacePresentation.value.root);
 const isLinearTicketButtonDisabled = computed(() => isWorkspaceDetailsLoading.value || linearTicketUrl.value === '');
 const isPullRequestButtonDisabled = computed(() => pullRequestUrl.value === '');
 const isGitHubButtonDisabled = computed(() => githubUrl.value === '');
@@ -148,7 +147,7 @@ const reloadWorkspaceDetails = () => {
     <h1 id="workspace-summary">
       <RouterLink id="brand" :to="{ name: 'home' }">WADE</RouterLink>
       <span id="workspace-presentation" :title="workspacePresentation.title">
-        <span id="workspace-name">{{ workspaceDisplayName }}</span>
+        <span id="workspace-name">{{ workspacePresentation.root }}</span>
         <span v-if="workspacePresentation.branch !== ''" id="git-branch">
           <GitBranch :size="14" :stroke-width="1.75" aria-hidden="true" />
           <span>{{ workspacePresentation.branch }}</span>
