@@ -63,6 +63,7 @@ type TerminalsModel interface {
 	List(ctx context.Context, workspaceID string) ([]terminals.Terminal, error)
 	Get(ctx context.Context, workspaceID string, terminalID string) (terminals.Terminal, error)
 	Put(ctx context.Context, workspaceID string, terminalID string) (terminals.Terminal, bool, error)
+	StartDefaultAgent(ctx context.Context, workspaceID string) (terminals.Terminal, error)
 	Delete(ctx context.Context, workspaceID string, terminalID string) error
 	DeleteAll(ctx context.Context, workspaceID string) (int, error)
 	Input(ctx context.Context, input terminals.Input) error

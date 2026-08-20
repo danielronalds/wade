@@ -828,6 +828,53 @@
                 }
             }
         },
+        "/api/v1/workspaces/{workspaceId}/start": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workspaces"
+                ],
+                "summary": "Start the workspace's default agent",
+                "operationId": "startWorkspace",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Terminal"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/workspaces/{workspaceId}/terminals": {
             "get": {
                 "produces": [
@@ -986,7 +1033,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Terminal ID",
+                        "description": "Terminal ID: misc; server; scratchpad; or agent:\u003clowercase-agent-name\u003e for a configured agent",
                         "name": "terminalId",
                         "in": "path",
                         "required": true

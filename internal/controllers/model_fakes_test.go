@@ -106,6 +106,9 @@ type fakeTerminalsModel struct {
 	items              []terminals.Terminal
 	putItem            terminals.Terminal
 	putCreated         bool
+	startDefaultItem   terminals.Terminal
+	startDefaultError  error
+	startDefaultCalls  int
 	connectError       error
 	activeWorkspaceIDs []string
 	activeCounts       map[string]int
@@ -124,6 +127,10 @@ func (*fakeTerminalsModel) Get(context.Context, string, string) (terminals.Termi
 func (fake *fakeTerminalsModel) Put(context.Context, string, string) (terminals.Terminal, bool, error) {
 	fake.putCalls++
 	return fake.putItem, fake.putCreated, nil
+}
+func (fake *fakeTerminalsModel) StartDefaultAgent(context.Context, string) (terminals.Terminal, error) {
+	fake.startDefaultCalls++
+	return fake.startDefaultItem, fake.startDefaultError
 }
 func (*fakeTerminalsModel) Delete(context.Context, string, string) error { return nil }
 func (fake *fakeTerminalsModel) DeleteAll(_ context.Context, workspaceID string) (int, error) {

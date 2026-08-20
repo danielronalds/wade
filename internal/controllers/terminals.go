@@ -71,7 +71,7 @@ func (h Terminals) DeleteAll(w http.ResponseWriter, r *http.Request) {
 // @Tags Terminals
 // @Produce json
 // @Param workspaceId path string true "Workspace ID"
-// @Param terminalId path string true "Terminal ID"
+// @Param terminalId path string true "Terminal ID: misc; server; scratchpad; or agent:<lowercase-agent-name> for a configured agent"
 // @Success 200 {object} terminals.Terminal
 // @Success 201 {object} terminals.Terminal
 // @Header 201 {string} Location "Created terminal URL"

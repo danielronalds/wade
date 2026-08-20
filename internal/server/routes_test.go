@@ -42,6 +42,7 @@ func TestAPIV1RoutesAreRegistered(t *testing.T) {
 	paths := []string{
 		"/api/v1/workspaces",
 		"/api/v1/workspaces/wade",
+		"/api/v1/workspaces/wade/start",
 		"/api/v1/remote-repositories",
 		"/api/v1/repositories/wade",
 		"/api/v1/repositories/wade/worktrees",

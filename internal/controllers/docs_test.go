@@ -37,6 +37,7 @@ func TestOpenAPISpecIncludesOperationIDs(t *testing.T) {
 		"GET /api/v1/workspaces":                                             "listWorkspaces",
 		"POST /api/v1/workspaces":                                            "materialiseWorkspace",
 		"GET /api/v1/workspaces/{workspaceId}":                               "getWorkspace",
+		"POST /api/v1/workspaces/{workspaceId}/start":                        "startWorkspace",
 		"POST /api/v1/workspaces/{workspaceId}/review-snapshots":             "createReviewSnapshot",
 		"GET /api/v1/workspaces/{workspaceId}/terminals":                     "listWorkspaceTerminals",
 		"DELETE /api/v1/workspaces/{workspaceId}/terminals":                  "deleteWorkspaceTerminals",

@@ -18,8 +18,8 @@ func TestParseOperationsParsesEmbeddedSpecification(t *testing.T) {
 	// The exact count is a deliberate tripwire: adding or removing an API
 	// operation must include a conscious decision to expose it as a command
 	// or annotate it with x-wade-cli-ignore, then update this count.
-	if len(operations) != 22 {
-		t.Fatalf("parseOperations() returned %d operations, want 22", len(operations))
+	if len(operations) != 23 {
+		t.Fatalf("parseOperations() returned %d operations, want 23", len(operations))
 	}
 
 	commands := make([]string, 0, len(operations))
@@ -33,6 +33,17 @@ func TestParseOperationsParsesEmbeddedSpecification(t *testing.T) {
 		if slices.Contains(commands, excluded) {
 			t.Fatalf("commands include excluded operation %s", excluded)
 		}
+	}
+
+	startWorkspace, found := findOperation(operations, "start-workspace")
+	if !found {
+		t.Fatalf("start-workspace not found in %v", commands)
+	}
+	if startWorkspace.Method != "POST" || startWorkspace.Path != "/api/v1/workspaces/{workspaceId}/start" || startWorkspace.HasBody {
+		t.Fatalf("start-workspace operation = %#v", startWorkspace)
+	}
+	if len(startWorkspace.Parameters) != 1 || startWorkspace.Parameters[0].Name != "workspaceId" || !startWorkspace.Parameters[0].Required {
+		t.Fatalf("start-workspace parameters = %#v", startWorkspace.Parameters)
 	}
 
 	operation, found := findOperation(operations, "send-workspace-terminal-input")

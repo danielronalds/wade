@@ -2,6 +2,7 @@ package terminals
 
 import (
 	"context"
+	"errors"
 	"io"
 	"sync"
 	"testing"
@@ -93,6 +94,42 @@ func TestModelPutIsIdempotentAndReturnsDetachedResources(t *testing.T) {
 	loaded, err := model.Get(context.Background(), "wade", "agent:pi")
 	if err != nil || loaded.Agent == nil || *loaded.Agent != "Pi" {
 		t.Fatalf("Get() = %#v, error = %v", loaded, err)
+	}
+}
+
+func TestModelStartDefaultAgentIsIdempotent(t *testing.T) {
+	pty := &fakePTY{}
+	model := newTerminalTestModel(pty)
+	defer model.Close()
+
+	first, err := model.StartDefaultAgent(context.Background(), "wade")
+	if err != nil {
+		t.Fatalf("first StartDefaultAgent() = %#v, error = %v", first, err)
+	}
+	second, err := model.StartDefaultAgent(context.Background(), "wade")
+	if err != nil {
+		t.Fatalf("second StartDefaultAgent() = %#v, error = %v", second, err)
+	}
+	if first.ID != "agent:pi" || first.Role != TerminalRoleAgent || first.Agent == nil || *first.Agent != "Pi" {
+		t.Fatalf("first terminal = %#v", first)
+	}
+	if second.ID != first.ID || pty.startCount != 1 {
+		t.Fatalf("second terminal = %#v, PTY starts = %d", second, pty.startCount)
+	}
+}
+
+func TestModelStartDefaultAgentRequiresConfiguredDefault(t *testing.T) {
+	model := New(
+		terminalWorkspaceDiscoveryStub{path: "/tmp/wade", found: true},
+		&fakePTY{},
+		Configuration{Shell: "/bin/sh", Agents: []Agent{{Name: "Pi", Command: "pi"}}},
+	)
+	defer model.Close()
+
+	_, err := model.StartDefaultAgent(context.Background(), "wade")
+	var agentError AgentNotConfiguredError
+	if !errors.As(err, &agentError) || agentError.AgentName != "default" {
+		t.Fatalf("StartDefaultAgent() error = %v, want missing default agent error", err)
 	}
 }
 
