@@ -162,9 +162,9 @@ onBeforeUnmount(() => {
                 type="button"
                 :disabled="result.isDisabled"
                 :data-selected="String(index === selectedIndex)"
+                :title="result.title"
                 @mouseenter="selectedIndex = index"
                 @click="runResult(result)"
-                :title="result.title"
               >
                 <span class="command-palette-result-presentation">
                   <span>{{ result.label }}</span>
