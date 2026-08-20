@@ -45,6 +45,27 @@ func (model *Model) Configure(configuration Configuration) {
 	model.configuration = configuration
 }
 
+// StartDefaultAgent idempotently starts or returns the configured default agent terminal.
+func (model *Model) StartDefaultAgent(ctx context.Context, workspaceID string) (Terminal, error) {
+	model.mu.Lock()
+	var defaultAgent Agent
+	found := false
+	for _, agent := range model.configuration.Agents {
+		if agent.Default {
+			defaultAgent = agent
+			found = true
+			break
+		}
+	}
+	model.mu.Unlock()
+	if !found {
+		return Terminal{}, AgentNotConfiguredError{AgentName: "default"}
+	}
+
+	terminal, _, err := model.Put(ctx, workspaceID, "agent:"+strings.ToLower(defaultAgent.Name))
+	return terminal, err
+}
+
 // Put idempotently starts or returns one terminal resource.
 func (model *Model) Put(ctx context.Context, workspaceID string, terminalID string) (Terminal, bool, error) {
 	workspacePath, err := model.workspacePath(workspaceID)

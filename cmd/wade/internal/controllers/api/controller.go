@@ -25,6 +25,15 @@ const (
 	developmentEnvironmentVariable = "WADE_DEV"
 	developmentAddress             = "editor-dev.localhost:8090"
 	defaultAddress                 = "editor.localhost:8765"
+	apiCommandListPreamble         = `Use WADE's local HTTP API to automate workspaces, worktrees and terminals. WADE must be running; the daemon address is detected automatically, or use --address to override it. Commands are derived from the OpenAPI specification.
+
+Examples
+  # Create a repository worktree
+  wade api create-repository-worktree --repository-id <repository-id> --body '{"branchRef":"<branch-ref>"}'
+  # Start its configured default agent
+  wade api start-workspace --workspace-id <workspace-id>
+
+`
 )
 
 type daemonLifecycle interface {
@@ -97,7 +106,7 @@ func (c Controller) writeCommandList(operations []Operation) error {
 
 	var listing strings.Builder
 	listing.WriteString("Usage: wade api <command> [flags]\n\n")
-	listing.WriteString("Call the WADE HTTP API. Commands are derived from the OpenAPI specification.\n\n")
+	listing.WriteString(apiCommandListPreamble)
 	listing.WriteString("Commands\n")
 	for _, operation := range operations {
 		fmt.Fprintf(&listing, "  %-*s  %s\n", widest, operation.Command, operation.Summary)

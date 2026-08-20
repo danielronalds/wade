@@ -1119,6 +1119,37 @@ paths:
       summary: Create a review snapshot
       tags:
       - Review snapshots
+  /api/v1/workspaces/{workspaceId}/start:
+    post:
+      operationId: startWorkspace
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Terminal'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/Problem'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/Problem'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Problem'
+      summary: Start the workspace's default agent
+      tags:
+      - Workspaces
   /api/v1/workspaces/{workspaceId}/terminals:
     delete:
       operationId: deleteWorkspaceTerminals
@@ -1251,7 +1282,8 @@ paths:
         name: workspaceId
         required: true
         type: string
-      - description: Terminal ID
+      - description: 'Terminal ID: misc; server; scratchpad; or agent:<lowercase-agent-name>
+          for a configured agent'
         in: path
         name: terminalId
         required: true

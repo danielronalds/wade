@@ -10,6 +10,7 @@ func (s *Server) registerRoutes(controllerSet controllers.Controllers) {
 	s.Mux.HandleFunc("GET /api/v1/workspaces", controllerSet.Workspaces.List)
 	s.Mux.HandleFunc("POST /api/v1/workspaces", controllerSet.Workspaces.Materialise)
 	s.Mux.HandleFunc("GET /api/v1/workspaces/{workspaceId}", controllerSet.Workspaces.Get)
+	s.Mux.HandleFunc("POST /api/v1/workspaces/{workspaceId}/start", controllerSet.Workspaces.Start)
 
 	s.Mux.HandleFunc("GET /api/v1/remote-repositories", controllerSet.RemoteRepositories.List)
 	s.Mux.HandleFunc("GET /api/v1/repositories/{repositoryId}", controllerSet.Repositories.Get)

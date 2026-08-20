@@ -130,6 +130,26 @@ func (h Workspaces) Get(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, workspace)
 }
 
+// Start starts or reconnects to the workspace's configured default agent terminal.
+// @Summary Start the workspace's default agent
+// @ID startWorkspace
+// @Tags Workspaces
+// @Produce json
+// @Param workspaceId path string true "Workspace ID"
+// @Success 200 {object} terminals.Terminal
+// @Failure 404 {object} Problem
+// @Failure 422 {object} Problem
+// @Failure 500 {object} Problem
+// @Router /api/v1/workspaces/{workspaceId}/start [post]
+func (h Workspaces) Start(w http.ResponseWriter, r *http.Request) {
+	terminal, err := h.terminals.StartDefaultAgent(r.Context(), r.PathValue("workspaceId"))
+	if err != nil {
+		writeModelError(w, err, "Unable to start the workspace's default agent.")
+		return
+	}
+	writeJSON(w, http.StatusOK, terminal)
+}
+
 // Materialise creates and enriches a workspace from a remote repository.
 // @Summary Materialise a remote repository as a workspace
 // @ID materialiseWorkspace

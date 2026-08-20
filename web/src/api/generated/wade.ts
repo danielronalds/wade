@@ -762,6 +762,30 @@ export const createReviewSnapshot = async (workspaceId: string, options?: Parame
 
 
 
+export const getStartWorkspaceUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/v1/workspaces/${encodeURIComponent(String(workspaceId))}/start`
+}
+
+/**
+ * @summary Start the workspace's default agent
+ */
+export const startWorkspace = async (workspaceId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<Terminal> => {
+
+  return wadeFetch<Terminal>(getStartWorkspaceUrl(workspaceId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
 export const getListWorkspaceTerminalsUrl = (workspaceId: string,) => {
 
 

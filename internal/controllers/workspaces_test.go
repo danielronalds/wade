@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"wade/internal/models/repositories"
+	"wade/internal/models/terminals"
 	"wade/internal/models/workspaces"
 )
 
@@ -46,6 +47,30 @@ func TestListWorkspacesUsesTargetedActiveLoadingAndFilters(t *testing.T) {
 	}
 	if !reflect.DeepEqual(repositoryModel.targetedWorkspaceIDCall, []string{"wade", "notes"}) {
 		t.Fatalf("targeted context IDs = %#v", repositoryModel.targetedWorkspaceIDCall)
+	}
+}
+
+func TestStartWorkspaceReturnsDefaultAgentTerminal(t *testing.T) {
+	terminalModel := &fakeTerminalsModel{startDefaultItem: terminals.Terminal{ID: "agent:pi", WorkspaceID: "wade", Role: terminals.TerminalRoleAgent}}
+	handler := NewWorkspaces(&fakeWorkspacesModel{}, &fakeRepositoriesModel{}, terminalModel)
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/wade/start", nil)
+	request.SetPathValue("workspaceId", "wade")
+	response := httptest.NewRecorder()
+
+	handler.Start(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
+	}
+	var terminal terminals.Terminal
+	if err := json.Unmarshal(response.Body.Bytes(), &terminal); err != nil {
+		t.Fatal(err)
+	}
+	if terminal.ID != "agent:pi" || terminal.WorkspaceID != "wade" {
+		t.Fatalf("terminal = %#v", terminal)
+	}
+	if terminalModel.startDefaultCalls != 1 {
+		t.Fatalf("StartDefaultAgent() calls = %d, want 1", terminalModel.startDefaultCalls)
 	}
 }
 

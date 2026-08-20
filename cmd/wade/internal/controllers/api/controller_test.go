@@ -79,6 +79,7 @@ func TestHandleArgsWritesOperationHelp(t *testing.T) {
 		"PUT /api/v1/workspaces/{workspaceId}/terminals/{terminalId}",
 		"--workspace-id",
 		"--terminal-id",
+		"misc; server; scratchpad; or agent:<lowercase-agent-name> for a configured agent",
 		"--address",
 		"(required)",
 	} {
@@ -88,6 +89,29 @@ func TestHandleArgsWritesOperationHelp(t *testing.T) {
 	}
 	if strings.Contains(help, "--body") {
 		t.Fatalf("help %q offers --body for a bodyless operation", help)
+	}
+}
+
+func TestHandleArgsWritesOfflinePreambleAndExamples(t *testing.T) {
+	var output bytes.Buffer
+	controller := newTestController(&output, strings.NewReader(""))
+
+	if _, err := controller.HandleArgs([]string{"api"}); err != nil {
+		t.Fatalf("HandleArgs() error = %v, want nil", err)
+	}
+
+	for _, expected := range []string{
+		"Use WADE's local HTTP API",
+		"WADE must be running",
+		"detected automatically",
+		"--address",
+		"wade api create-repository-worktree --repository-id <repository-id>",
+		"<branch-ref>",
+		"wade api start-workspace --workspace-id <workspace-id>",
+	} {
+		if !strings.Contains(output.String(), expected) {
+			t.Fatalf("output %q does not contain %q", output.String(), expected)
+		}
 	}
 }
 
