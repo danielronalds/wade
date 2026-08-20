@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useWorkspaceDetailsStore } from '@/stores/useWorkspaceDetailsStore';
 import GitHubIcon from '@/components/icons/GitHubIcon.vue';
 import LinearIcon from '@/components/icons/LinearIcon.vue';
+import { getWorkspacePresentation, type WorkspacePresentation } from '@/features/workspaces/workspacePresentation';
 
 const props = defineProps<{
   workspaceId: string;
@@ -21,13 +22,35 @@ const { clipboardAnnouncement, copiedWorkspaceLink, copyWorkspaceLink } = useWor
 const workspaceDetails = computed(() => workspaceDetailsStore.getWorkspaceDetails(props.workspaceId));
 const isWorkspaceDetailsLoading = computed(() => workspaceDetailsStore.isWorkspaceDetailsLoading(props.workspaceId));
 const isWaitingForWorkspaceDetails = computed(() => isWorkspaceDetailsLoading.value && !workspaceDetails.value);
+const workspaceDetailsError = computed(() => workspaceDetailsStore.getWorkspaceDetailsError(props.workspaceId));
+const isWorkspaceDetailsPending = computed(
+  () => isWorkspaceDetailsLoading.value || (!workspaceDetails.value && workspaceDetailsError.value === '')
+);
 const isLinearEnabled = computed(() => settingsStore.settings.linear.enabled);
-const gitBranch = computed(() => workspaceDetails.value?.branch?.name ?? '');
 const githubUrl = computed(() => workspaceDetails.value?.links.repository ?? '');
 const linearTicketUrl = computed(() => workspaceDetails.value?.links.issue?.url ?? '');
 const pullRequestUrl = computed(() => workspaceDetails.value?.links.pullRequest ?? '');
 
-const workspaceDisplayName = computed(() => workspaceDetails.value?.name ?? props.workspaceId);
+const workspacePresentation = computed<WorkspacePresentation>(() => {
+  if (isWorkspaceDetailsPending.value) {
+    return {
+      root: 'Loading workspace...',
+      branch: '',
+      title: 'Loading workspace...'
+    };
+  }
+
+  if (workspaceDetailsError.value !== '' || !workspaceDetails.value) {
+    return {
+      root: props.workspaceId,
+      branch: '',
+      title: props.workspaceId
+    };
+  }
+
+  return getWorkspacePresentation(workspaceDetails.value);
+});
+
 const isLinearTicketButtonDisabled = computed(() => isWorkspaceDetailsLoading.value || linearTicketUrl.value === '');
 const isPullRequestButtonDisabled = computed(() => pullRequestUrl.value === '');
 const isGitHubButtonDisabled = computed(() => githubUrl.value === '');
@@ -82,14 +105,6 @@ const gitHubCopyButtonTitle = computed(() =>
 const reloadButtonTitle = computed(() =>
   isWorkspaceDetailsLoading.value ? 'Loading workspace details' : 'Reload workspace details'
 );
-const gitBranchLabel = computed(() => {
-  if (isWaitingForWorkspaceDetails.value) {
-    return 'Loading branch';
-  }
-
-  return gitBranch.value || 'No branch';
-});
-
 const openExternalUrl = (url: string) => {
   if (url === '') {
     return;
@@ -131,10 +146,12 @@ const reloadWorkspaceDetails = () => {
   <header id="workspace-topbar">
     <h1 id="workspace-summary">
       <RouterLink id="brand" :to="{ name: 'home' }">WADE</RouterLink>
-      <span id="workspace-name" :title="workspaceId">{{ workspaceDisplayName }}</span>
-      <span id="git-branch" :title="gitBranchLabel">
-        <GitBranch :size="14" :stroke-width="1.75" aria-hidden="true" />
-        <span>{{ gitBranchLabel }}</span>
+      <span id="workspace-presentation" :title="workspacePresentation.title">
+        <span id="workspace-name">{{ workspacePresentation.root }}</span>
+        <span v-if="workspacePresentation.branch !== ''" id="git-branch">
+          <GitBranch :size="14" :stroke-width="1.75" aria-hidden="true" />
+          <span>{{ workspacePresentation.branch }}</span>
+        </span>
       </span>
     </h1>
     <section id="workspace-actions" aria-label="Workspace actions">
@@ -263,39 +280,34 @@ const reloadWorkspaceDetails = () => {
   text-decoration: underline;
 }
 
-#workspace-name {
-  flex: 0 1 auto;
-  margin: 0;
+#workspace-presentation {
+  min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
-  color: var(--muted);
+  color: var(--text);
   font-size: 14px;
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+#workspace-name {
+  color: var(--text);
+}
+
 #git-branch {
-  min-width: 0;
-  max-width: 45vw;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin: 0;
-  overflow: hidden;
-  color: var(--text);
+  margin-left: 12px;
+  color: var(--muted);
   font-size: 13px;
   line-height: 1;
-  white-space: nowrap;
+  vertical-align: middle;
 }
 
 #git-branch svg {
   flex: 0 0 auto;
-}
-
-#git-branch span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 #workspace-actions {

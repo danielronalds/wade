@@ -1,4 +1,4 @@
-import { computed, readonly, type Ref } from 'vue';
+import { computed, type Ref } from 'vue';
 
 export type FuzzyMatch<T> = {
   item: T;
@@ -89,10 +89,30 @@ const scoreLabel = <T>(item: T, label: string, rawQuery: string): FuzzyMatch<T> 
   };
 };
 
-export const useFuzzyItems = <T>(items: Ref<readonly T[]>, query: Ref<string>, getLabel: (item: T) => string) => {
-  const matchingItems = computed(() =>
+export const useFuzzyItems = <T>(
+  items: Ref<readonly T[]>,
+  query: Ref<string>,
+  getLabel: (item: T) => string,
+  getSearchCandidates: (item: T) => readonly string[] = (item) => [getLabel(item)]
+) => {
+  const matchingItems = computed<readonly FuzzyMatch<T>[]>(() =>
     items.value
-      .map((item) => scoreLabel(item, getLabel(item), query.value))
+      .map((item) => {
+        const match = getSearchCandidates(item)
+          .map((candidate) => scoreLabel(item, candidate, query.value))
+          .filter((candidateMatch): candidateMatch is FuzzyMatch<T> => Boolean(candidateMatch))
+          .sort((firstMatch, secondMatch) => secondMatch.score - firstMatch.score)[0];
+
+        if (!match) {
+          return undefined;
+        }
+
+        return {
+          item,
+          label: getLabel(item),
+          score: match.score
+        };
+      })
       .filter((match): match is FuzzyMatch<T> => Boolean(match))
       .sort((firstMatch, secondMatch) => {
         if (firstMatch.score !== secondMatch.score) {
@@ -104,6 +124,6 @@ export const useFuzzyItems = <T>(items: Ref<readonly T[]>, query: Ref<string>, g
   );
 
   return {
-    matchingItems: readonly(matchingItems)
+    matchingItems
   };
 };

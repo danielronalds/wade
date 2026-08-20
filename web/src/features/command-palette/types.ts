@@ -1,3 +1,5 @@
+import type { Component } from 'vue';
+
 export type PaletteNoticeTone = 'warning' | 'error';
 
 export type PaletteNotice = {
@@ -9,7 +11,10 @@ export type PaletteNotice = {
 export type PaletteResult = {
   id: string;
   label: string;
-  actionLabel: string;
+  secondaryLabel?: string;
+  icon?: Component;
+  title?: string;
+  actionLabel?: string;
   isDisabled: boolean;
   run: () => void;
 };
