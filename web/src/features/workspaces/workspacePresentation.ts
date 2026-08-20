@@ -8,10 +8,26 @@ export type WorkspacePresentation = {
   title: string;
 };
 
-export const getWorkspaceDisplayRoot = (workspace: WorkspacePresentationInput) =>
-  workspace.repositoryId ?? workspace.name;
+export const getWorkspaceSearchCandidates = (workspace: WorkspacePresentationInput) => [
+  workspace.name,
+  ...(workspace.repositoryId ? [workspace.repositoryId] : []),
+  ...(workspace.repositoryId && workspace.branch?.name ? [workspace.branch.name] : [])
+];
 
-export const getWorkspaceBranchDisplay = (workspace: WorkspacePresentationInput) => {
+export const getWorkspacePresentation = (workspace: WorkspacePresentationInput): WorkspacePresentation => {
+  const root = getWorkspaceDisplayRoot(workspace);
+  const branch = getWorkspaceDisplayBranch(workspace);
+
+  return {
+    root,
+    branch,
+    title: branch === '' ? root : `${root} ${branch}`
+  };
+};
+
+const getWorkspaceDisplayRoot = (workspace: WorkspacePresentationInput) => workspace.repositoryId ?? workspace.name;
+
+const getWorkspaceDisplayBranch = (workspace: WorkspacePresentationInput) => {
   if (!workspace.repositoryId || !workspace.branch) {
     return '';
   }
@@ -21,21 +37,4 @@ export const getWorkspaceBranchDisplay = (workspace: WorkspacePresentationInput)
   }
 
   return workspace.branch.name;
-};
-
-export const getWorkspaceSearchCandidates = (workspace: WorkspacePresentationInput) => [
-  workspace.name,
-  ...(workspace.repositoryId ? [workspace.repositoryId] : []),
-  ...(workspace.repositoryId && workspace.branch?.name ? [workspace.branch.name] : [])
-];
-
-export const getWorkspacePresentation = (workspace: WorkspacePresentationInput): WorkspacePresentation => {
-  const root = getWorkspaceDisplayRoot(workspace);
-  const branch = getWorkspaceBranchDisplay(workspace);
-
-  return {
-    root,
-    branch,
-    title: branch === '' ? root : `${root} ${branch}`
-  };
 };
