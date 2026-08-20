@@ -181,9 +181,13 @@ useWorkspaceKeyboardShortcuts({
 });
 
 watch(
-  () => [settingsStore.settings.linear.enabled, settingsStore.settings.linear.workspace] as const,
-  ([enabled]) => {
-    if (enabled) {
+  [
+    () => settingsStore.settings.linear.enabled,
+    () => settingsStore.settings.linear.workspace,
+    () => settingsStore.hasLoaded
+  ],
+  ([enabled], [, , settingsWereLoaded]) => {
+    if (settingsWereLoaded && enabled) {
       void workspaceDetailsStore.refreshWorkspaceDetails(props.workspaceId);
     }
   }
