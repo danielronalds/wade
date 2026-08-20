@@ -197,7 +197,7 @@ onMounted(() => {
         <section id="linear-section" aria-labelledby="linear-title">
           <header class="settings-section-header">
             <section>
-              <h2 id="linear-title">Linear Integration</h2>
+              <h2 id="linear-title">Linear integration</h2>
               <p>Resolve ticket keys in branch names against a Linear workspace.</p>
             </section>
           </header>
