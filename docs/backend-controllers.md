@@ -82,7 +82,7 @@ The controller owns snapshot resource locations and HTTP response semantics. Sna
 
 ## Settings
 
-The `Settings` controller loads, updates and reloads settings. After an update or reload, it maps and applies the resolved runtime configuration across the running application.
+The `Settings` controller loads, updates and reloads settings. After an update or reload, it maps and applies the resolved runtime configuration across the running application, including optional Linear integration configuration owned by the workspaces Model.
 
 A controller-level mutex covers persistence and all runtime configuration calls so concurrent requests cannot apply settings out of order. The controller is stored and called by pointer to prevent this mutex from being copied.
 

@@ -122,14 +122,22 @@ A complete configuration looks like this:
   "copyIgnoredFilesOnWorktreeCreation": false,
   "openWorktreesInNewTabs": false,
   "worktreeCopyExcludes": [],
-  "themeAccentColor": "white"
+  "themeAccentColor": "white",
+  "linear": {
+    "enabled": false,
+    "workspace": ""
+  }
 }
 ```
 
 Workspace directories may use `~` or absolute paths. Leave `shell` empty to use
-the server's `$SHELL`. Exactly one configured agent must be the default. Safe
-changes can be applied without restarting through **Reload Settings** in the
-command palette.
+the server's `$SHELL`. Exactly one configured agent must be the default.
+
+Linear integration is optional. When enabled, `linear.workspace` must be the
+workspace slug from `linear.app/<workspace>`, such as `signinsolutions`.
+
+Safe changes can be applied without restarting through **Reload Settings** in
+the command palette.
 
 ## Server address
 

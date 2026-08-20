@@ -4,10 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 )
+
+var linearWorkspacePattern = regexp.MustCompile(`^[A-Za-z0-9._~-]+$`)
 
 func normaliseAndValidateSettings(settings Settings, homeDirectory string, files FileSystem, environment Environment) (Settings, error) {
 	settings = cloneSettings(settings)
@@ -35,6 +38,11 @@ func normaliseAndValidateSettings(settings Settings, homeDirectory string, files
 
 	settings.ThemeAccentColor = normaliseThemeAccentColor(settings.ThemeAccentColor)
 	if err := validateThemeAccentColor(settings.ThemeAccentColor); err != nil {
+		return Settings{}, err
+	}
+
+	settings.Linear.Workspace = strings.TrimSpace(settings.Linear.Workspace)
+	if err := validateLinearSettings(settings.Linear); err != nil {
 		return Settings{}, err
 	}
 
@@ -139,6 +147,22 @@ func validateWorktreeCopyExcludes(excludes []string) error {
 		if !doublestar.ValidatePattern(pattern) {
 			return fmt.Errorf("invalid worktree copy exclude pattern %q", pattern)
 		}
+	}
+	return nil
+}
+
+func validateLinearSettings(linear LinearSettings) error {
+	if !linear.Enabled {
+		return nil
+	}
+	if linear.Workspace == "" {
+		return errors.New("linear workspace is required when the integration is enabled")
+	}
+	if linear.Workspace == "." || linear.Workspace == ".." {
+		return fmt.Errorf("linear workspace %q is not a valid workspace slug", linear.Workspace)
+	}
+	if !linearWorkspacePattern.MatchString(linear.Workspace) {
+		return fmt.Errorf("linear workspace %q contains unsupported characters", linear.Workspace)
 	}
 	return nil
 }

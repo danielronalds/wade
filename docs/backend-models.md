@@ -19,7 +19,7 @@ Related concepts remain within their owning aggregate, such as worktrees and bra
 
 The `workspaces` Model owns workspace discovery, identity, lookup, materialisation and provider links. It lists all or selected workspaces, loads individual workspaces and clones remote repositories into configured destinations.
 
-It works with `filesystem` workspace discovery, along with `github` and `linear` clients. Workspace state is read fresh, while conflicting materialisations are serialised by workspace identity and target path.
+It works with `filesystem` workspace discovery, along with `github` and `linear` clients. Workspace state is read fresh, while conflicting materialisations are serialised by workspace identity and target path. Its runtime configuration controls whether Linear resolution is enabled and supplies the current workspace slug to the stateless provider client.
 
 Controllers add repository context and terminal activity to workspace responses. Provider-link enrichment is best-effort, so optional GitHub or Linear failures do not prevent workspace loading.
 
@@ -59,6 +59,6 @@ Snapshot scopes use captured file identity and pinned revisions. The `current` s
 
 The `settings` Model owns persisted settings and their resolved runtime configuration. It ensures the settings file exists, loads startup configuration, persists updates and reloads out-of-band changes.
 
-It uses the `filesystem` settings-file capability and `environment` infrastructure. Persistence mutations are serialised while defaults, validation, legacy keys, unknown keys, normalisation and environment precedence are preserved.
+It uses the `filesystem` settings-file capability and `environment` infrastructure. Persistence mutations are serialised while defaults, validation, legacy keys, unknown keys, normalisation and environment precedence are preserved. Optional provider configuration is validated here and included in the neutral runtime configuration applied to owning Models.
 
 `settings` remains independent of other Models. The HTTP controller coordinates runtime reconfiguration, while the CLI and server startup share the same `settings` Model.

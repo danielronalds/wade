@@ -28,5 +28,5 @@ type GitHub interface {
 
 // Linear resolves an optional ticket associated with a branch.
 type Linear interface {
-	TicketForBranch(branch string) (*linear.Ticket, error)
+	TicketForBranch(workspace string, branch string) (*linear.Ticket, error)
 }

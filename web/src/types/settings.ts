@@ -1,7 +1,7 @@
-import type { Agent, Settings } from '@/api/generated/wade';
+import type { Agent, LinearSettings, Settings } from '@/api/generated/wade';
 import { defaultThemeAccentColor, normaliseThemeAccentColor } from '@/utils/theme';
 
-export type { Agent, Settings };
+export type { Agent, LinearSettings, Settings };
 
 export const defaultAgents: Agent[] = [
   { name: 'Pi', command: 'pi -c', default: true },
@@ -15,7 +15,11 @@ export const createEmptySettings = (): Settings => ({
   copyIgnoredFilesOnWorktreeCreation: false,
   openWorktreesInNewTabs: false,
   worktreeCopyExcludes: [],
-  themeAccentColor: defaultThemeAccentColor
+  themeAccentColor: defaultThemeAccentColor,
+  linear: {
+    enabled: false,
+    workspace: ''
+  }
 });
 
 export const cloneAgents = (agents: readonly Agent[]): Agent[] => agents.map((agent) => ({ ...agent }));
@@ -27,7 +31,8 @@ export const cloneSettings = (settings: Settings): Settings => ({
   copyIgnoredFilesOnWorktreeCreation: settings.copyIgnoredFilesOnWorktreeCreation,
   openWorktreesInNewTabs: settings.openWorktreesInNewTabs,
   worktreeCopyExcludes: [...settings.worktreeCopyExcludes],
-  themeAccentColor: settings.themeAccentColor
+  themeAccentColor: settings.themeAccentColor,
+  linear: { ...settings.linear }
 });
 
 export const normaliseWorkspaceDirectories = (directories: readonly string[]) =>
@@ -52,8 +57,18 @@ export const normaliseSettings = (settings: Settings): Settings => ({
   copyIgnoredFilesOnWorktreeCreation: settings.copyIgnoredFilesOnWorktreeCreation,
   openWorktreesInNewTabs: settings.openWorktreesInNewTabs,
   worktreeCopyExcludes: normaliseWorktreeCopyExcludes(settings.worktreeCopyExcludes),
-  themeAccentColor: normaliseThemeAccentColor(settings.themeAccentColor)
+  themeAccentColor: normaliseThemeAccentColor(settings.themeAccentColor),
+  linear: {
+    enabled: settings.linear.enabled,
+    workspace: settings.linear.workspace.trim()
+  }
 });
+
+export const isValidLinearWorkspace = (workspace: string) => {
+  const trimmedWorkspace = workspace.trim();
+
+  return trimmedWorkspace !== '.' && trimmedWorkspace !== '..' && /^[A-Za-z0-9._~-]+$/.test(trimmedWorkspace);
+};
 
 export const isValidShell = (shell: string) => shell.trim().split(/\s+/).filter(Boolean).length <= 1;
 

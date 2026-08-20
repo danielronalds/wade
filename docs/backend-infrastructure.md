@@ -43,9 +43,9 @@ Commands run with bounded contexts and provider output is parsed before being re
 
 ## Linear
 
-The `linear` module identifies Linear ticket keys embedded in branch names and builds issue references for the configured workspace. A branch without a ticket key returns no result rather than an error.
+The `linear` module identifies Linear ticket keys embedded in branch names and builds issue references for a workspace slug supplied to each call. A branch without a ticket key returns no result rather than an error.
 
-The module contains only provider-specific parsing and URL construction. The `workspaces` Model maps its technical ticket value into workspace link resources and decides how resolution failures affect enrichment.
+The client is stateless and contains only provider-specific parsing and URL construction. The `workspaces` Model owns enablement and workspace-selection policy, maps the technical ticket value into workspace link resources and decides how resolution failures affect enrichment.
 
 ## PTY
 

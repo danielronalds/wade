@@ -30,6 +30,7 @@ func TestUpdateSettingsDecodesModelResourceAndConfiguresRuntimeModels(t *testing
 			Agents:                             requested.Agents,
 			CopyIgnoredFilesOnWorktreeCreation: true,
 			WorktreeCopyExcludes:               []string{"node_modules"},
+			Linear:                             settings.LinearSettings{Enabled: true, Workspace: "example"},
 		},
 	}
 	settingsModel := &fakeSettingsModel{updateResult: result}
@@ -52,7 +53,10 @@ func TestUpdateSettingsDecodesModelResourceAndConfiguresRuntimeModels(t *testing
 	if !reflect.DeepEqual(settingsModel.updated, requested) {
 		t.Fatalf("Update() request = %#v", settingsModel.updated)
 	}
-	wantWorkspaceConfiguration := workspaces.Configuration{WorkspaceDirectories: []workspaces.WorkspaceDirectory{{Setting: "~/Code", Path: "/home/test/Code"}}}
+	wantWorkspaceConfiguration := workspaces.Configuration{
+		WorkspaceDirectories: []workspaces.WorkspaceDirectory{{Setting: "~/Code", Path: "/home/test/Code"}},
+		Linear:               workspaces.LinearConfiguration{Enabled: true, Workspace: "example"},
+	}
 	if !reflect.DeepEqual(workspaceModel.configuration, wantWorkspaceConfiguration) {
 		t.Fatalf("workspace configuration = %#v", workspaceModel.configuration)
 	}

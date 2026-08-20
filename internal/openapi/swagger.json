@@ -1288,6 +1288,21 @@
                 }
             }
         },
+        "LinearSettings": {
+            "type": "object",
+            "required": [
+                "enabled",
+                "workspace"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "workspace": {
+                    "type": "string"
+                }
+            }
+        },
         "MaterialiseWorkspaceRequest": {
             "type": "object",
             "required": [
@@ -1623,6 +1638,7 @@
             "required": [
                 "agents",
                 "copyIgnoredFilesOnWorktreeCreation",
+                "linear",
                 "openWorktreesInNewTabs",
                 "shell",
                 "themeAccentColor",
@@ -1638,6 +1654,9 @@
                 },
                 "copyIgnoredFilesOnWorktreeCreation": {
                     "type": "boolean"
+                },
+                "linear": {
+                    "$ref": "#/definitions/LinearSettings"
                 },
                 "openWorktreesInNewTabs": {
                     "type": "boolean"

@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+
+	"wade/internal/infrastructure/linear"
 )
 
 type workspaceDiscoveryStub struct {
@@ -31,6 +33,17 @@ func (stub *workspaceDiscoveryStub) Directories() []string {
 
 func (stub *workspaceDiscoveryStub) Reload(directories []string) {
 	stub.directories = append([]string(nil), directories...)
+}
+
+type workspaceLinearStub struct {
+	calls      int
+	workspaces []string
+}
+
+func (stub *workspaceLinearStub) TicketForBranch(workspace string, branch string) (*linear.Ticket, error) {
+	stub.calls++
+	stub.workspaces = append(stub.workspaces, workspace)
+	return &linear.Ticket{Key: "ABC-123", URL: "https://linear.app/" + workspace + "/issue/ABC-123"}, nil
 }
 
 type workspaceFileSystemStub struct {
@@ -109,6 +122,23 @@ func TestModelGetValidatesWorkspaceIdentity(t *testing.T) {
 	var notFound WorkspaceNotFoundError
 	if !errors.As(err, &notFound) {
 		t.Fatalf("Get() error = %v, want WorkspaceNotFoundError", err)
+	}
+}
+
+func TestModelResolveLinksUsesLatestEnabledLinearConfiguration(t *testing.T) {
+	linearClient := &workspaceLinearStub{}
+	model := New(workspaceFileSystemStub{}, &workspaceDiscoveryStub{}, &workspaceGitHubStub{}, linearClient, Configuration{})
+
+	links, err := model.ResolveLinks(context.Background(), LinkContext{BranchName: "abc-123"})
+	if err != nil || links.Issue != nil || linearClient.calls != 0 {
+		t.Fatalf("disabled ResolveLinks() = %#v, %v, calls %d", links, err, linearClient.calls)
+	}
+
+	model.Configure(Configuration{Linear: LinearConfiguration{Enabled: true, Workspace: "first"}})
+	model.Configure(Configuration{Linear: LinearConfiguration{Enabled: true, Workspace: "second"}})
+	links, err = model.ResolveLinks(context.Background(), LinkContext{BranchName: "abc-123"})
+	if err != nil || links.Issue == nil || links.Issue.URL != "https://linear.app/second/issue/ABC-123" {
+		t.Fatalf("enabled ResolveLinks() = %#v, %v", links, err)
 	}
 }
 

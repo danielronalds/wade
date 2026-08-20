@@ -31,7 +31,7 @@ func New(configuration settings.RuntimeConfiguration, settingsModel controllers.
 	discovery := filesystem.NewWorkspaceDiscovery(configuration.WorkspaceDirectoryPaths)
 	gitClient := git.NewClient()
 	githubClient := github.NewClient(github.RunCommand)
-	linearClient := linear.NewClient("signinsolutions")
+	linearClient := linear.NewClient()
 	ptyClient := pty.NewClient()
 
 	workspaceModel := workspaces.New(files, discovery, githubClient, linearClient, workspaceConfiguration(configuration))

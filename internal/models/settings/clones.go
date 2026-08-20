@@ -5,6 +5,7 @@ func cloneSettings(settings Settings) Settings {
 	cloned.WorkspaceDirectories = cloneStrings(settings.WorkspaceDirectories)
 	cloned.Agents = cloneAgents(settings.Agents)
 	cloned.WorktreeCopyExcludes = cloneStrings(settings.WorktreeCopyExcludes)
+	cloned.Linear = settings.Linear
 	return cloned
 }
 
@@ -14,6 +15,7 @@ func cloneRuntimeConfiguration(configuration RuntimeConfiguration) RuntimeConfig
 	cloned.WorkspaceDirectorySettings = cloneStrings(configuration.WorkspaceDirectorySettings)
 	cloned.Agents = cloneAgents(configuration.Agents)
 	cloned.WorktreeCopyExcludes = cloneStrings(configuration.WorktreeCopyExcludes)
+	cloned.Linear = configuration.Linear
 	return cloned
 }
 

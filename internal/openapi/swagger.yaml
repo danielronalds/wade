@@ -65,6 +65,16 @@ definitions:
     - provider
     - url
     type: object
+  LinearSettings:
+    properties:
+      enabled:
+        type: boolean
+      workspace:
+        type: string
+    required:
+    - enabled
+    - workspace
+    type: object
   MaterialiseWorkspaceRequest:
     properties:
       remoteRepositoryId:
@@ -297,6 +307,8 @@ definitions:
         type: array
       copyIgnoredFilesOnWorktreeCreation:
         type: boolean
+      linear:
+        $ref: '#/definitions/LinearSettings'
       openWorktreesInNewTabs:
         type: boolean
       shell:
@@ -318,6 +330,7 @@ definitions:
     required:
     - agents
     - copyIgnoredFilesOnWorktreeCreation
+    - linear
     - openWorktreesInNewTabs
     - shell
     - themeAccentColor
