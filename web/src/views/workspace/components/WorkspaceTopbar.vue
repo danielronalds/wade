@@ -7,7 +7,7 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useWorkspaceDetailsStore } from '@/stores/useWorkspaceDetailsStore';
 import GitHubIcon from '@/components/icons/GitHubIcon.vue';
 import LinearIcon from '@/components/icons/LinearIcon.vue';
-import { getWorkspacePresentation } from '@/features/workspaces/workspacePresentation';
+import { getWorkspacePresentation, type WorkspacePresentation } from '@/features/workspaces/workspacePresentation';
 
 const props = defineProps<{
   workspaceId: string;
@@ -31,7 +31,7 @@ const githubUrl = computed(() => workspaceDetails.value?.links.repository ?? '')
 const linearTicketUrl = computed(() => workspaceDetails.value?.links.issue?.url ?? '');
 const pullRequestUrl = computed(() => workspaceDetails.value?.links.pullRequest ?? '');
 
-const workspacePresentation = computed(() => {
+const workspacePresentation = computed<WorkspacePresentation>(() => {
   if (isWorkspaceDetailsPending.value) {
     return {
       root: 'Loading workspace...',
