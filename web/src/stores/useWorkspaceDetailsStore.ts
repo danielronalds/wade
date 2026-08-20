@@ -108,6 +108,7 @@ export const useWorkspaceDetailsStore = defineStore('workspace-details', () => {
     const refreshRequest = (async () => {
       let details: Readonly<Workspace> | undefined;
 
+      // Repeat until a request completes without a Linear configuration change in flight.
       while (true) {
         const requestedGeneration = refreshGenerations.get(workspaceId);
         const activeLoad = loadRequests.get(workspaceId);
