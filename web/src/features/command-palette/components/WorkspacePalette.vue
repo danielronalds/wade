@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { GitBranch } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import PaletteShell from '@/features/command-palette/components/PaletteShell.vue';
 import type { PaletteResult } from '@/features/command-palette/types';
 import { useFuzzyWorkspaces } from '@/features/workspaces/composables/useFuzzyWorkspaces';
 import { useWorkspaces } from '@/features/workspaces/composables/useWorkspaces';
+import { getWorkspacePresentation } from '@/features/workspaces/workspacePresentation';
 
 const emit = defineEmits<{
   close: [restoreFocus?: boolean];
@@ -51,15 +53,21 @@ const openWorkspace = async (workspaceId: string) => {
 };
 
 const paletteResults = computed<PaletteResult[]>(() =>
-  matchingWorkspaces.value.map((match) => ({
-    id: `workspace:${match.workspace.id}`,
-    label: match.workspace.name,
-    actionLabel: 'Open workspace',
-    isDisabled: false,
-    run: () => {
-      void openWorkspace(match.workspace.id);
-    }
-  }))
+  matchingWorkspaces.value.map((match) => {
+    const presentation = getWorkspacePresentation(match.workspace);
+
+    return {
+      id: `workspace:${match.workspace.id}`,
+      label: presentation.root,
+      secondaryLabel: presentation.branch || undefined,
+      icon: presentation.branch === '' ? undefined : GitBranch,
+      title: presentation.title,
+      isDisabled: false,
+      run: () => {
+        void openWorkspace(match.workspace.id);
+      }
+    };
+  })
 );
 
 onMounted(() => {

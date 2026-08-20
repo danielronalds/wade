@@ -164,9 +164,22 @@ onBeforeUnmount(() => {
                 :data-selected="String(index === selectedIndex)"
                 @mouseenter="selectedIndex = index"
                 @click="runResult(result)"
+                :title="result.title"
               >
-                <span>{{ result.label }}</span>
-                <span>{{ result.actionLabel }}</span>
+                <span class="command-palette-result-presentation">
+                  <span>{{ result.label }}</span>
+                  <span v-if="result.secondaryLabel" class="command-palette-result-secondary">
+                    <component
+                      v-if="result.icon"
+                      :is="result.icon"
+                      :size="14"
+                      :stroke-width="1.75"
+                      aria-hidden="true"
+                    />
+                    <span>{{ result.secondaryLabel }}</span>
+                  </span>
+                </span>
+                <span v-if="result.actionLabel" class="command-palette-result-action">{{ result.actionLabel }}</span>
               </button>
             </li>
           </ul>
@@ -349,14 +362,28 @@ onBeforeUnmount(() => {
   opacity: 0.55;
 }
 
-.command-palette-result span:first-child {
+.command-palette-result-presentation {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.command-palette-result span:last-child {
+.command-palette-result-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.command-palette-result-secondary svg {
+  flex: 0 0 auto;
+}
+
+.command-palette-result-action {
   flex: 0 0 auto;
   color: var(--muted);
   font-size: 12px;
