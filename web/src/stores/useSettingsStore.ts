@@ -34,8 +34,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const replaceSettings = (nextSettings: Settings) => {
     const replacement = cloneSettings(normaliseSettings(nextSettings));
     const linearConfigurationChanged =
-      state.settings.linear.enabled !== replacement.linear.enabled ||
-      state.settings.linear.workspace !== replacement.linear.workspace;
+      state.hasLoaded &&
+      (state.settings.linear.enabled !== replacement.linear.enabled ||
+        state.settings.linear.workspace !== replacement.linear.workspace);
 
     state.settings = replacement;
     if (linearConfigurationChanged) {
