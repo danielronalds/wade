@@ -1,7 +1,9 @@
 <!-- NOTE: Vibecoded and not suppppppper reviewed -->
 <script setup lang="ts">
 import {
+  BookOpen,
   Check,
+  Code2,
   Columns2,
   EyeOff,
   ListCollapse,
@@ -30,6 +32,7 @@ import {
   ReviewScope
 } from '@/types/review';
 import ReviewDiffViewer from '@/views/workspace/tabs/review/components/ReviewDiffViewer.vue';
+import ReviewMarkdownViewer from '@/views/workspace/tabs/review/components/ReviewMarkdownViewer.vue';
 
 const props = defineProps<{
   workspaceId: string;
@@ -86,6 +89,7 @@ const errorMessage = ref('');
 const sendErrorMessage = ref('');
 const fileRequestStates = ref<Record<string, FileRequestState>>({});
 const isSendingPrompt = ref(false);
+const renderMarkdown = ref(true);
 const startButton = ref<HTMLButtonElement | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
 const draftCommentTextarea = ref<HTMLTextAreaElement | null>(null);
@@ -342,6 +346,8 @@ const fileTreeRows = computed(() =>
 const activeFile = computed(() => reviewData.value?.files.find((file) => file.id === activeFileId.value) ?? null);
 const activeComparison = computed(() => getComparison(activeFile.value, activeScope.value));
 const activeFilePath = computed(() => activeComparison.value?.displayPath ?? activeFile.value?.path ?? '');
+const isActiveFileMarkdown = computed(() => /\.(md|markdown|mdown|mkd)$/i.test(activeFilePath.value));
+const showRenderedMarkdown = computed(() => isActiveFileMarkdown.value && renderMarkdown.value);
 const activeCacheKey = computed(() => (activeFile.value ? cacheKey(activeScope.value, activeFile.value.id) : ''));
 const activeFileRequestState = computed(() =>
   activeCacheKey.value ? fileRequestStates.value[activeCacheKey.value] : undefined
@@ -383,6 +389,14 @@ const renderSideBySideButtonLabel = computed(() =>
   renderSideBySide.value ? 'Use inline diff' : 'Use side-by-side diff'
 );
 const wrapLinesButtonLabel = computed(() => (wrapLines.value ? 'Disable line wrap' : 'Enable line wrap'));
+const markdownViewButtonLabel = computed(() =>
+  showRenderedMarkdown.value ? 'Show Markdown source' : 'Show rendered Markdown'
+);
+const reviewInstructions = computed(() =>
+  showRenderedMarkdown.value
+    ? 'Click a rendered content block to comment. Use j/k or arrows for files, r to mark reviewed, / to search.'
+    : 'Click a line number to comment. Use j/k or arrows for files, r to mark reviewed, / to search.'
+);
 const draftCommentTitle = computed(() => {
   if (!draftComment.value) {
     return '';
@@ -449,6 +463,14 @@ const toggleRenderSideBySide = () => {
 
 const toggleWrapLines = () => {
   wrapLines.value = !wrapLines.value;
+};
+
+const toggleMarkdownView = () => {
+  if (!isActiveFileMarkdown.value) {
+    return;
+  }
+
+  renderMarkdown.value = !renderMarkdown.value;
 };
 
 const toggleDirectoryCollapsed = (directoryPath: string) => {
@@ -711,7 +733,7 @@ const loadActiveFileContents = async () => {
 
 const createCommentId = () => `${Date.now()}:${Math.random().toString(16).slice(2)}`;
 
-const addLineComment = (payload: { side: Exclude<CommentSide, 'file'>; lineNumber: number }) => {
+const addLineComment = (payload: { side: Exclude<CommentSide, 'file'>; lineNumber: number; endLine?: number }) => {
   const file = activeFile.value;
   if (!file) {
     return;
@@ -726,7 +748,7 @@ const addLineComment = (payload: { side: Exclude<CommentSide, 'file'>; lineNumbe
       side: payload.side,
       kind: 'feedback',
       startLine: payload.lineNumber,
-      endLine: payload.lineNumber,
+      endLine: payload.endLine ?? payload.lineNumber,
       body: ''
     }
   ];
@@ -1091,7 +1113,7 @@ defineExpose({
           <section>
             <p class="review-kicker">{{ scopeLabel(activeScope) }}</p>
             <h2>{{ activeFilePath || 'No file selected' }}</h2>
-            <p>Click a line number to comment. Use j/k or arrows for files, r to mark reviewed, / to search.</p>
+            <p>{{ reviewInstructions }}</p>
           </section>
           <section class="review-header-actions" aria-label="Review actions">
             <section class="review-action-group" aria-label="Comment actions">
@@ -1117,6 +1139,19 @@ defineExpose({
             </section>
             <section class="review-action-group" aria-label="Editor view actions">
               <button
+                v-if="isActiveFileMarkdown"
+                class="review-icon-button"
+                type="button"
+                :data-active="String(showRenderedMarkdown)"
+                :title="markdownViewButtonLabel"
+                :aria-label="markdownViewButtonLabel"
+                @click="toggleMarkdownView"
+              >
+                <Code2 v-if="showRenderedMarkdown" :size="15" :stroke-width="1.8" aria-hidden="true" />
+                <BookOpen v-else :size="15" :stroke-width="1.8" aria-hidden="true" />
+              </button>
+              <button
+                v-if="!showRenderedMarkdown"
                 class="review-icon-button"
                 type="button"
                 :disabled="!activeComparison"
@@ -1129,6 +1164,7 @@ defineExpose({
                 <EyeOff v-else :size="15" :stroke-width="1.8" aria-hidden="true" />
               </button>
               <button
+                v-if="!showRenderedMarkdown"
                 class="review-icon-button"
                 type="button"
                 :data-active="String(wrapLines)"
@@ -1139,6 +1175,7 @@ defineExpose({
                 <TextWrap :size="15" :stroke-width="1.8" aria-hidden="true" />
               </button>
               <button
+                v-if="!showRenderedMarkdown"
                 class="review-icon-button"
                 type="button"
                 :disabled="!activeComparison"
@@ -1208,7 +1245,18 @@ defineExpose({
             <button type="button" @click="deleteComment(comment.id)">Delete</button>
           </article>
         </section>
+        <ReviewMarkdownViewer
+          v-if="showRenderedMarkdown"
+          :comments="activeFileInlineComments"
+          :contents="activeContents"
+          :is-loading="isActiveFileLoading"
+          @add-line-comment="addLineComment"
+          @delete-comment="deleteComment"
+          @toggle-comment-kind="toggleCommentKind"
+          @update-comment-body="updateCommentBody"
+        />
         <ReviewDiffViewer
+          v-else
           :comments="activeFileInlineComments"
           :contents="activeContents"
           :file-path="activeFilePath"
