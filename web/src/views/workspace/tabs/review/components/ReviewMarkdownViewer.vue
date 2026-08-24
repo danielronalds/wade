@@ -3,6 +3,7 @@
 import MarkdownIt from 'markdown-it';
 import { computed, nextTick, ref, watch } from 'vue';
 import type { CommentSide, ReviewComment, ReviewFileContents } from '@/types/review';
+import MermaidDiagram from './MermaidDiagram.vue';
 
 type InlineCommentSide = Exclude<CommentSide, 'file'>;
 
@@ -11,6 +12,7 @@ type MarkdownBlock = {
   startLine: number;
   endLine: number;
   html: string;
+  mermaidSource: string | null;
   isList: boolean;
 };
 
@@ -76,11 +78,17 @@ const renderMarkdownBlocks = (source: string) => {
     }
 
     const firstTokenType = blockTokens[0]?.type;
+    const mermaidToken = blockTokens.length === 1 ? blockTokens[0] : null;
+    const mermaidSource =
+      mermaidToken?.type === 'fence' && mermaidToken.info.trim().split(/\s+/)[0]?.toLowerCase() === 'mermaid'
+        ? mermaidToken.content
+        : null;
     blocks.push({
       id: `${startLine}:${endLine}:${blocks.length}`,
       startLine,
       endLine: Math.max(startLine, endLine),
       html: markdown.renderer.render(blockTokens, markdown.options, environment),
+      mermaidSource,
       isList: firstTokenType === 'bullet_list_open' || firstTokenType === 'ordered_list_open'
     });
     blockTokens = [];
@@ -159,7 +167,7 @@ const addBlockComment = (block: MarkdownBlock) => {
 };
 
 const handleBlockClick = (block: MarkdownBlock, event: MouseEvent) => {
-  if (!(event.target instanceof HTMLElement)) {
+  if (!(event.target instanceof Element)) {
     return;
   }
 
@@ -204,7 +212,10 @@ watch(commentSignature, async () => {
         @click="handleBlockClick(block, $event)"
         @keydown.enter.self.prevent="addBlockComment(block)"
       >
-        <section class="markdown-rendered-content" v-html="block.html"></section>
+        <section class="markdown-rendered-content">
+          <MermaidDiagram v-if="block.mermaidSource !== null" :source="block.mermaidSource ?? ''" />
+          <section v-else v-html="block.html"></section>
+        </section>
         <section
           v-if="commentsForBlock(block).length > 0"
           class="markdown-inline-comments"
