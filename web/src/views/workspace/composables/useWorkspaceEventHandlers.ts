@@ -6,12 +6,14 @@ type WorkspaceEventHandlersOptions = {
   cancelReview: () => Promise<void>;
   getWorkspaceId: () => string;
   startReview: () => Promise<void>;
+  submitReview: () => Promise<void>;
 };
 
 export const useWorkspaceEventHandlers = ({
   cancelReview,
   getWorkspaceId,
-  startReview
+  startReview,
+  submitReview
 }: WorkspaceEventHandlersOptions) => {
   let unregisterEventHandlers: (() => void) | undefined;
 
@@ -30,6 +32,13 @@ export const useWorkspaceEventHandlers = ({
         }
 
         await startReview();
+      },
+      submitReview: async ({ workspaceId }) => {
+        if (workspaceId !== getWorkspaceId()) {
+          return;
+        }
+
+        await submitReview();
       }
     });
   });
