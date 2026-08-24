@@ -167,10 +167,15 @@ const cancelReviewFromCommandPalette = async () => {
   await reviewTab.value?.cancelReview();
 };
 
+const submitReviewFromCommandPalette = async () => {
+  await reviewTab.value?.finishReview();
+};
+
 useWorkspaceEventHandlers({
   cancelReview: cancelReviewFromCommandPalette,
   getWorkspaceId: () => props.workspaceId,
-  startReview: startReviewFromCommandPalette
+  startReview: startReviewFromCommandPalette,
+  submitReview: submitReviewFromCommandPalette
 });
 
 useWorkspaceKeyboardShortcuts({

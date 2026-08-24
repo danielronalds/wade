@@ -7,17 +7,23 @@ import {
   registerStartReviewEventHandler,
   type StartReviewEventHandler
 } from '@/views/workspace/tabs/review/events/startReview';
+import {
+  registerSubmitReviewEventHandler,
+  type SubmitReviewEventHandler
+} from '@/views/workspace/tabs/review/events/submitReview';
 
 type RegisteredEventHandlers = {
   cancelReview?: CancelReviewEventHandler;
   startReview?: StartReviewEventHandler;
+  submitReview?: SubmitReviewEventHandler;
 };
 
 export const registerEventHandlers = (handlers: RegisteredEventHandlers) => {
   // Event handlers are optional so each screen can subscribe only to events it understands while still receiving one cleanup callback.
   const unregisterHandlers = [
     handlers.cancelReview ? registerCancelReviewEventHandler(handlers.cancelReview) : undefined,
-    handlers.startReview ? registerStartReviewEventHandler(handlers.startReview) : undefined
+    handlers.startReview ? registerStartReviewEventHandler(handlers.startReview) : undefined,
+    handlers.submitReview ? registerSubmitReviewEventHandler(handlers.submitReview) : undefined
   ].filter((unregister): unregister is () => void => Boolean(unregister));
 
   return () => {

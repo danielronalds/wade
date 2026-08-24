@@ -14,6 +14,7 @@ import { useWorkspaceSessionStore } from '@/stores/useWorkspaceSessionStore';
 import { isReviewInProgressState } from '@/types/review';
 import { dispatchCancelReviewEvent } from '@/views/workspace/tabs/review/events/cancelReview';
 import { dispatchStartReviewEvent } from '@/views/workspace/tabs/review/events/startReview';
+import { dispatchSubmitReviewEvent } from '@/views/workspace/tabs/review/events/submitReview';
 
 const emit = defineEmits<{
   close: [restoreFocus?: boolean];
@@ -46,6 +47,9 @@ const isWorkspaceDetailsLoading = computed(() =>
 const isWaitingForWorkspaceDetails = computed(() => isWorkspaceDetailsLoading.value && !workspaceDetails.value);
 const currentReviewState = computed(() => workspaceSessionStore.getReviewState(currentWorkspaceId.value));
 const isReviewInProgress = computed(() => isReviewInProgressState(currentReviewState.value));
+const hasPendingReviewComments = computed(() =>
+  workspaceSessionStore.hasPendingReviewComments(currentWorkspaceId.value)
+);
 const hasRepository = computed(() => Boolean(workspaceDetails.value?.repositoryId));
 
 const closeTerminalsActionLabel = computed(() => {
@@ -132,6 +136,15 @@ const cancelReview = () => {
   dispatchCancelReviewEvent(currentWorkspaceId.value);
 };
 
+const submitReview = () => {
+  if (currentWorkspaceId.value === '' || !hasPendingReviewComments.value) {
+    return;
+  }
+
+  closePaletteWithoutRestoringFocus();
+  dispatchSubmitReviewEvent(currentWorkspaceId.value);
+};
+
 const openCreateWorktree = () => {
   if (hasRepository.value) {
     emit('openCreateWorktree');
@@ -209,6 +222,20 @@ const reviewCommand = computed<PaletteResult>(() => {
   };
 });
 
+const submitReviewCommand = computed<PaletteResult | undefined>(() => {
+  if (!hasPendingReviewComments.value) {
+    return undefined;
+  }
+
+  return {
+    id: 'submit-review',
+    label: 'Submit Review',
+    actionLabel: 'Send comments',
+    isDisabled: false,
+    run: submitReview
+  };
+});
+
 const repositoryActionLabel = computed(() =>
   unavailableCommandLabel(hasRepository.value ? 'Select' : 'Not a Git workspace')
 );
@@ -236,6 +263,7 @@ const commandDefinitions = computed<PaletteResult[]>(() => [
     run: () => emit('openRemoteRepositoryPicker')
   },
   reviewCommand.value,
+  ...(submitReviewCommand.value ? [submitReviewCommand.value] : []),
   {
     id: 'close-workspace-terminals',
     label: 'Close Workspace',

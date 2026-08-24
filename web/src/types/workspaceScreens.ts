@@ -7,5 +7,6 @@ export interface WorkspaceScreenComponent {
 
 export interface ReviewScreenComponent extends WorkspaceScreenComponent {
   cancelReview: () => Promise<void>;
+  finishReview: () => Promise<void>;
   startReview: () => Promise<void>;
 }

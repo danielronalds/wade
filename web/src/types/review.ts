@@ -44,6 +44,9 @@ export interface ReviewComment {
   body: string;
 }
 
+export const hasReviewCommentsToSend = (comments: ReviewComment[], overallComment: string) =>
+  comments.some((comment) => comment.body.trim().length > 0) || overallComment.trim().length > 0;
+
 export interface ReviewCheckpoint {
   snapshotId: string;
   activeScope: ReviewScope;

@@ -5,6 +5,7 @@ import { deleteReviewSnapshot, getReviewSnapshot, listWorkspaceTerminals, Termin
 import { WadeHTTPError } from '@/api/httpClient';
 import {
   commentSides,
+  hasReviewCommentsToSend as reviewHasCommentsToSend,
   reviewCommentKinds,
   reviewScopes,
   type DraftReviewComment,
@@ -314,6 +315,15 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
   const getReviewState = (workspaceId: string): ReviewState =>
     workspaceSessions.get(workspaceId)?.reviewState.value ?? 'idle';
 
+  const hasPendingReviewComments = (workspaceId: string) => {
+    const entry = workspaceSessions.get(workspaceId);
+    if (!entry || entry.reviewState.value !== 'ready' || !entry.state.review) {
+      return false;
+    }
+
+    return reviewHasCommentsToSend(entry.state.review.comments, entry.state.review.overallComment);
+  };
+
   const getSelectedAgentName = (workspaceId: string) =>
     workspaceSessions.get(workspaceId)?.state.terminal.selectedAgentName ?? '';
 
@@ -421,6 +431,7 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
     clearWorkspaceSession,
     getReviewState,
     getSelectedAgentName,
+    hasPendingReviewComments,
     initialiseReview,
     isReviewOverallNoteOpen,
     isScratchpadOpen,

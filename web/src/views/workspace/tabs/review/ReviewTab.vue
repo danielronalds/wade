@@ -20,6 +20,7 @@ import { createReviewSnapshot, deleteReviewSnapshot, getReviewSnapshotFileConten
 import { pasteIntoAgentTerminal } from '@/features/terminal-session/composables/useAgentTerminalInput';
 import { useWorkspaceSessionStore } from '@/stores/useWorkspaceSessionStore';
 import {
+  hasReviewCommentsToSend,
   isReviewInProgressState,
   type CommentSide,
   type DraftReviewComment,
@@ -381,7 +382,7 @@ const trimmedComments = computed(() =>
     .filter((comment) => comment.body.length > 0)
 );
 const canFinishReview = computed(
-  () => !isSendingPrompt.value && (trimmedComments.value.length > 0 || overallComment.value.trim().length > 0)
+  () => !isSendingPrompt.value && hasReviewCommentsToSend(comments.value, overallComment.value)
 );
 const reviewScrollKey = computed(() => (activeFileId.value ? `${activeScope.value}:${activeFileId.value}` : ''));
 const hideUnchangedButtonLabel = computed(() => (hideUnchanged.value ? 'Show full file' : 'Show changed areas only'));
@@ -1003,6 +1004,7 @@ watch(
 
 defineExpose({
   cancelReview,
+  finishReview,
   focusActiveTerminal,
   startReview,
   switchToNextTerminal
