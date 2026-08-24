@@ -220,6 +220,7 @@ watch(commentSignature, async () => {
               spellcheck="true"
               placeholder="Write a review comment"
               @input="updateCommentBody(comment.id, $event)"
+              @keydown.shift.tab.prevent.stop="emit('toggleCommentKind', comment.id)"
             ></textarea>
             <footer>
               <button type="button" :data-kind="comment.kind" @click="emit('toggleCommentKind', comment.id)">

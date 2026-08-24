@@ -348,7 +348,7 @@ const inlineComments = () => props.comments.filter((comment) => comment.side !==
 
 const commentSignature = () =>
   inlineComments()
-    .map((comment) => `${comment.id}:${comment.side}:${comment.startLine}:${comment.kind}`)
+    .map((comment) => `${comment.id}:${comment.side}:${comment.startLine}`)
     .join('|');
 
 const commentKindLabel = (kind: ReviewComment['kind']) => (kind === 'question' ? 'Question' : 'Feedback');
@@ -452,6 +452,16 @@ const renderInlineComment = (comment: ReviewComment) => {
   const deleteButton = createButton('Delete', () => emit('deleteComment', comment.id));
   header.append(label, deleteButton);
 
+  let kindButton: HTMLButtonElement;
+  const toggleKind = () => {
+    const nextKind = article.dataset.kind === 'feedback' ? 'question' : 'feedback';
+    article.dataset.kind = nextKind;
+    label.textContent = `${commentKindLabel(nextKind)} · ${sideLabel(comment.side as InlineCommentSide)}:${comment.startLine}`;
+    kindButton.textContent = commentKindLabel(nextKind);
+    kindButton.dataset.kind = nextKind;
+    emit('toggleCommentKind', comment.id);
+  };
+
   const textarea = document.createElement('textarea');
   textarea.value = comment.body;
   textarea.placeholder = 'Write a review comment';
@@ -460,12 +470,21 @@ const renderInlineComment = (comment: ReviewComment) => {
   textarea.addEventListener('input', () => {
     emit('updateCommentBody', { commentId: comment.id, body: textarea.value });
   });
+  textarea.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab' || !event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    toggleKind();
+  });
   if (comment.body.length === 0) {
     setTimeout(() => textarea.focus(), 50);
   }
 
   const footer = document.createElement('footer');
-  const kindButton = createButton(commentKindLabel(comment.kind), () => emit('toggleCommentKind', comment.id));
+  kindButton = createButton(commentKindLabel(comment.kind), toggleKind);
   kindButton.dataset.kind = comment.kind;
   footer.append(kindButton, deleteButton);
 

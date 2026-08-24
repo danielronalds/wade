@@ -1291,6 +1291,7 @@ defineExpose({
           v-model="draftCommentBody"
           spellcheck="true"
           placeholder="Write a review comment"
+          @keydown.shift.tab.prevent.stop="toggleDraftCommentKind"
         ></textarea>
         <footer>
           <button
@@ -1773,16 +1774,26 @@ button:not(:disabled):focus-visible {
 
 .review-modal-card {
   width: min(720px, 100%);
+  min-width: 0;
   display: grid;
   gap: 14px;
   padding: 18px;
   border: 1px solid var(--text);
   background: var(--window);
+  overflow: hidden;
 }
 
 .review-modal-card header {
+  min-width: 0;
   display: grid;
   gap: 6px;
+  overflow: hidden;
+}
+
+.review-modal-card h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .review-modal-card header p:not(.review-kicker) {
