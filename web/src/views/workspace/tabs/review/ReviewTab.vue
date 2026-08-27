@@ -32,6 +32,7 @@ import {
   ReviewFileContents,
   ReviewScope
 } from '@/types/review';
+import ReviewCommentEditor from '@/views/workspace/tabs/review/components/ReviewCommentEditor.vue';
 import ReviewDiffViewer from '@/views/workspace/tabs/review/components/ReviewDiffViewer.vue';
 import ReviewMarkdownViewer from '@/views/workspace/tabs/review/components/ReviewMarkdownViewer.vue';
 
@@ -1231,21 +1232,15 @@ defineExpose({
           :data-visible="String(activeFileFileComments.length > 0)"
           aria-label="File comments for selected file"
         >
-          <article
+          <ReviewCommentEditor
             v-for="comment in activeFileFileComments"
             :key="comment.id"
-            class="review-comment-card"
-            :data-kind="comment.kind"
-          >
-            <header>
-              <span>{{ commentKindLabel(comment.kind) }}</span>
-              <span>{{
-                comment.side === 'file' ? 'File' : `${commentSideLabel(comment.side)}:${comment.startLine}`
-              }}</span>
-            </header>
-            <p>{{ comment.body }}</p>
-            <button type="button" @click="deleteComment(comment.id)">Delete</button>
-          </article>
+            :comment="comment"
+            location-label="File"
+            @delete-comment="deleteComment"
+            @toggle-comment-kind="toggleCommentKind"
+            @update-comment-body="updateCommentBody"
+          />
         </section>
         <ReviewMarkdownViewer
           v-if="showRenderedMarkdown"
@@ -1726,42 +1721,6 @@ button:not(:disabled):focus-visible {
   padding-block: 0;
   border-bottom: 0;
   overflow: hidden;
-}
-
-.review-comment-card {
-  display: grid;
-  gap: 6px;
-  padding: 8px;
-  border: 1px solid rgb(var(--accent-rgb) / 45%);
-}
-
-.review-comment-card header,
-.review-comment-card footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.review-comment-card header {
-  color: var(--muted);
-  font-size: 11px;
-  text-transform: uppercase;
-}
-
-.review-comment-card p {
-  margin: 0;
-  color: var(--text);
-  font-size: 12px;
-  line-height: 1.45;
-  white-space: pre-wrap;
-}
-
-.review-comment-card button {
-  justify-self: end;
-  height: 24px;
-  padding: 0 8px;
-  font-size: 11px;
 }
 
 .review-modal-backdrop {
