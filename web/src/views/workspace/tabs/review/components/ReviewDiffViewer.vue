@@ -1,7 +1,19 @@
 <!-- NOTE: Vibecoded and not suppppppper reviewed -->
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+import {
+  computed,
+  Fragment,
+  h,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  render as renderVNode,
+  shallowRef,
+  watch
+} from 'vue';
 import type { CommentSide, ReviewComment, ReviewFileContents } from '@/types/review';
+import ReviewCommentEditor from './ReviewCommentEditor.vue';
 
 type EditorLayoutDimension = {
   width: number;
@@ -71,6 +83,9 @@ type InlineCommentSide = Exclude<CommentSide, 'file'>;
 type ActiveViewZone = {
   id: string;
   editor: MonacoCodeEditor;
+  domNode: HTMLElement;
+  lineNumber: number;
+  side: InlineCommentSide;
 };
 
 type ScrollPosition = {
@@ -351,8 +366,6 @@ const commentSignature = () =>
     .map((comment) => `${comment.id}:${comment.side}:${comment.startLine}`)
     .join('|');
 
-const commentKindLabel = (kind: ReviewComment['kind']) => (kind === 'question' ? 'Question' : 'Feedback');
-
 const sideLabel = (side: InlineCommentSide) => (side === 'original' ? 'Original' : 'Modified');
 
 const groupedInlineComments = (side: InlineCommentSide) => {
@@ -386,33 +399,9 @@ const protectInteractiveElement = (element: HTMLElement) => {
   element.addEventListener('keydown', stopEditorEvent);
 };
 
-const runButtonAction = (event: Event, action: () => void) => {
-  event.preventDefault();
-  event.stopPropagation();
-  action();
-};
-
-const createButton = (text: string, action: () => void) => {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.textContent = text;
-  protectInteractiveElement(button);
-  button.addEventListener('pointerdown', (event) => runButtonAction(event, action));
-  button.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-  });
-  button.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter' && event.key !== ' ') {
-      return;
-    }
-
-    runButtonAction(event, action);
-  });
-  return button;
-};
-
 const clearViewZones = () => {
+  activeViewZones.forEach((zone) => renderVNode(null, zone.domNode));
+
   if (!editor) {
     activeViewZones = [];
     return;
@@ -440,57 +429,25 @@ const clearViewZones = () => {
   activeViewZones = [];
 };
 
-const renderInlineComment = (comment: ReviewComment) => {
-  const article = document.createElement('article');
-  article.className = 'review-inline-comment';
-  article.dataset.kind = comment.kind;
-  protectInteractiveElement(article);
-
-  const header = document.createElement('header');
-  const label = document.createElement('span');
-  label.textContent = `${commentKindLabel(comment.kind)} · ${sideLabel(comment.side as InlineCommentSide)}:${comment.startLine}`;
-  const deleteButton = createButton('Delete', () => emit('deleteComment', comment.id));
-  header.append(label, deleteButton);
-
-  let kindButton: HTMLButtonElement;
-  const toggleKind = () => {
-    const nextKind = article.dataset.kind === 'feedback' ? 'question' : 'feedback';
-    article.dataset.kind = nextKind;
-    label.textContent = `${commentKindLabel(nextKind)} · ${sideLabel(comment.side as InlineCommentSide)}:${comment.startLine}`;
-    kindButton.textContent = commentKindLabel(nextKind);
-    kindButton.dataset.kind = nextKind;
-    emit('toggleCommentKind', comment.id);
-  };
-
-  const textarea = document.createElement('textarea');
-  textarea.value = comment.body;
-  textarea.placeholder = 'Write a review comment';
-  textarea.spellcheck = true;
-  protectInteractiveElement(textarea);
-  textarea.addEventListener('input', () => {
-    emit('updateCommentBody', { commentId: comment.id, body: textarea.value });
-  });
-  textarea.addEventListener('keydown', (event) => {
-    if (event.key !== 'Tab' || !event.shiftKey) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    toggleKind();
-  });
-  if (comment.body.length === 0) {
-    setTimeout(() => textarea.focus(), 50);
-  }
-
-  const footer = document.createElement('footer');
-  kindButton = createButton(commentKindLabel(comment.kind), toggleKind);
-  kindButton.dataset.kind = comment.kind;
-  footer.append(kindButton, deleteButton);
-
-  article.append(header, textarea, footer);
-
-  return article;
+const renderInlineCommentEditors = (container: HTMLElement, side: InlineCommentSide, comments: ReviewComment[]) => {
+  renderVNode(
+    h(
+      Fragment,
+      null,
+      comments.map((comment) =>
+        h(ReviewCommentEditor, {
+          key: comment.id,
+          activateOnPointerdown: true,
+          comment,
+          locationLabel: `${sideLabel(side)}:${comment.startLine}`,
+          onDeleteComment: (commentId: string) => emit('deleteComment', commentId),
+          onToggleCommentKind: (commentId: string) => emit('toggleCommentKind', commentId),
+          onUpdateCommentBody: (payload: { commentId: string; body: string }) => emit('updateCommentBody', payload)
+        })
+      )
+    ),
+    container
+  );
 };
 
 const renderInlineZone = (side: InlineCommentSide, lineNumber: number, comments: ReviewComment[]) => {
@@ -498,10 +455,7 @@ const renderInlineZone = (side: InlineCommentSide, lineNumber: number, comments:
   container.className = 'review-inline-zone';
   container.dataset.side = side;
   protectInteractiveElement(container);
-
-  for (const comment of comments) {
-    container.append(renderInlineComment(comment));
-  }
+  renderInlineCommentEditors(container, side, comments);
 
   const height = Math.max(156, 18 + comments.length * 156);
 
@@ -518,7 +472,13 @@ const addInlineViewZones = (codeEditor: MonacoCodeEditor, side: InlineCommentSid
         heightInPx: zone.height,
         domNode: zone.container
       });
-      activeViewZones.push({ id, editor: codeEditor });
+      activeViewZones.push({
+        id,
+        editor: codeEditor,
+        domNode: zone.container,
+        lineNumber: zone.lineNumber,
+        side
+      });
     }
   });
 };
@@ -532,6 +492,15 @@ const syncInlineViewZones = () => {
   addInlineViewZones(editor.getOriginalEditor(), 'original');
   addInlineViewZones(editor.getModifiedEditor(), 'modified');
   scheduleEditorLayout();
+};
+
+const syncInlineCommentEditors = () => {
+  for (const zone of activeViewZones) {
+    const comments = inlineComments().filter(
+      (comment) => comment.side === zone.side && comment.startLine === zone.lineNumber
+    );
+    renderInlineCommentEditors(zone.domNode, zone.side, comments);
+  }
 };
 
 const clearCommentDecorations = () => {
@@ -727,6 +696,13 @@ watch(commentSignature, () => {
   syncInlineReviewUI();
 });
 
+watch(
+  () => props.comments,
+  () => {
+    syncInlineCommentEditors();
+  }
+);
+
 onMounted(() => {
   void createEditor();
 });
@@ -808,78 +784,6 @@ onBeforeUnmount(() => {
   background: var(--window);
   color: var(--text);
   overflow: hidden;
-}
-
-.review-diff-editor :global(.review-inline-comment) {
-  display: grid;
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid rgb(var(--accent-rgb) / 45%);
-  background: rgb(0 0 0 / 12%);
-}
-
-.review-diff-editor :global(.review-inline-comment header),
-.review-diff-editor :global(.review-inline-comment footer) {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.review-diff-editor :global(.review-inline-comment header) {
-  justify-content: flex-start;
-}
-
-.review-diff-editor :global(.review-inline-comment footer) {
-  justify-content: flex-end;
-}
-
-.review-diff-editor :global(.review-inline-comment header) {
-  color: var(--muted);
-  font-size: 11px;
-  text-transform: uppercase;
-}
-
-.review-diff-editor :global(.review-inline-zone button) {
-  height: 24px;
-  padding: 0 8px;
-  border: 1px solid var(--text);
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.review-diff-editor :global(.review-inline-zone button[data-kind='question']) {
-  border-color: #d29922;
-  background: rgb(210 153 34 / 14%);
-  color: #d29922;
-}
-
-.review-diff-editor :global(.review-inline-zone button[data-kind='feedback']) {
-  border-color: #ff6e6e;
-  background: rgb(255 110 110 / 14%);
-  color: #ff6e6e;
-}
-
-.review-diff-editor :global(.review-inline-zone button:not(:disabled):hover),
-.review-diff-editor :global(.review-inline-zone button:not(:disabled):focus-visible) {
-  background: rgb(var(--accent-rgb) / 10%);
-}
-
-.review-diff-editor :global(.review-inline-comment textarea) {
-  width: 100%;
-  min-height: 78px;
-  resize: vertical;
-  padding: 8px;
-  border: 1px solid var(--text);
-  border-radius: 0;
-  outline: none;
-  background: rgb(0 0 0 / 18%);
-  color: var(--text);
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.45;
 }
 
 .review-diff-editor[data-hidden='true'] {

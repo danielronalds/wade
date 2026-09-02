@@ -1,9 +1,10 @@
 <!-- NOTE: Vibecoded and unreviewed -->
 <script setup lang="ts">
 import MarkdownIt from 'markdown-it';
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed } from 'vue';
 import type { CommentSide, ReviewComment, ReviewFileContents } from '@/types/review';
 import MermaidDiagram from './MermaidDiagram.vue';
+import ReviewCommentEditor from './ReviewCommentEditor.vue';
 
 type InlineCommentSide = Exclude<CommentSide, 'file'>;
 
@@ -29,7 +30,6 @@ const emit = defineEmits<{
   updateCommentBody: [payload: { commentId: string; body: string }];
 }>();
 
-const viewerElement = ref<HTMLElement | null>(null);
 const markdown = new MarkdownIt({
   breaks: false,
   html: false,
@@ -151,8 +151,6 @@ const commentsForBlock = (block: MarkdownBlock) =>
     return nearestBlock?.id === block.id;
   });
 
-const commentKindLabel = (kind: ReviewComment['kind']) => (kind === 'question' ? 'Question' : 'Feedback');
-
 const commentLineRange = (comment: ReviewComment) =>
   comment.endLine != null && comment.endLine !== comment.startLine
     ? `${comment.startLine}-${comment.endLine}`
@@ -180,27 +178,10 @@ const handleBlockClick = (block: MarkdownBlock, event: MouseEvent) => {
 
   addBlockComment(block);
 };
-
-const updateCommentBody = (commentId: string, event: Event) => {
-  const textarea = event.target as HTMLTextAreaElement;
-  textarea.style.height = 'auto';
-  textarea.style.height = `${textarea.scrollHeight}px`;
-  emit('updateCommentBody', { commentId, body: textarea.value });
-};
-
-const commentSignature = computed(() => props.comments.map((comment) => comment.id).join('|'));
-
-watch(commentSignature, async () => {
-  await nextTick();
-  const emptyTextarea = viewerElement.value?.querySelector<HTMLTextAreaElement>(
-    '.markdown-inline-comment textarea[data-empty="true"]'
-  );
-  emptyTextarea?.focus();
-});
 </script>
 
 <template>
-  <section ref="viewerElement" class="markdown-review-viewer" aria-label="Rendered Markdown review">
+  <section class="markdown-review-viewer" aria-label="Rendered Markdown review">
     <div v-if="placeholderText" class="markdown-placeholder">{{ placeholderText }}</div>
     <section v-else class="markdown-document-body">
       <p v-if="blocks.length === 0" class="markdown-empty-document">This document is empty.</p>
@@ -221,25 +202,16 @@ watch(commentSignature, async () => {
           class="markdown-inline-comments"
           aria-label="Comments on Markdown content"
         >
-          <article v-for="comment in commentsForBlock(block)" :key="comment.id" class="markdown-inline-comment">
-            <header>
-              <span>{{ commentKindLabel(comment.kind) }} · Modified:{{ commentLineRange(comment) }}</span>
-            </header>
-            <textarea
-              :value="comment.body"
-              :data-empty="String(comment.body.length === 0)"
-              spellcheck="true"
-              placeholder="Write a review comment"
-              @input="updateCommentBody(comment.id, $event)"
-              @keydown.shift.tab.prevent.stop="emit('toggleCommentKind', comment.id)"
-            ></textarea>
-            <footer>
-              <button type="button" :data-kind="comment.kind" @click="emit('toggleCommentKind', comment.id)">
-                {{ commentKindLabel(comment.kind) }}
-              </button>
-              <button type="button" @click="emit('deleteComment', comment.id)">Delete</button>
-            </footer>
-          </article>
+          <ReviewCommentEditor
+            v-for="comment in commentsForBlock(block)"
+            :key="comment.id"
+            auto-resize
+            :comment="comment"
+            :location-label="`Modified:${commentLineRange(comment)}`"
+            @delete-comment="emit('deleteComment', $event)"
+            @toggle-comment-kind="emit('toggleCommentKind', $event)"
+            @update-comment-body="emit('updateCommentBody', $event)"
+          />
         </section>
       </article>
     </section>
@@ -447,80 +419,6 @@ watch(commentSignature, async () => {
   display: grid;
   gap: 8px;
   margin: 12px 0 16px;
-}
-
-.markdown-inline-comment {
-  display: grid;
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid rgb(var(--accent-rgb) / 45%);
-  background: rgb(0 0 0 / 12%);
-}
-
-.markdown-inline-comment header,
-.markdown-inline-comment footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.markdown-inline-comment header {
-  justify-content: flex-start;
-  color: var(--muted);
-  font-size: 11px;
-  text-transform: uppercase;
-}
-
-.markdown-inline-comment textarea {
-  width: 100%;
-  min-height: 78px;
-  resize: vertical;
-  padding: 8px;
-  border: 1px solid var(--text);
-  border-radius: 0;
-  outline: none;
-  background: rgb(0 0 0 / 18%);
-  color: var(--text);
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.markdown-inline-comment textarea:focus {
-  border-color: var(--text);
-}
-
-.markdown-inline-comment footer {
-  justify-content: flex-end;
-}
-
-.markdown-inline-comment button {
-  height: 24px;
-  padding: 0 8px;
-  border: 1px solid var(--text);
-  border-radius: 0;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.markdown-inline-comment button[data-kind='feedback'] {
-  border-color: #ff6e6e;
-  background: rgb(255 110 110 / 14%);
-  color: #ff6e6e;
-}
-
-.markdown-inline-comment button[data-kind='question'] {
-  border-color: #d29922;
-  background: rgb(210 153 34 / 14%);
-  color: #d29922;
-}
-
-.markdown-inline-comment button:hover,
-.markdown-inline-comment button:focus-visible {
-  background: rgb(var(--accent-rgb) / 10%);
 }
 
 .markdown-empty-document,
