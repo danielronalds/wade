@@ -92,6 +92,31 @@ func TestHandleArgsWritesOperationHelp(t *testing.T) {
 	}
 }
 
+func TestHandleArgsWritesReviewAnnotationHelpFromOpenAPI(t *testing.T) {
+	var output bytes.Buffer
+	controller := newTestController(&output, strings.NewReader(""))
+
+	exitCode, err := controller.HandleArgs([]string{"api", "create-review-annotation", "--help"})
+	if err != nil || exitCode != 0 {
+		t.Fatalf("HandleArgs() = %d, %v", exitCode, err)
+	}
+
+	for _, expected := range []string{
+		"--snapshot-id",
+		"list-workspace-review-snapshots",
+		"fileId",
+		"rationale and author are optional",
+		"working-tree, last-commit, or pull-request",
+		"original or modified",
+		"one-based and inclusive",
+		"wade api create-review-annotation --snapshot-id <snapshot-id> --body @annotation.json",
+	} {
+		if !strings.Contains(output.String(), expected) {
+			t.Fatalf("help %q does not contain %q", output.String(), expected)
+		}
+	}
+}
+
 func TestHandleArgsWritesOfflinePreambleAndExamples(t *testing.T) {
 	var output bytes.Buffer
 	controller := newTestController(&output, strings.NewReader(""))

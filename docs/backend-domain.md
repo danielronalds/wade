@@ -11,6 +11,7 @@ The core domain resources are:
 - [`Branch`](#branch)
 - [`Terminal`](#terminal)
 - [`ReviewSnapshot`](#reviewsnapshot)
+- [`ReviewAnnotation`](#reviewannotation)
 - [`Settings`](#settings)
 
 ## Workspace
@@ -56,6 +57,20 @@ There is no separate project-session resource. A workspace's active state is der
 A `ReviewSnapshot` is a point-in-time description of files and comparisons in one workspace. Snapshot IDs are application-wide, while file IDs only need to be unique within their snapshot.
 
 Snapshots retain pinned Git revisions and captured file identity until they are deleted or the server restarts. The `current` file-content scope is the deliberate exception and reads current filesystem contents.
+
+## ReviewAnnotation
+
+A `ReviewAnnotation` is an immutable agent-authored child resource of one
+review snapshot. It targets a snapshot file, captured comparison scope,
+original or modified side, and one-based inclusive line range. The live
+`current` scope is excluded because it cannot provide a stable captured line
+anchor.
+
+Annotations can be created, listed and deleted, but not updated. Replacing a
+note creates a new identity and creation time. The collection and its revision
+are retained only with the in-memory parent snapshot, while browser clients
+reload the complete authoritative collection after revision notifications.
+Agent annotations remain separate from editable human review comments.
 
 ## Settings
 

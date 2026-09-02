@@ -18,8 +18,8 @@ func TestParseOperationsParsesEmbeddedSpecification(t *testing.T) {
 	// The exact count is a deliberate tripwire: adding or removing an API
 	// operation must include a conscious decision to expose it as a command
 	// or annotate it with x-wade-cli-ignore, then update this count.
-	if len(operations) != 23 {
-		t.Fatalf("parseOperations() returned %d operations, want 23", len(operations))
+	if len(operations) != 27 {
+		t.Fatalf("parseOperations() returned %d operations, want 27", len(operations))
 	}
 
 	commands := make([]string, 0, len(operations))
@@ -29,7 +29,12 @@ func TestParseOperationsParsesEmbeddedSpecification(t *testing.T) {
 	if !slices.IsSorted(commands) {
 		t.Fatalf("commands are not sorted: %v", commands)
 	}
-	for _, excluded := range []string{"connect-workspace-terminal", "get-open-api-spec"} {
+	for _, excluded := range []string{
+		"connect-workspace-terminal",
+		"get-open-api-spec",
+		"subscribe-review-annotation-events",
+		"update-review-annotation",
+	} {
 		if slices.Contains(commands, excluded) {
 			t.Fatalf("commands include excluded operation %s", excluded)
 		}
@@ -75,6 +80,26 @@ func TestParseOperationsParsesEmbeddedSpecification(t *testing.T) {
 	activity := listWorkspaces.Parameters[0]
 	if activity.Name != "activity" || activity.In != "query" || activity.Required || !slices.Equal(activity.Enum, []string{"active"}) {
 		t.Fatalf("activity parameter = %+v, want optional query enum parameter", activity)
+	}
+
+	createAnnotation, found := findOperation(operations, "create-review-annotation")
+	if !found {
+		t.Fatalf("create-review-annotation not found in %v", commands)
+	}
+	if createAnnotation.Method != "POST" || !createAnnotation.HasBody || !createAnnotation.BodyRequired {
+		t.Fatalf("create-review-annotation operation = %#v", createAnnotation)
+	}
+	for _, expected := range []string{
+		"list-workspace-review-snapshots",
+		"fileId",
+		"working-tree, last-commit, or pull-request",
+		"original or modified",
+		"one-based and inclusive",
+		"Complete invocation example",
+	} {
+		if !strings.Contains(createAnnotation.BodyDescription, expected) {
+			t.Fatalf("body description %q does not contain %q", createAnnotation.BodyDescription, expected)
+		}
 	}
 }
 

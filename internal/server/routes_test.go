@@ -55,6 +55,9 @@ func TestAPIV1RoutesAreRegistered(t *testing.T) {
 		"/api/v1/workspaces/wade/review-snapshots",
 		"/api/v1/review-snapshots/review_snapshot_01",
 		"/api/v1/review-snapshots/review_snapshot_01/files/file_01/contents",
+		"/api/v1/review-snapshots/review_snapshot_01/annotations",
+		"/api/v1/review-snapshots/review_snapshot_01/annotations/events",
+		"/api/v1/review-snapshots/review_snapshot_01/annotations/annotation_01",
 		"/api/v1/settings",
 		"/api/v1/settings/reload",
 	}

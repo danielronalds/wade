@@ -45,3 +45,22 @@ type SnapshotFileNotFoundError struct {
 func (err SnapshotFileNotFoundError) Error() string {
 	return fmt.Sprintf("file %q was not found in review snapshot %q", err.FileID, err.SnapshotID)
 }
+
+// AnnotationNotFoundError reports an unknown annotation identity within a snapshot.
+type AnnotationNotFoundError struct {
+	SnapshotID   string
+	AnnotationID string
+}
+
+func (err AnnotationNotFoundError) Error() string {
+	return fmt.Sprintf("annotation %q was not found in review snapshot %q", err.AnnotationID, err.SnapshotID)
+}
+
+// InvalidAnnotationError reports a request that cannot target captured review content.
+type InvalidAnnotationError struct {
+	Detail string
+}
+
+func (err InvalidAnnotationError) Error() string {
+	return err.Detail
+}

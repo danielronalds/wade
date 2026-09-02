@@ -72,9 +72,11 @@ For live connections, the controller upgrades the request to a WebSocket and obt
 
 ## ReviewSnapshots
 
-The `ReviewSnapshots` controller creates, retrieves and deletes snapshots. It also loads file comparisons for a snapshot, file ID and requested review scope.
+The `ReviewSnapshots` controller creates, lists, retrieves and deletes snapshots. It also loads file comparisons for a snapshot, file ID and requested review scope.
 
-The controller owns snapshot resource locations and HTTP response semantics. Snapshot identity, scope validation, pinned revisions and file-content behaviour remain in the domain layer.
+Agent-authored annotations are immutable child resources of a snapshot. The controller strictly decodes annotation requests, exposes collection reads and item deletion, and streams annotation revision notifications to browsers with server-sent events. The annotation collection remains authoritative, so clients reload it after each revision event.
+
+The controller owns snapshot and annotation resource locations, streaming transport and HTTP response semantics. Snapshot identity, annotation validation, collection revisions, pinned comparisons and file-content behaviour remain in the domain layer.
 
 ### Depends on
 

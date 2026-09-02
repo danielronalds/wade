@@ -49,11 +49,18 @@ API operations return detached `Terminal` values. Controllers use explicit live 
 
 ## ReviewSnapshots
 
-The `reviewsnapshots` Model owns point-in-time review snapshots, revision pinning, file identity and scoped content loading. It creates, retrieves and deletes snapshots and loads their file contents.
+The `reviewsnapshots` Model owns point-in-time review snapshots, revision pinning, file identity, scoped content loading and agent-authored annotations. It creates, lists, retrieves and deletes snapshots and loads their file contents.
 
 It uses the `filesystem`, `git` and `github` infrastructure packages, including the shared workspace-discovery capability. Snapshots remain in a concurrency-safe in-memory registry until deletion or server shutdown, and callers receive defensive copies.
 
 Snapshot scopes use captured file identity and pinned revisions. The `current` scope intentionally reads the workspace's current filesystem contents instead.
+
+Annotations are validated against one captured comparison side and inclusive
+line range before being committed to the parent snapshot. The Model serialises
+collection mutations, enforces the per-snapshot limit, owns monotonically
+increasing revisions and publishes non-blocking, coalescible revision updates.
+Deleting a snapshot atomically removes its annotations and closes its
+subscribers.
 
 ## Settings
 

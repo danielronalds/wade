@@ -170,6 +170,36 @@ func TestRunOperationSendsBodyFromEachSource(t *testing.T) {
 	}
 }
 
+func TestRunCreateReviewAnnotationSendsEscapedPathAndUnchangedBody(t *testing.T) {
+	requestBody := `{"fileId":"src/app.ts","scope":"working-tree","side":"modified","startLine":4,"endLine":6,"summary":"Explain validation"}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %s, want POST", r.Method)
+		}
+		if r.URL.EscapedPath() != "/api/v1/review-snapshots/snapshot%2Fone/annotations" {
+			t.Errorf("escaped path = %s", r.URL.EscapedPath())
+		}
+		received, _ := io.ReadAll(r.Body)
+		if string(received) != requestBody {
+			t.Errorf("body = %q, want %q", received, requestBody)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{}`)
+	}))
+	defer server.Close()
+
+	controller := newTestController(&bytes.Buffer{}, strings.NewReader(""))
+	_, err := controller.HandleArgs([]string{
+		"api", "create-review-annotation",
+		"--snapshot-id", "snapshot/one",
+		"--body", requestBody,
+		"--address", serverAddress(server),
+	})
+	if err != nil {
+		t.Fatalf("HandleArgs() error = %v, want nil", err)
+	}
+}
+
 func TestRunOperationRejectsMissingRequiredFlags(t *testing.T) {
 	tests := []struct {
 		name      string

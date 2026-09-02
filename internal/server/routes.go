@@ -28,9 +28,14 @@ func (s *Server) registerRoutes(controllerSet controllers.Controllers) {
 	s.Mux.HandleFunc("GET /api/v1/workspaces/{workspaceId}/terminals/{terminalId}/socket", controllerSet.Terminals.Connect)
 
 	s.Mux.HandleFunc("POST /api/v1/workspaces/{workspaceId}/review-snapshots", controllerSet.ReviewSnapshots.Create)
+	s.Mux.HandleFunc("GET /api/v1/workspaces/{workspaceId}/review-snapshots", controllerSet.ReviewSnapshots.List)
 	s.Mux.HandleFunc("GET /api/v1/review-snapshots/{snapshotId}", controllerSet.ReviewSnapshots.Get)
 	s.Mux.HandleFunc("GET /api/v1/review-snapshots/{snapshotId}/files/{fileId}/contents", controllerSet.ReviewSnapshots.GetFileContents)
 	s.Mux.HandleFunc("DELETE /api/v1/review-snapshots/{snapshotId}", controllerSet.ReviewSnapshots.Delete)
+	s.Mux.HandleFunc("POST /api/v1/review-snapshots/{snapshotId}/annotations", controllerSet.ReviewSnapshots.CreateAnnotation)
+	s.Mux.HandleFunc("GET /api/v1/review-snapshots/{snapshotId}/annotations", controllerSet.ReviewSnapshots.ListAnnotations)
+	s.Mux.HandleFunc("GET /api/v1/review-snapshots/{snapshotId}/annotations/events", controllerSet.ReviewSnapshots.AnnotationEvents)
+	s.Mux.HandleFunc("DELETE /api/v1/review-snapshots/{snapshotId}/annotations/{annotationId}", controllerSet.ReviewSnapshots.DeleteAnnotation)
 
 	s.Mux.HandleFunc("GET /api/v1/settings", controllerSet.Settings.Get)
 	s.Mux.HandleFunc("PUT /api/v1/settings", controllerSet.Settings.Update)
