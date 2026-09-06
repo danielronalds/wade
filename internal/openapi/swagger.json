@@ -478,7 +478,7 @@
                 }
             },
             "post": {
-                "description": "Create an agent note against exact captured comparison content. First run wade api list-workspace-review-snapshots --workspace-id \u003cworkspace-id\u003e and select an explicit snapshot ID. Line numbers are one-based and startLine and endLine form an inclusive range. Revision is delete followed by create; there is no update operation.",
+                "description": "Create an agent note against exact captured comparison content. First run wade api list-workspace-review-snapshots --workspace-id \u003cworkspace-id\u003e. If the items collection is empty, ask the reviewer to start a Review in WADE. If several snapshots exist, select an explicit snapshot ID or ask the reviewer which review is intended. Do not create another snapshot merely to obtain an ID because the browser will not be attached to it. Line numbers are one-based and startLine and endLine form an inclusive range. Revision is delete followed by create; there is no update operation.",
                 "consumes": [
                     "application/json"
                 ],
@@ -499,7 +499,7 @@
                         "required": true
                     },
                     {
-                        "description": "First discover snapshots with wade api list-workspace-review-snapshots --workspace-id \u003cworkspace-id\u003e. JSON fields: fileId, scope, side, startLine, endLine, and summary are required; rationale and author are optional. scope is working-tree, last-commit, or pull-request. side is original or modified. Lines are one-based and inclusive. Complete invocation example: wade api create-review-annotation --snapshot-id \u003csnapshot-id\u003e --body @annotation.json",
+                        "description": "First discover snapshots with wade api list-workspace-review-snapshots --workspace-id \u003cworkspace-id\u003e. If the items collection is empty, ask the reviewer to start a Review in WADE. If several snapshots exist, select an explicit snapshot ID or ask the reviewer which review is intended. Do not create another snapshot merely to obtain an ID because the browser will not be attached to it. JSON fields: fileId, scope, side, startLine, endLine, and summary are required; rationale and author are optional. scope is working-tree, last-commit, or pull-request. side is original or modified. Lines are one-based and inclusive. Complete invocation example: wade api create-review-annotation --snapshot-id \u003csnapshot-id\u003e --body @annotation.json",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -987,7 +987,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Workspace ID from WADE_WORKSPACE_ID",
+                        "description": "Workspace ID from WADE_WORKSPACE_ID. Snapshots are returned newest first. An empty items collection means no usable review is active; ask the reviewer to start a Review in WADE. If several snapshots exist, select an explicit snapshot ID or ask the reviewer which review is intended. Do not create another snapshot merely to obtain an ID because the browser will not be attached to it.",
                         "name": "workspaceId",
                         "in": "path",
                         "required": true

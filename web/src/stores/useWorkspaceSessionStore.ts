@@ -226,6 +226,15 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
       }
     }
   });
+  const reviewShowAgentAnnotations = computed({
+    get: () => getActiveReview()?.showAgentAnnotations ?? defaultReview.showAgentAnnotations,
+    set: (showAgentAnnotations) => {
+      const review = getActiveReview();
+      if (review) {
+        review.showAgentAnnotations = showAgentAnnotations;
+      }
+    }
+  });
 
   const activateWorkspaceSession = (workspaceId: string) => {
     ensureWorkspaceSessionEntry(workspaceId);
@@ -255,6 +264,18 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
     entry.state.review = null;
     entry.reviewData.value = null;
     entry.reviewState.value = 'idle';
+  };
+
+  const clearReviewIfSnapshotMatches = (workspaceId: string, snapshotId: string) => {
+    const entry = workspaceSessions.get(workspaceId);
+    if (!entry || entry.state.review?.snapshotId !== snapshotId) {
+      return false;
+    }
+
+    entry.state.review = null;
+    entry.reviewData.value = null;
+    entry.reviewState.value = 'idle';
+    return true;
   };
 
   const clearWorkspaceSession = (workspaceId: string) => {
@@ -428,6 +449,7 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
     activateWorkspaceSession,
     beginReview,
     clearReview,
+    clearReviewIfSnapshotMatches,
     clearWorkspaceSession,
     getReviewState,
     getSelectedAgentName,
@@ -450,6 +472,7 @@ export const useWorkspaceSessionStore = defineStore('workspace-session', () => {
     reviewOverallNoteDraft,
     reviewRenderSideBySide,
     reviewReviewedFiles,
+    reviewShowAgentAnnotations,
     reviewState,
     reviewWrapLines,
     selectedAgentName,
@@ -480,7 +503,8 @@ const createFreshReviewCheckpoint = (
   overallNoteDraft: '',
   hideUnchanged: true,
   renderSideBySide: true,
-  wrapLines: true
+  wrapLines: true,
+  showAgentAnnotations: true
 });
 
 const createFreshWorkspaceSession = (): WorkspaceSessionCheckpoint => ({
@@ -510,7 +534,8 @@ const cloneReviewCheckpoint = (review: ReviewCheckpoint): ReviewCheckpoint => ({
   overallNoteDraft: review.overallNoteDraft,
   hideUnchanged: review.hideUnchanged,
   renderSideBySide: review.renderSideBySide,
-  wrapLines: review.wrapLines
+  wrapLines: review.wrapLines,
+  showAgentAnnotations: review.showAgentAnnotations
 });
 
 const createCheckpoint = (state: WorkspaceSessionCheckpoint): WorkspaceSessionCheckpoint => ({
@@ -638,7 +663,8 @@ const parseReviewCheckpoint = (value: unknown): ReviewCheckpoint | null | undefi
     typeof value.overallNoteDraft !== 'string' ||
     typeof value.hideUnchanged !== 'boolean' ||
     typeof value.renderSideBySide !== 'boolean' ||
-    typeof value.wrapLines !== 'boolean'
+    typeof value.wrapLines !== 'boolean' ||
+    (value.showAgentAnnotations !== undefined && typeof value.showAgentAnnotations !== 'boolean')
   ) {
     return undefined;
   }
@@ -667,7 +693,8 @@ const parseReviewCheckpoint = (value: unknown): ReviewCheckpoint | null | undefi
     overallNoteDraft: value.overallNoteDraft,
     hideUnchanged: value.hideUnchanged,
     renderSideBySide: value.renderSideBySide,
-    wrapLines: value.wrapLines
+    wrapLines: value.wrapLines,
+    showAgentAnnotations: value.showAgentAnnotations ?? true
   };
 };
 

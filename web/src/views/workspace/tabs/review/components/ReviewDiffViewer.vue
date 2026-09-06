@@ -12,7 +12,9 @@ import {
   shallowRef,
   watch
 } from 'vue';
+import type { ReviewAnnotation } from '@/api/generated/wade';
 import type { CommentSide, ReviewComment, ReviewFileContents } from '@/types/review';
+import ReviewAgentAnnotation from './ReviewAgentAnnotation.vue';
 import ReviewCommentEditor from './ReviewCommentEditor.vue';
 
 type EditorLayoutDimension = {
@@ -33,8 +35,15 @@ type MonacoMouseEvent = {
   };
 };
 
+type MutableViewZone = {
+  afterLineNumber: number;
+  heightInPx: number;
+  domNode: HTMLElement;
+};
+
 type ViewZoneAccessor = {
-  addZone: (zone: { afterLineNumber: number; heightInPx: number; domNode: HTMLElement }) => string;
+  addZone: (zone: MutableViewZone) => string;
+  layoutZone: (id: string) => void;
   removeZone: (id: string) => void;
 };
 
@@ -83,9 +92,11 @@ type InlineCommentSide = Exclude<CommentSide, 'file'>;
 type ActiveViewZone = {
   id: string;
   editor: MonacoCodeEditor;
-  domNode: HTMLElement;
+  zone: MutableViewZone;
+  contentElement: HTMLElement;
   lineNumber: number;
   side: InlineCommentSide;
+  observedElements: Set<HTMLElement>;
 };
 
 type ScrollPosition = {
@@ -106,6 +117,7 @@ declare global {
 }
 
 const props = defineProps<{
+  annotations: ReviewAnnotation[];
   comments: ReviewComment[];
   contents: ReviewFileContents | null;
   filePath: string;
@@ -134,7 +146,9 @@ let monacoLoadPromise: Promise<MonacoApi> | null = null;
 let editor: MonacoEditor | null = null;
 let originalModel: MonacoModel | null = null;
 let modifiedModel: MonacoModel | null = null;
-let resizeObserver: ResizeObserver | null = null;
+let editorResizeObserver: ResizeObserver | null = null;
+let viewZoneResizeObserver: ResizeObserver | null = null;
+let viewZoneMeasurementFrame: number | null = null;
 let mouseDisposables: Disposable[] = [];
 let originalDecorations: string[] = [];
 let modifiedDecorations: string[] = [];
@@ -316,6 +330,7 @@ const applyEditorReviewOptions = () => {
   editor.getOriginalEditor().updateOptions({ wordWrap: props.wrapLines ? 'on' : 'off' });
   editor.getModifiedEditor().updateOptions({ wordWrap: props.wrapLines ? 'on' : 'off' });
   scheduleEditorLayout();
+  measureActiveViewZones();
 };
 
 const saveScrollPosition = () => {
@@ -361,28 +376,49 @@ const scheduleScrollRestore = () => {
 
 const inlineComments = () => props.comments.filter((comment) => comment.side !== 'file' && comment.startLine != null);
 
-const commentSignature = () =>
-  inlineComments()
-    .map((comment) => `${comment.id}:${comment.side}:${comment.startLine}`)
-    .join('|');
+const inlineContentSignature = () =>
+  [
+    ...inlineComments().map((comment) => `comment:${comment.id}:${comment.side}:${comment.startLine}`),
+    ...props.annotations.map(
+      (annotation) => `annotation:${annotation.id}:${annotation.side}:${annotation.startLine}:${annotation.endLine}`
+    )
+  ].join('|');
 
 const sideLabel = (side: InlineCommentSide) => (side === 'original' ? 'Original' : 'Modified');
 
-const groupedInlineComments = (side: InlineCommentSide) => {
-  const groups = new Map<number, ReviewComment[]>();
+const annotationLocationLabel = (annotation: ReviewAnnotation) => {
+  const lineRange =
+    annotation.endLine === annotation.startLine
+      ? `${annotation.startLine}`
+      : `${annotation.startLine}-${annotation.endLine}`;
+  return `${sideLabel(annotation.side)}:${lineRange}`;
+};
+
+const groupedInlineContent = (side: InlineCommentSide) => {
+  const groups = new Map<number, { comments: ReviewComment[]; annotations: ReviewAnnotation[] }>();
 
   for (const comment of inlineComments()) {
     if (comment.side !== side || comment.startLine == null) {
       continue;
     }
 
-    const comments = groups.get(comment.startLine) ?? [];
-    comments.push(comment);
-    groups.set(comment.startLine, comments);
+    const group = groups.get(comment.startLine) ?? { comments: [], annotations: [] };
+    group.comments.push(comment);
+    groups.set(comment.startLine, group);
+  }
+
+  for (const annotation of props.annotations) {
+    if (annotation.side !== side) {
+      continue;
+    }
+
+    const group = groups.get(annotation.startLine) ?? { comments: [], annotations: [] };
+    group.annotations.push(annotation);
+    groups.set(annotation.startLine, group);
   }
 
   return [...groups.entries()]
-    .map(([lineNumber, comments]) => ({ lineNumber, comments }))
+    .map(([lineNumber, content]) => ({ lineNumber, ...content }))
     .sort((a, b) => a.lineNumber - b.lineNumber);
 };
 
@@ -399,8 +435,39 @@ const protectInteractiveElement = (element: HTMLElement) => {
   element.addEventListener('keydown', stopEditorEvent);
 };
 
+const viewZoneKey = (side: InlineCommentSide, lineNumber: number) => `${side}:${lineNumber}`;
+
+const syncViewZoneResizeObserver = (activeZone: ActiveViewZone) => {
+  const nextObservedElements = new Set<HTMLElement>([activeZone.contentElement]);
+
+  for (const element of activeZone.observedElements) {
+    if (!nextObservedElements.has(element)) {
+      viewZoneResizeObserver?.unobserve(element);
+    }
+  }
+
+  for (const element of nextObservedElements) {
+    if (!activeZone.observedElements.has(element)) {
+      viewZoneResizeObserver?.observe(element);
+    }
+  }
+
+  activeZone.observedElements = nextObservedElements;
+};
+
+const disposeViewZoneContent = (activeZone: ActiveViewZone) => {
+  for (const element of activeZone.observedElements) {
+    viewZoneResizeObserver?.unobserve(element);
+  }
+  activeZone.observedElements.clear();
+  renderVNode(null, activeZone.contentElement);
+  activeZone.contentElement.remove();
+};
+
 const clearViewZones = () => {
-  activeViewZones.forEach((zone) => renderVNode(null, zone.domNode));
+  for (const activeZone of activeViewZones) {
+    disposeViewZoneContent(activeZone);
+  }
 
   if (!editor) {
     activeViewZones = [];
@@ -411,17 +478,17 @@ const clearViewZones = () => {
   const modifiedEditor = editor.getModifiedEditor();
 
   originalEditor.changeViewZones((accessor) => {
-    for (const zone of activeViewZones) {
-      if (zone.editor === originalEditor) {
-        accessor.removeZone(zone.id);
+    for (const activeZone of activeViewZones) {
+      if (activeZone.editor === originalEditor) {
+        accessor.removeZone(activeZone.id);
       }
     }
   });
 
   modifiedEditor.changeViewZones((accessor) => {
-    for (const zone of activeViewZones) {
-      if (zone.editor === modifiedEditor) {
-        accessor.removeZone(zone.id);
+    for (const activeZone of activeViewZones) {
+      if (activeZone.editor === modifiedEditor) {
+        accessor.removeZone(activeZone.id);
       }
     }
   });
@@ -429,14 +496,24 @@ const clearViewZones = () => {
   activeViewZones = [];
 };
 
-const renderInlineCommentEditors = (container: HTMLElement, side: InlineCommentSide, comments: ReviewComment[]) => {
+const renderInlineContent = (
+  container: HTMLElement,
+  side: InlineCommentSide,
+  comments: ReviewComment[],
+  annotations: ReviewAnnotation[]
+) => {
   renderVNode(
-    h(
-      Fragment,
-      null,
-      comments.map((comment) =>
+    h(Fragment, null, [
+      ...annotations.map((annotation) =>
+        h(ReviewAgentAnnotation, {
+          key: `annotation:${annotation.id}`,
+          annotation,
+          locationLabel: annotationLocationLabel(annotation)
+        })
+      ),
+      ...comments.map((comment) =>
         h(ReviewCommentEditor, {
-          key: comment.id,
+          key: `comment:${comment.id}`,
           activateOnPointerdown: true,
           comment,
           locationLabel: `${sideLabel(side)}:${comment.startLine}`,
@@ -445,62 +522,130 @@ const renderInlineCommentEditors = (container: HTMLElement, side: InlineCommentS
           onUpdateCommentBody: (payload: { commentId: string; body: string }) => emit('updateCommentBody', payload)
         })
       )
-    ),
+    ]),
     container
   );
 };
 
-const renderInlineZone = (side: InlineCommentSide, lineNumber: number, comments: ReviewComment[]) => {
-  const container = document.createElement('section');
-  container.className = 'review-inline-zone';
-  container.dataset.side = side;
-  protectInteractiveElement(container);
-  renderInlineCommentEditors(container, side, comments);
+const measureActiveViewZones = () => {
+  if (viewZoneMeasurementFrame !== null) {
+    return;
+  }
 
-  const height = Math.max(156, 18 + comments.length * 156);
+  viewZoneMeasurementFrame = requestAnimationFrame(() => {
+    viewZoneMeasurementFrame = null;
+    let hasHeightChange = false;
 
-  return { container, height, lineNumber };
-};
+    for (const activeZone of activeViewZones) {
+      const measuredHeight = Math.ceil(activeZone.contentElement.getBoundingClientRect().height);
+      if (!Number.isFinite(measuredHeight) || measuredHeight <= 0 || measuredHeight === activeZone.zone.heightInPx) {
+        continue;
+      }
 
-const addInlineViewZones = (codeEditor: MonacoCodeEditor, side: InlineCommentSide) => {
-  const entries = groupedInlineComments(side);
-  codeEditor.changeViewZones((accessor) => {
-    for (const entry of entries) {
-      const zone = renderInlineZone(side, entry.lineNumber, entry.comments);
-      const id = accessor.addZone({
-        afterLineNumber: zone.lineNumber,
-        heightInPx: zone.height,
-        domNode: zone.container
-      });
-      activeViewZones.push({
-        id,
-        editor: codeEditor,
-        domNode: zone.container,
-        lineNumber: zone.lineNumber,
-        side
-      });
+      activeZone.zone.heightInPx = measuredHeight;
+      activeZone.editor.changeViewZones((accessor) => accessor.layoutZone(activeZone.id));
+      hasHeightChange = true;
+    }
+
+    if (hasHeightChange) {
+      scheduleEditorLayout();
     }
   });
 };
 
-const syncInlineViewZones = () => {
+const createInlineViewZone = (
+  codeEditor: MonacoCodeEditor,
+  side: InlineCommentSide,
+  entry: { lineNumber: number; comments: ReviewComment[]; annotations: ReviewAnnotation[] },
+  accessor: ViewZoneAccessor
+) => {
+  const domNode = document.createElement('section');
+  domNode.className = 'review-inline-zone';
+  domNode.dataset.side = side;
+  protectInteractiveElement(domNode);
+  const contentElement = document.createElement('section');
+  contentElement.className = 'review-inline-zone-content';
+  domNode.append(contentElement);
+  renderInlineContent(contentElement, side, entry.comments, entry.annotations);
+
+  const zone: MutableViewZone = {
+    afterLineNumber: entry.lineNumber,
+    heightInPx: Math.max(156, 18 + entry.annotations.length * 110 + entry.comments.length * 156),
+    domNode
+  };
+  const activeZone: ActiveViewZone = {
+    id: accessor.addZone(zone),
+    editor: codeEditor,
+    zone,
+    contentElement,
+    lineNumber: entry.lineNumber,
+    side,
+    observedElements: new Set()
+  };
+  syncViewZoneResizeObserver(activeZone);
+  return activeZone;
+};
+
+const reconcileInlineViewZones = () => {
   if (!editor || !props.contents) {
     return;
   }
 
-  clearViewZones();
-  addInlineViewZones(editor.getOriginalEditor(), 'original');
-  addInlineViewZones(editor.getModifiedEditor(), 'modified');
+  const nextActiveViewZones: ActiveViewZone[] = [];
+  const editorSides: Array<[MonacoCodeEditor, InlineCommentSide]> = [
+    [editor.getOriginalEditor(), 'original'],
+    [editor.getModifiedEditor(), 'modified']
+  ];
+
+  for (const [codeEditor, side] of editorSides) {
+    const entries = groupedInlineContent(side);
+    const entriesByKey = new Map(entries.map((entry) => [viewZoneKey(side, entry.lineNumber), entry]));
+    const existingZones = activeViewZones.filter((activeZone) => activeZone.editor === codeEditor);
+    const existingZonesByKey = new Map(
+      existingZones.map((activeZone) => [viewZoneKey(activeZone.side, activeZone.lineNumber), activeZone])
+    );
+
+    codeEditor.changeViewZones((accessor) => {
+      for (const activeZone of existingZones) {
+        const entry = entriesByKey.get(viewZoneKey(activeZone.side, activeZone.lineNumber));
+        if (!entry) {
+          disposeViewZoneContent(activeZone);
+          accessor.removeZone(activeZone.id);
+          continue;
+        }
+
+        renderInlineContent(activeZone.contentElement, side, entry.comments, entry.annotations);
+        syncViewZoneResizeObserver(activeZone);
+        nextActiveViewZones.push(activeZone);
+      }
+
+      for (const entry of entries) {
+        if (existingZonesByKey.has(viewZoneKey(side, entry.lineNumber))) {
+          continue;
+        }
+
+        nextActiveViewZones.push(createInlineViewZone(codeEditor, side, entry, accessor));
+      }
+    });
+  }
+
+  activeViewZones = nextActiveViewZones;
   scheduleEditorLayout();
+  measureActiveViewZones();
 };
 
-const syncInlineCommentEditors = () => {
-  for (const zone of activeViewZones) {
+const syncInlineZoneContent = () => {
+  for (const activeZone of activeViewZones) {
     const comments = inlineComments().filter(
-      (comment) => comment.side === zone.side && comment.startLine === zone.lineNumber
+      (comment) => comment.side === activeZone.side && comment.startLine === activeZone.lineNumber
     );
-    renderInlineCommentEditors(zone.domNode, zone.side, comments);
+    const annotations = props.annotations.filter(
+      (annotation) => annotation.side === activeZone.side && annotation.startLine === activeZone.lineNumber
+    );
+    renderInlineContent(activeZone.contentElement, activeZone.side, comments, annotations);
+    syncViewZoneResizeObserver(activeZone);
   }
+  measureActiveViewZones();
 };
 
 const clearCommentDecorations = () => {
@@ -540,13 +685,31 @@ const syncCommentDecorations = () => {
     }
   }
 
+  for (const annotation of props.annotations) {
+    const decoration = {
+      range: new monaco.value.Range(annotation.startLine, 1, annotation.endLine, 1),
+      options: {
+        isWholeLine: true,
+        className: annotation.side === 'original' ? 'review-agent-line-original' : 'review-agent-line-modified',
+        glyphMarginClassName:
+          annotation.side === 'original' ? 'review-agent-glyph-original' : 'review-agent-glyph-modified'
+      }
+    };
+
+    if (annotation.side === 'original') {
+      originalRanges.push(decoration);
+    } else {
+      modifiedRanges.push(decoration);
+    }
+  }
+
   originalDecorations = editor.getOriginalEditor().deltaDecorations(originalDecorations, originalRanges);
   modifiedDecorations = editor.getModifiedEditor().deltaDecorations(modifiedDecorations, modifiedRanges);
 };
 
 const syncInlineReviewUI = () => {
   syncCommentDecorations();
-  syncInlineViewZones();
+  reconcileInlineViewZones();
 };
 
 const disposeModels = () => {
@@ -665,8 +828,12 @@ const createEditor = async () => {
       wordWrap: 'on',
       diffWordWrap: 'on'
     });
-    resizeObserver = new ResizeObserver(layoutEditor);
-    resizeObserver.observe(editorElement.value);
+    editorResizeObserver = new ResizeObserver(() => {
+      layoutEditor();
+      measureActiveViewZones();
+    });
+    viewZoneResizeObserver = new ResizeObserver(() => measureActiveViewZones());
+    editorResizeObserver.observe(editorElement.value);
     wireLineCommentHandlers();
     statusMessage.value = '';
     isEditorReady.value = true;
@@ -692,16 +859,13 @@ watch(
   }
 );
 
-watch(commentSignature, () => {
+watch(inlineContentSignature, () => {
   syncInlineReviewUI();
 });
 
-watch(
-  () => props.comments,
-  () => {
-    syncInlineCommentEditors();
-  }
-);
+watch([() => props.comments, () => props.annotations], () => {
+  syncInlineZoneContent();
+});
 
 onMounted(() => {
   void createEditor();
@@ -709,7 +873,11 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   saveScrollPosition();
-  resizeObserver?.disconnect();
+  editorResizeObserver?.disconnect();
+  viewZoneResizeObserver?.disconnect();
+  if (viewZoneMeasurementFrame !== null) {
+    cancelAnimationFrame(viewZoneMeasurementFrame);
+  }
   mouseDisposables.forEach((disposable) => disposable.dispose());
   clearEditorModel();
   editor?.dispose();
@@ -720,6 +888,14 @@ onBeforeUnmount(() => {
   <section class="review-diff-viewer" aria-label="Review diff viewer">
     <div v-if="placeholderText" class="review-diff-placeholder">{{ placeholderText }}</div>
     <section ref="editorElement" class="review-diff-editor" :data-hidden="String(Boolean(placeholderText))"></section>
+    <section class="review-diff-accessible-annotations" aria-label="Agent annotations">
+      <ReviewAgentAnnotation
+        v-for="annotation in props.annotations"
+        :key="annotation.id"
+        :annotation="annotation"
+        :location-label="annotationLocationLabel(annotation)"
+      />
+    </section>
   </section>
 </template>
 
@@ -758,6 +934,11 @@ onBeforeUnmount(() => {
   background: rgb(139 233 253 / 16%);
 }
 
+.review-diff-editor :global(.review-agent-line-original),
+.review-diff-editor :global(.review-agent-line-modified) {
+  background: rgb(189 147 249 / 14%);
+}
+
 .review-diff-editor :global(.review-comment-glyph-original),
 .review-diff-editor :global(.review-comment-glyph-modified) {
   width: 8px !important;
@@ -775,7 +956,22 @@ onBeforeUnmount(() => {
   background: #8be9fd;
 }
 
+.review-diff-editor :global(.review-agent-glyph-original),
+.review-diff-editor :global(.review-agent-glyph-modified) {
+  width: 9px !important;
+  height: 9px !important;
+  margin-left: 5px;
+  margin-top: 5px;
+  border: 1px solid #bd93f9;
+  background: transparent;
+  transform: rotate(45deg);
+}
+
 .review-diff-editor :global(.review-inline-zone) {
+  overflow: hidden;
+}
+
+.review-diff-editor :global(.review-inline-zone-content) {
   display: grid;
   gap: 8px;
   padding: 8px 14px 10px;
@@ -783,7 +979,6 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid var(--text);
   background: var(--window);
   color: var(--text);
-  overflow: hidden;
 }
 
 .review-diff-editor[data-hidden='true'] {
@@ -798,5 +993,17 @@ onBeforeUnmount(() => {
   color: var(--muted);
   font-size: 13px;
   text-align: center;
+}
+
+.review-diff-accessible-annotations {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

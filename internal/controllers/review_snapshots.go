@@ -72,7 +72,7 @@ func (controller ReviewSnapshots) Create(response http.ResponseWriter, request *
 // @ID listWorkspaceReviewSnapshots
 // @Tags Review snapshots
 // @Produce json
-// @Param workspaceId path string true "Workspace ID from WADE_WORKSPACE_ID"
+// @Param workspaceId path string true "Workspace ID from WADE_WORKSPACE_ID. Snapshots are returned newest first. An empty items collection means no usable review is active; ask the reviewer to start a Review in WADE. If several snapshots exist, select an explicit snapshot ID or ask the reviewer which review is intended. Do not create another snapshot merely to obtain an ID because the browser will not be attached to it."
 // @Success 200 {object} ReviewSnapshotList
 // @Failure 404 {object} Problem
 // @Failure 500 {object} Problem
@@ -155,13 +155,13 @@ func (controller ReviewSnapshots) Delete(response http.ResponseWriter, request *
 
 // CreateAnnotation validates and creates an immutable agent-authored review annotation.
 // @Summary Create an immutable review annotation
-// @Description Create an agent note against exact captured comparison content. First run wade api list-workspace-review-snapshots --workspace-id <workspace-id> and select an explicit snapshot ID. Line numbers are one-based and startLine and endLine form an inclusive range. Revision is delete followed by create; there is no update operation.
+// @Description Create an agent note against exact captured comparison content. First run wade api list-workspace-review-snapshots --workspace-id <workspace-id>. If the items collection is empty, ask the reviewer to start a Review in WADE. If several snapshots exist, select an explicit snapshot ID or ask the reviewer which review is intended. Do not create another snapshot merely to obtain an ID because the browser will not be attached to it. Line numbers are one-based and startLine and endLine form an inclusive range. Revision is delete followed by create; there is no update operation.
 // @ID createReviewAnnotation
 // @Tags Review annotations
 // @Accept json
 // @Produce json
 // @Param snapshotId path string true "Explicit review snapshot ID discovered with list-workspace-review-snapshots"
-// @Param request body reviewsnapshots.CreateAnnotationRequest true "First discover snapshots with wade api list-workspace-review-snapshots --workspace-id <workspace-id>. JSON fields: fileId, scope, side, startLine, endLine, and summary are required; rationale and author are optional. scope is working-tree, last-commit, or pull-request. side is original or modified. Lines are one-based and inclusive. Complete invocation example: wade api create-review-annotation --snapshot-id <snapshot-id> --body @annotation.json"
+// @Param request body reviewsnapshots.CreateAnnotationRequest true "First discover snapshots with wade api list-workspace-review-snapshots --workspace-id <workspace-id>. If the items collection is empty, ask the reviewer to start a Review in WADE. If several snapshots exist, select an explicit snapshot ID or ask the reviewer which review is intended. Do not create another snapshot merely to obtain an ID because the browser will not be attached to it. JSON fields: fileId, scope, side, startLine, endLine, and summary are required; rationale and author are optional. scope is working-tree, last-commit, or pull-request. side is original or modified. Lines are one-based and inclusive. Complete invocation example: wade api create-review-annotation --snapshot-id <snapshot-id> --body @annotation.json"
 // @Success 201 {object} reviewsnapshots.Annotation
 // @Header 201 {string} Location "Created annotation URL used for deletion"
 // @Failure 400 {object} Problem

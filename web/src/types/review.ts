@@ -23,6 +23,7 @@ export const reviewCommentKinds = ['feedback', 'question'] as const;
 export type ReviewCommentKind = (typeof reviewCommentKinds)[number];
 
 export type ReviewState = 'idle' | 'loading' | 'ready' | 'error';
+export type AnnotationSyncStatus = 'loading' | 'ready' | 'disconnected' | 'error';
 
 export interface DraftReviewComment {
   fileId: string;
@@ -64,6 +65,7 @@ export interface ReviewCheckpoint {
   hideUnchanged: boolean;
   renderSideBySide: boolean;
   wrapLines: boolean;
+  showAgentAnnotations: boolean;
 }
 
 export const isReviewInProgressState = (state: ReviewState) => state === 'loading' || state === 'ready';
