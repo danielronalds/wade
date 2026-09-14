@@ -6,7 +6,6 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "gen:api": "orval --config orval.config.ts",
-    "test": "vitest run",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
@@ -25,18 +24,13 @@
   },
   "devDependencies": {
     "@types/markdown-it": "^14.1.2",
-    "@types/node": "^22.15.30",
     "@types/web-bluetooth": "^0.0.21",
-    "@vitejs/plugin-vue": "^6.0.1",
     "@vue/compiler-sfc": "^3.5.39",
-    "@vue/test-utils": "^2.4.6",
     "esbuild": "^0.28.1",
-    "jsdom": "^26.1.0",
     "orval": "^8.24.0",
     "prettier": "^3.9.6",
     "type-fest": "^4.41.0",
     "typescript": "^6.0.3",
-    "vitest": "^3.2.6",
     "vue-tsc": "^3.3.5"
   }
 }
