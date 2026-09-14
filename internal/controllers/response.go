@@ -65,6 +65,8 @@ func writeModelError(w http.ResponseWriter, err error, fallbackDetail string) {
 		writeProblem(w, http.StatusNotFound, "review_snapshot_not_found", "Review snapshot not found", err.Error())
 	case matchesError[reviewsnapshots.SnapshotFileNotFoundError](err):
 		writeProblem(w, http.StatusNotFound, "review_snapshot_file_not_found", "Review snapshot file not found", err.Error())
+	case matchesError[reviewsnapshots.AnnotationNotFoundError](err):
+		writeProblem(w, http.StatusNotFound, "review_annotation_not_found", "Review annotation not found", err.Error())
 	case matchesError[repositories.RepositoryIDConflictError](err):
 		writeProblem(w, http.StatusConflict, "repository_id_conflict", "Repository ID conflict", err.Error())
 	case matchesError[workspaces.WorkspaceAlreadyExistsError](err):
@@ -99,6 +101,8 @@ func writeModelError(w http.ResponseWriter, err error, fallbackDetail string) {
 		writeProblem(w, http.StatusUnprocessableEntity, "workspace_not_git_repository", "Workspace is not a Git repository", err.Error())
 	case matchesError[reviewsnapshots.InvalidScopeError](err):
 		writeProblem(w, http.StatusUnprocessableEntity, "invalid_review_scope", "Invalid review scope", err.Error())
+	case matchesError[reviewsnapshots.InvalidAnnotationError](err):
+		writeProblem(w, http.StatusUnprocessableEntity, "invalid_review_annotation", "Invalid review annotation", err.Error())
 	default:
 		log.Printf("request failed: %v", err)
 		writeProblem(w, http.StatusInternalServerError, "internal_error", "Internal server error", fallbackDetail)

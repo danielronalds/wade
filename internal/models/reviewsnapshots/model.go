@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -18,7 +19,7 @@ type Model struct {
 	files      FileSystem
 
 	mu    sync.RWMutex
-	items map[string]snapshotRecord
+	items map[string]*snapshotRecord
 }
 
 // New constructs an application-scoped ReviewSnapshots Model.
@@ -28,7 +29,7 @@ func New(workspaces WorkspaceDiscovery, git Git, github GitHub, files FileSystem
 		git:        git,
 		github:     github,
 		files:      files,
-		items:      make(map[string]snapshotRecord),
+		items:      make(map[string]*snapshotRecord),
 	}
 }
 
@@ -84,13 +85,46 @@ func (model *Model) Create(ctx context.Context, workspaceID string) (ReviewSnaps
 	}
 
 	model.mu.Lock()
-	model.items[snapshotID] = snapshotRecord{
-		snapshot: snapshot,
-		window:   window,
+	model.items[snapshotID] = &snapshotRecord{
+		snapshot:              snapshot,
+		window:                window,
+		annotations:           make([]Annotation, 0),
+		annotationSubscribers: make(map[uint64]chan AnnotationRevision),
 	}
 	model.mu.Unlock()
 
 	return cloneReviewSnapshot(snapshot), nil
+}
+
+// List returns detached snapshots belonging to one configured workspace, newest first.
+func (model *Model) List(ctx context.Context, workspaceID string) ([]ReviewSnapshot, error) {
+	_, found, err := model.workspaces.Resolve(workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("resolving workspace %q: %w", workspaceID, err)
+	}
+	if !found {
+		return nil, WorkspaceNotFoundError{WorkspaceID: workspaceID}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	model.mu.RLock()
+	snapshots := make([]ReviewSnapshot, 0)
+	for _, record := range model.items {
+		if record.snapshot.WorkspaceID == workspaceID {
+			snapshots = append(snapshots, cloneReviewSnapshot(record.snapshot))
+		}
+	}
+	model.mu.RUnlock()
+
+	sort.Slice(snapshots, func(firstIndex int, secondIndex int) bool {
+		if snapshots[firstIndex].CreatedAt.Equal(snapshots[secondIndex].CreatedAt) {
+			return snapshots[firstIndex].ID < snapshots[secondIndex].ID
+		}
+		return snapshots[firstIndex].CreatedAt.After(snapshots[secondIndex].CreatedAt)
+	})
+	return snapshots, nil
 }
 
 // Get returns a detached copy of an in-memory snapshot.
@@ -127,17 +161,34 @@ func (model *Model) FileContents(ctx context.Context, snapshotID string, fileID 
 	return FileContents{}, SnapshotFileNotFoundError{SnapshotID: snapshotID, FileID: fileID}
 }
 
-// Delete removes one snapshot from the in-memory registry.
+// Delete removes one snapshot and closes its annotation subscriptions.
 func (model *Model) Delete(snapshotID string) error {
 	model.mu.Lock()
 	defer model.mu.Unlock()
 
-	if _, found := model.items[snapshotID]; !found {
+	record, found := model.items[snapshotID]
+	if !found {
 		return SnapshotNotFoundError{SnapshotID: snapshotID}
 	}
 
 	delete(model.items, snapshotID)
+	for _, updates := range record.annotationSubscribers {
+		close(updates)
+	}
 	return nil
+}
+
+// Close removes every snapshot and closes all annotation subscriptions.
+func (model *Model) Close() {
+	model.mu.Lock()
+	defer model.mu.Unlock()
+
+	for snapshotID, record := range model.items {
+		delete(model.items, snapshotID)
+		for _, updates := range record.annotationSubscribers {
+			close(updates)
+		}
+	}
 }
 
 func cloneReviewSnapshot(snapshot ReviewSnapshot) ReviewSnapshot {

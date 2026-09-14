@@ -436,6 +436,204 @@
                 }
             }
         },
+        "/api/v1/review-snapshots/{snapshotId}/annotations": {
+            "get": {
+                "description": "Returns annotations in creation order for the explicit review snapshot ID. Use list-workspace-review-snapshots to discover snapshots.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Review annotations"
+                ],
+                "summary": "List review annotations",
+                "operationId": "listReviewAnnotations",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Explicit review snapshot ID discovered with list-workspace-review-snapshots",
+                        "name": "snapshotId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ReviewAnnotationList"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create an agent note against exact captured comparison content. First run wade api list-workspace-review-snapshots --workspace-id \u003cworkspace-id\u003e. If the items collection is empty, ask the reviewer to start a Review in WADE. If several snapshots exist, select an explicit snapshot ID or ask the reviewer which review is intended. Do not create another snapshot merely to obtain an ID because the browser will not be attached to it. Line numbers are one-based and startLine and endLine form an inclusive range. Revision is delete followed by create; there is no update operation.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Review annotations"
+                ],
+                "summary": "Create an immutable review annotation",
+                "operationId": "createReviewAnnotation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Explicit review snapshot ID discovered with list-workspace-review-snapshots",
+                        "name": "snapshotId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "First discover snapshots with wade api list-workspace-review-snapshots --workspace-id \u003cworkspace-id\u003e. If the items collection is empty, ask the reviewer to start a Review in WADE. If several snapshots exist, select an explicit snapshot ID or ask the reviewer which review is intended. Do not create another snapshot merely to obtain an ID because the browser will not be attached to it. JSON fields: fileId, scope, side, startLine, endLine, and summary are required; rationale and author are optional. scope is working-tree, last-commit, or pull-request. side is original or modified. Lines are one-based and inclusive. Complete invocation example: wade api create-review-annotation --snapshot-id \u003csnapshot-id\u003e --body @annotation.json",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateReviewAnnotationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ReviewAnnotation"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "Created annotation URL used for deletion"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/review-snapshots/{snapshotId}/annotations/events": {
+            "get": {
+                "description": "Browser synchronisation transport. Each annotations-changed event contains the current collection revision; reload the annotation collection after every new revision.",
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "Review annotations"
+                ],
+                "summary": "Subscribe to review annotation changes",
+                "operationId": "subscribeReviewAnnotationEvents",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Review snapshot ID",
+                        "name": "snapshotId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Server-sent annotations-changed events",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                },
+                "x-wade-cli-ignore": true
+            }
+        },
+        "/api/v1/review-snapshots/{snapshotId}/annotations/{annotationId}": {
+            "delete": {
+                "description": "Deletes the annotation identified by annotationId beneath the explicit snapshotId. List annotations first if the annotation ID is not known. To revise a note, delete it and create a replacement.",
+                "tags": [
+                    "Review annotations"
+                ],
+                "summary": "Delete a review annotation",
+                "operationId": "deleteReviewAnnotation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Review snapshot ID",
+                        "name": "snapshotId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Opaque annotation ID returned by create-review-annotation or list-review-annotations",
+                        "name": "annotationId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/review-snapshots/{snapshotId}/files/{fileId}/contents": {
             "get": {
                 "produces": [
@@ -776,6 +974,46 @@
             }
         },
         "/api/v1/workspaces/{workspaceId}/review-snapshots": {
+            "get": {
+                "description": "Lists snapshots retained by the running WADE server, newest first. An empty items collection means no usable review is active; ask the reviewer to start a Review in WADE. If several snapshots exist, select an explicit snapshot ID or ask the reviewer which review is intended. Do not create another snapshot merely to obtain an ID because the browser will not be attached to it.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Review snapshots"
+                ],
+                "summary": "List workspace review snapshots",
+                "operationId": "listWorkspaceReviewSnapshots",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID from WADE_WORKSPACE_ID. Snapshots are returned newest first. An empty items collection means no usable review is active; ask the reviewer to start a Review in WADE. If several snapshots exist, select an explicit snapshot ID or ask the reviewer which review is intended. Do not create another snapshot merely to obtain an ID because the browser will not be attached to it.",
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ReviewSnapshotList"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/Problem"
+                        }
+                    }
+                }
+            },
             "post": {
                 "produces": [
                     "application/json"
@@ -1305,6 +1543,64 @@
                 }
             }
         },
+        "CreateReviewAnnotationRequest": {
+            "type": "object",
+            "required": [
+                "endLine",
+                "fileId",
+                "scope",
+                "side",
+                "startLine",
+                "summary"
+            ],
+            "properties": {
+                "author": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "endLine": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "fileId": {
+                    "type": "string"
+                },
+                "rationale": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "scope": {
+                    "enum": [
+                        "working-tree",
+                        "last-commit",
+                        "pull-request"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/reviewsnapshots.Scope"
+                        }
+                    ]
+                },
+                "side": {
+                    "enum": [
+                        "original",
+                        "modified"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ReviewAnnotationSide"
+                        }
+                    ]
+                },
+                "startLine": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "summary": {
+                    "type": "string"
+                }
+            }
+        },
         "CreateWorktreeRequest": {
             "type": "object",
             "required": [
@@ -1462,6 +1758,101 @@
                     }
                 }
             }
+        },
+        "ReviewAnnotation": {
+            "type": "object",
+            "required": [
+                "author",
+                "createdAt",
+                "endLine",
+                "fileId",
+                "id",
+                "rationale",
+                "scope",
+                "side",
+                "snapshotId",
+                "startLine",
+                "summary"
+            ],
+            "properties": {
+                "author": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "endLine": {
+                    "type": "integer"
+                },
+                "fileId": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "rationale": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "scope": {
+                    "enum": [
+                        "working-tree",
+                        "last-commit",
+                        "pull-request"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/reviewsnapshots.Scope"
+                        }
+                    ]
+                },
+                "side": {
+                    "enum": [
+                        "original",
+                        "modified"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ReviewAnnotationSide"
+                        }
+                    ]
+                },
+                "snapshotId": {
+                    "type": "string"
+                },
+                "startLine": {
+                    "type": "integer"
+                },
+                "summary": {
+                    "type": "string"
+                }
+            }
+        },
+        "ReviewAnnotationList": {
+            "type": "object",
+            "required": [
+                "items"
+            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ReviewAnnotation"
+                    }
+                }
+            }
+        },
+        "ReviewAnnotationSide": {
+            "type": "string",
+            "enum": [
+                "original",
+                "modified"
+            ],
+            "x-enum-varnames": [
+                "AnnotationSideOriginal",
+                "AnnotationSideModified"
+            ]
         },
         "ReviewChangeStatus": {
             "type": "string",
@@ -1654,6 +2045,20 @@
                 "remote": {
                     "type": "string",
                     "x-nullable": true
+                }
+            }
+        },
+        "ReviewSnapshotList": {
+            "type": "object",
+            "required": [
+                "items"
+            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ReviewSnapshot"
+                    }
                 }
             }
         },
@@ -2083,6 +2488,21 @@
                     "type": "boolean"
                 }
             }
+        },
+        "reviewsnapshots.Scope": {
+            "type": "string",
+            "enum": [
+                "pull-request",
+                "working-tree",
+                "last-commit",
+                "current"
+            ],
+            "x-enum-varnames": [
+                "ScopePullRequest",
+                "ScopeWorkingTree",
+                "ScopeLastCommit",
+                "ScopeCurrent"
+            ]
         }
     }
 }

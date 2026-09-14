@@ -2,8 +2,10 @@
 <script setup lang="ts">
 import MarkdownIt from 'markdown-it';
 import { computed } from 'vue';
-import type { CommentSide, ReviewComment, ReviewFileContents } from '@/types/review';
+import type { ReviewAnnotation } from '@/api/generated/wade';
+import type { AnnotationDeletionDisplay, CommentSide, ReviewComment, ReviewFileContents } from '@/types/review';
 import MermaidDiagram from './MermaidDiagram.vue';
+import ReviewAgentAnnotation from './ReviewAgentAnnotation.vue';
 import ReviewCommentEditor from './ReviewCommentEditor.vue';
 
 type InlineCommentSide = Exclude<CommentSide, 'file'>;
@@ -17,14 +19,20 @@ type MarkdownBlock = {
   isList: boolean;
 };
 
-const props = defineProps<{
-  comments: ReviewComment[];
-  contents: ReviewFileContents | null;
-  isLoading: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    annotations: ReviewAnnotation[];
+    comments: ReviewComment[];
+    contents: ReviewFileContents | null;
+    deletionErrors?: ReadonlyMap<string, string>;
+    isLoading: boolean;
+  }>(),
+  { deletionErrors: () => new Map() }
+);
 
 const emit = defineEmits<{
   addLineComment: [payload: { side: InlineCommentSide; lineNumber: number; endLine?: number }];
+  deleteAnnotation: [annotationID: string];
   deleteComment: [commentId: string];
   toggleCommentKind: [commentId: string];
   updateCommentBody: [payload: { commentId: string; body: string }];
@@ -118,38 +126,43 @@ const placeholderText = computed(() => {
   return '';
 });
 
-const commentsForBlock = (block: MarkdownBlock) =>
-  props.comments.filter((comment) => {
-    if (comment.side !== 'modified' || comment.startLine == null) {
-      return false;
+const blockForLine = (lineNumber: number) => {
+  const containingBlock = blocks.value.find(
+    (candidate) => lineNumber >= candidate.startLine && lineNumber <= candidate.endLine
+  );
+  if (containingBlock) {
+    return containingBlock;
+  }
+
+  return blocks.value.reduce<MarkdownBlock | null>((nearest, candidate) => {
+    if (!nearest) {
+      return candidate;
     }
 
-    const lineNumber = comment.startLine;
-    const containingBlock = blocks.value.find(
-      (candidate) => lineNumber >= candidate.startLine && lineNumber <= candidate.endLine
+    const candidateDistance = Math.min(
+      Math.abs(lineNumber - candidate.startLine),
+      Math.abs(lineNumber - candidate.endLine)
     );
-    if (containingBlock) {
-      return containingBlock.id === block.id;
-    }
+    const nearestDistance = Math.min(Math.abs(lineNumber - nearest.startLine), Math.abs(lineNumber - nearest.endLine));
+    return candidateDistance < nearestDistance ? candidate : nearest;
+  }, null);
+};
 
-    const nearestBlock = blocks.value.reduce<MarkdownBlock | null>((nearest, candidate) => {
-      if (!nearest) {
-        return candidate;
-      }
+const commentsForBlock = (block: MarkdownBlock) =>
+  props.comments.filter(
+    (comment) =>
+      comment.side === 'modified' && comment.startLine != null && blockForLine(comment.startLine)?.id === block.id
+  );
 
-      const candidateDistance = Math.min(
-        Math.abs(lineNumber - candidate.startLine),
-        Math.abs(lineNumber - candidate.endLine)
-      );
-      const nearestDistance = Math.min(
-        Math.abs(lineNumber - nearest.startLine),
-        Math.abs(lineNumber - nearest.endLine)
-      );
-      return candidateDistance < nearestDistance ? candidate : nearest;
-    }, null);
+const annotationsForBlock = (block: MarkdownBlock) =>
+  props.annotations.filter(
+    (annotation) => annotation.side === 'modified' && blockForLine(annotation.startLine)?.id === block.id
+  );
 
-    return nearestBlock?.id === block.id;
-  });
+const annotationDeletion = (annotationID: string): AnnotationDeletionDisplay => {
+  const message = props.deletionErrors.get(annotationID);
+  return message ? { status: 'failed', message } : { status: 'available' };
+};
 
 const commentLineRange = (comment: ReviewComment) =>
   comment.endLine != null && comment.endLine !== comment.startLine
@@ -170,9 +183,9 @@ const handleBlockClick = (block: MarkdownBlock, event: MouseEvent) => {
   }
 
   const clickedInteractiveContent = event.target.closest('a, button, input, textarea, select');
-  const clickedExistingComment = event.target.closest('.markdown-inline-comments');
+  const clickedExistingNote = event.target.closest('.markdown-inline-comments, .markdown-agent-annotations');
   const selection = window.getSelection();
-  if (clickedInteractiveContent || clickedExistingComment || (selection && !selection.isCollapsed)) {
+  if (clickedInteractiveContent || clickedExistingNote || (selection && !selection.isCollapsed)) {
     return;
   }
 
@@ -196,6 +209,22 @@ const handleBlockClick = (block: MarkdownBlock, event: MouseEvent) => {
         <section class="markdown-rendered-content">
           <MermaidDiagram v-if="block.mermaidSource !== null" :source="block.mermaidSource ?? ''" />
           <section v-else v-html="block.html"></section>
+        </section>
+        <section
+          v-if="annotationsForBlock(block).length > 0"
+          class="markdown-agent-annotations"
+          aria-label="Agent annotations on Markdown content"
+        >
+          <ReviewAgentAnnotation
+            v-for="annotation in annotationsForBlock(block)"
+            :key="annotation.id"
+            :annotation="annotation"
+            :deletion="annotationDeletion(annotation.id)"
+            :location-label="`Modified:${annotation.startLine}${
+              annotation.endLine === annotation.startLine ? '' : `-${annotation.endLine}`
+            }`"
+            @delete-annotation="emit('deleteAnnotation', $event)"
+          />
         </section>
         <section
           v-if="commentsForBlock(block).length > 0"
@@ -415,6 +444,7 @@ const handleBlockClick = (block: MarkdownBlock, event: MouseEvent) => {
   color: var(--muted);
 }
 
+.markdown-agent-annotations,
 .markdown-inline-comments {
   display: grid;
   gap: 8px;

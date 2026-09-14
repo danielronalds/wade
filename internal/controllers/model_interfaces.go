@@ -44,9 +44,14 @@ type RemoteRepositoriesModel interface {
 // ReviewSnapshotsModel is the complete ReviewSnapshots surface consumed by controllers.
 type ReviewSnapshotsModel interface {
 	Create(ctx context.Context, workspaceID string) (reviewsnapshots.ReviewSnapshot, error)
+	List(ctx context.Context, workspaceID string) ([]reviewsnapshots.ReviewSnapshot, error)
 	Get(snapshotID string) (reviewsnapshots.ReviewSnapshot, error)
 	FileContents(ctx context.Context, snapshotID string, fileID string, scope reviewsnapshots.Scope) (reviewsnapshots.FileContents, error)
 	Delete(snapshotID string) error
+	CreateAnnotation(ctx context.Context, snapshotID string, request reviewsnapshots.CreateAnnotationRequest) (reviewsnapshots.Annotation, error)
+	ListAnnotations(snapshotID string) ([]reviewsnapshots.Annotation, error)
+	DeleteAnnotation(snapshotID string, annotationID string) error
+	SubscribeAnnotations(snapshotID string) (reviewsnapshots.AnnotationSubscription, error)
 }
 
 // SettingsModel is the shared Settings surface consumed by HTTP and CLI controllers.

@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import {
   BookOpen,
+  Bot,
   Check,
   Code2,
   Columns2,
@@ -35,6 +36,7 @@ import {
 import ReviewCommentEditor from '@/views/workspace/tabs/review/components/ReviewCommentEditor.vue';
 import ReviewDiffViewer from '@/views/workspace/tabs/review/components/ReviewDiffViewer.vue';
 import ReviewMarkdownViewer from '@/views/workspace/tabs/review/components/ReviewMarkdownViewer.vue';
+import { useReviewAnnotations } from '@/views/workspace/tabs/review/composables/useReviewAnnotations';
 
 const props = defineProps<{
   workspaceId: string;
@@ -83,9 +85,20 @@ const {
   reviewOverallNoteDraft: overallNoteDraft,
   reviewRenderSideBySide: renderSideBySide,
   reviewReviewedFiles: reviewedFiles,
+  reviewShowAgentAnnotations: showAgentAnnotations,
   reviewState: state,
   reviewWrapLines: wrapLines
 } = storeToRefs(workspaceSessionStore);
+const {
+  annotations,
+  deleteAnnotation,
+  deletionErrors,
+  errorMessage: annotationErrorMessage,
+  retry: retryAnnotationSynchronisation,
+  status: annotationStatus,
+  stop: stopAnnotationSynchronisation,
+  synchronise: synchroniseAnnotations
+} = useReviewAnnotations();
 
 const errorMessage = ref('');
 const sendErrorMessage = ref('');
@@ -98,6 +111,8 @@ const draftCommentTextarea = ref<HTMLTextAreaElement | null>(null);
 const overallNoteTextarea = ref<HTMLTextAreaElement | null>(null);
 let reviewLoadRun = 0;
 let reviewLoadAbortController: AbortController | null = null;
+let lifecycleRun = 0;
+let cancelReviewRun = 0;
 const fileRequestAbortControllers = new Map<string, AbortController>();
 
 const scopeOptions = computed<Array<{ id: ReviewScope; label: string }>>(() => {
@@ -365,10 +380,17 @@ const startErrorMessage = computed(
 );
 const canStartReview = computed(() => state.value === 'idle' || state.value === 'error');
 const canCancelReview = computed(() => isReviewInProgressState(state.value));
+const activeAnnotationSnapshotId = computed(() => (state.value === 'ready' ? (reviewData.value?.id ?? '') : ''));
 const hasReviewableFiles = computed(() => (reviewData.value?.files.length ?? 0) > 0);
 const activeFileComments = computed(() =>
   comments.value.filter((comment) => comment.fileId === activeFileId.value && comment.scope === activeScope.value)
 );
+const activeFileAnnotations = computed(() =>
+  annotations.value.filter(
+    (annotation) => annotation.fileId === activeFileId.value && annotation.scope === activeScope.value
+  )
+);
+const visibleActiveFileAnnotations = computed(() => (showAgentAnnotations.value ? activeFileAnnotations.value : []));
 const activeFileInlineComments = computed(() => activeFileComments.value.filter((comment) => comment.side !== 'file'));
 const activeFileFileComments = computed(() => activeFileComments.value.filter((comment) => comment.side === 'file'));
 const isActiveFileReviewed = computed(
@@ -394,6 +416,19 @@ const wrapLinesButtonLabel = computed(() => (wrapLines.value ? 'Disable line wra
 const markdownViewButtonLabel = computed(() =>
   showRenderedMarkdown.value ? 'Show Markdown source' : 'Show rendered Markdown'
 );
+const agentAnnotationsButtonLabel = computed(() =>
+  showAgentAnnotations.value ? 'Hide agent annotations' : 'Show agent annotations'
+);
+const annotationSyncMessage = computed(() => {
+  if (annotationStatus.value === 'error') {
+    return annotationErrorMessage.value || 'Could not load agent annotations';
+  }
+  if (annotationStatus.value === 'disconnected') {
+    return 'Agent annotation updates are disconnected. Reconnecting automatically.';
+  }
+  return '';
+});
+const hasReviewNotice = computed(() => Boolean(visibleErrorMessage.value || annotationSyncMessage.value));
 const reviewInstructions = computed(() =>
   showRenderedMarkdown.value
     ? 'Click a rendered content block to comment. Use j/k or arrows for files, r to mark reviewed, / to search.'
@@ -435,6 +470,10 @@ const commentCountForFile = (file: ReviewFile) =>
     (comment) => comment.fileId === file.id && comment.scope === activeScope.value && comment.body.trim().length > 0
   ).length;
 
+const annotationCountForFile = (file: ReviewFile) =>
+  annotations.value.filter((annotation) => annotation.fileId === file.id && annotation.scope === activeScope.value)
+    .length;
+
 const toggleActiveFileReviewed = () => {
   const file = activeFile.value;
   if (!file) {
@@ -473,6 +512,10 @@ const toggleMarkdownView = () => {
   }
 
   renderMarkdown.value = !renderMarkdown.value;
+};
+
+const toggleAgentAnnotations = () => {
+  showAgentAnnotations.value = !showAgentAnnotations.value;
 };
 
 const toggleDirectoryCollapsed = (directoryPath: string) => {
@@ -602,6 +645,7 @@ const abortReviewRequests = () => {
 const resetReview = () => {
   reviewLoadRun += 1;
   abortReviewRequests();
+  stopAnnotationSynchronisation();
   workspaceSessionStore.clearReview(props.workspaceId);
   errorMessage.value = '';
   sendErrorMessage.value = '';
@@ -622,10 +666,39 @@ const cancelReview = async () => {
     return;
   }
 
+  const workspaceId = props.workspaceId;
+  const snapshotId = reviewData.value?.id ?? '';
+  const reviewStateAtCancellation = state.value;
+  const currentLifecycleRun = lifecycleRun;
+  const currentCancelReviewRun = ++cancelReviewRun;
+  const isCurrentReview = () =>
+    lifecycleRun === currentLifecycleRun &&
+    cancelReviewRun === currentCancelReviewRun &&
+    props.workspaceId === workspaceId &&
+    workspaceSessionStore.activeWorkspaceId === workspaceId &&
+    (snapshotId
+      ? state.value === 'ready' && reviewData.value?.id === snapshotId
+      : state.value === reviewStateAtCancellation && reviewData.value?.id == null);
+
+  stopAnnotationSynchronisation();
   try {
     await deleteActiveSnapshot();
   } catch (error) {
+    if (!isCurrentReview()) {
+      return;
+    }
+
     errorMessage.value = error instanceof Error ? error.message : 'Could not cancel review';
+    synchroniseAnnotations(snapshotId);
+    return;
+  }
+
+  const shouldResetMountedReview = isCurrentReview();
+  if (snapshotId) {
+    workspaceSessionStore.clearReviewIfSnapshotMatches(workspaceId, snapshotId);
+  }
+
+  if (!shouldResetMountedReview) {
     return;
   }
 
@@ -962,6 +1035,7 @@ const switchToNextTerminal = async () => {
 };
 
 onMounted(() => {
+  lifecycleRun += 1;
   window.addEventListener('keydown', handleReviewKeydown, true);
 
   if (state.value === 'ready') {
@@ -973,13 +1047,24 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  lifecycleRun += 1;
+  cancelReviewRun += 1;
   reviewLoadRun += 1;
   abortReviewRequests();
+  stopAnnotationSynchronisation();
   if (workspaceSessionStore.getReviewState(props.workspaceId) === 'loading') {
     workspaceSessionStore.clearReview(props.workspaceId);
   }
   window.removeEventListener('keydown', handleReviewKeydown, true);
 });
+
+watch(
+  activeAnnotationSnapshotId,
+  (snapshotId) => {
+    synchroniseAnnotations(snapshotId);
+  },
+  { immediate: true }
+);
 
 watch(activeScope, () => {
   ensureActiveFile();
@@ -1073,6 +1158,13 @@ defineExpose({
                 <span v-if="commentCountForFile(file) > 0" class="review-comment-count">{{
                   commentCountForFile(file)
                 }}</span>
+                <span
+                  v-if="showAgentAnnotations && annotationCountForFile(file) > 0"
+                  class="review-annotation-count"
+                  title="Agent annotations"
+                >
+                  A{{ annotationCountForFile(file) }}
+                </span>
                 <span v-if="getFileStatus(file)" class="review-file-status" :data-status="getFileStatus(file)">
                   {{ statusLabel(getFileStatus(file)) }}
                 </span>
@@ -1102,6 +1194,13 @@ defineExpose({
                 <span v-if="commentCountForFile(row.file) > 0" class="review-comment-count">{{
                   commentCountForFile(row.file)
                 }}</span>
+                <span
+                  v-if="showAgentAnnotations && annotationCountForFile(row.file) > 0"
+                  class="review-annotation-count"
+                  title="Agent annotations"
+                >
+                  A{{ annotationCountForFile(row.file) }}
+                </span>
                 <span v-if="getFileStatus(row.file)" class="review-file-status" :data-status="getFileStatus(row.file)">
                   {{ statusLabel(getFileStatus(row.file)) }}
                 </span>
@@ -1141,6 +1240,16 @@ defineExpose({
               </button>
             </section>
             <section class="review-action-group" aria-label="Editor view actions">
+              <button
+                class="review-icon-button"
+                type="button"
+                :data-active="String(showAgentAnnotations)"
+                :title="agentAnnotationsButtonLabel"
+                :aria-label="agentAnnotationsButtonLabel"
+                @click="toggleAgentAnnotations"
+              >
+                <Bot :size="15" :stroke-width="1.8" aria-hidden="true" />
+              </button>
               <button
                 v-if="isActiveFileMarkdown"
                 class="review-icon-button"
@@ -1219,14 +1328,19 @@ defineExpose({
             </section>
           </section>
         </header>
-        <p
-          class="review-file-error"
-          :data-visible="String(Boolean(visibleErrorMessage))"
-          :role="visibleErrorMessage ? 'alert' : undefined"
-          :aria-hidden="!visibleErrorMessage"
-        >
-          {{ visibleErrorMessage }}
-        </p>
+        <section class="review-file-error" :data-visible="String(hasReviewNotice)" :aria-hidden="!hasReviewNotice">
+          <p v-if="visibleErrorMessage" role="alert">{{ visibleErrorMessage }}</p>
+          <p
+            v-if="annotationSyncMessage"
+            class="review-annotation-sync-message"
+            :role="annotationStatus === 'error' ? 'alert' : undefined"
+          >
+            {{ annotationSyncMessage }}
+          </p>
+          <button v-if="annotationStatus === 'error'" type="button" @click="retryAnnotationSynchronisation">
+            Retry agent annotations
+          </button>
+        </section>
         <section
           class="review-comments-panel"
           :data-visible="String(activeFileFileComments.length > 0)"
@@ -1244,18 +1358,23 @@ defineExpose({
         </section>
         <ReviewMarkdownViewer
           v-if="showRenderedMarkdown"
+          :annotations="visibleActiveFileAnnotations"
           :comments="activeFileInlineComments"
           :contents="activeContents"
+          :deletion-errors="deletionErrors"
           :is-loading="isActiveFileLoading"
           @add-line-comment="addLineComment"
+          @delete-annotation="deleteAnnotation"
           @delete-comment="deleteComment"
           @toggle-comment-kind="toggleCommentKind"
           @update-comment-body="updateCommentBody"
         />
         <ReviewDiffViewer
           v-else
+          :annotations="visibleActiveFileAnnotations"
           :comments="activeFileInlineComments"
           :contents="activeContents"
+          :deletion-errors="deletionErrors"
           :file-path="activeFilePath"
           :hide-unchanged="hideUnchanged"
           :is-diff="Boolean(activeComparison)"
@@ -1264,6 +1383,7 @@ defineExpose({
           :scroll-key="reviewScrollKey"
           :wrap-lines="wrapLines"
           @add-line-comment="addLineComment"
+          @delete-annotation="deleteAnnotation"
           @delete-comment="deleteComment"
           @toggle-comment-kind="toggleCommentKind"
           @update-comment-body="updateCommentBody"
@@ -1576,13 +1696,19 @@ button:not(:disabled):focus-visible {
 }
 
 .review-reviewed-marker,
-.review-comment-count {
+.review-comment-count,
+.review-annotation-count {
   min-width: 16px;
   padding: 1px 4px;
   border: 1px solid var(--text);
   color: var(--text);
   font-size: 10px;
   text-align: center;
+}
+
+.review-annotation-count {
+  border-color: #bd93f9;
+  color: #bd93f9;
 }
 
 .review-reviewed-marker {
@@ -1695,9 +1821,28 @@ button:not(:disabled):focus-visible {
 }
 
 .review-file-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 10px 16px;
   border-bottom: 1px solid rgb(255 85 85 / 30%);
   background: rgb(255 85 85 / 8%);
+}
+
+.review-file-error p {
+  margin: 0;
+}
+
+.review-file-error button {
+  flex: 0 0 auto;
+  height: 26px;
+  margin-left: auto;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.review-annotation-sync-message {
+  color: #bd93f9;
 }
 
 .review-file-error[data-visible='false'] {

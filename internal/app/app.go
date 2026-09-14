@@ -21,8 +21,9 @@ import (
 
 // Application owns the HTTP handler and application-scoped runtime resources.
 type Application struct {
-	Mux       *http.ServeMux
-	terminals *terminals.Model
+	Mux             *http.ServeMux
+	terminals       *terminals.Model
+	reviewSnapshots *reviewsnapshots.Model
 }
 
 // New constructs the HTTP application from resolved runtime configuration and the shared Settings Model.
@@ -53,10 +54,15 @@ func New(configuration settings.RuntimeConfiguration, settingsModel controllers.
 	}
 
 	httpServer := server.New(controllerSet)
-	return &Application{Mux: httpServer.Mux, terminals: terminalModel}
+	return &Application{
+		Mux:             httpServer.Mux,
+		terminals:       terminalModel,
+		reviewSnapshots: reviewSnapshotModel,
+	}
 }
 
 // Close releases all application-scoped runtime resources.
 func (application *Application) Close() {
+	application.reviewSnapshots.Close()
 	application.terminals.Close()
 }

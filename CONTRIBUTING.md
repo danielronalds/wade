@@ -84,8 +84,9 @@ Run the test task before opening a pull request:
 mise run test
 ```
 
-Use `mise run fmt` to format Go and frontend files. The complete required checks
-are defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+Use `mise run fmt` to format Go and frontend files. Frontend component and
+composable tests can be run with `npm --prefix web test`. The complete required
+checks are defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 Changes to daemon lifecycle behaviour also require an isolated smoke test using
 a temporary `XDG_STATE_HOME` and port. Exercise `wade start`, `wade status` and

@@ -24,6 +24,11 @@ the server. Successful response bodies stream unchanged to stdout, `204 No
 Content` produces no output, and non-2xx responses surface the problem
 payload through the process error path with a non-zero exit status.
 
+Review snapshot discovery and annotation create, list and delete operations use
+this same generated interface. Their OpenAPI descriptions document captured
+scope, side and line-range semantics. The annotation event stream is excluded
+because it is a browser synchronisation transport.
+
 ## Config
 
 The `config` controller ensures the settings file exists through the shared `settings` Model, then opens it in the selected editor. Editor selection, process IO and command-line presentation remain CLI concerns.

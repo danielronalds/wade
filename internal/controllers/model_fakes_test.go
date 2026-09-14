@@ -155,22 +155,38 @@ func (fake *fakeTerminalsModel) Configure(configuration terminals.Configuration)
 }
 
 type fakeReviewSnapshotsModel struct {
-	snapshot            reviewsnapshots.ReviewSnapshot
-	contents            reviewsnapshots.FileContents
-	createError         error
-	getError            error
-	fileContentsError   error
-	deleteError         error
-	createdWorkspaceID  string
-	requestedSnapshotID string
-	requestedFileID     string
-	requestedScope      reviewsnapshots.Scope
-	deletedSnapshotID   string
+	snapshot                  reviewsnapshots.ReviewSnapshot
+	snapshots                 []reviewsnapshots.ReviewSnapshot
+	contents                  reviewsnapshots.FileContents
+	annotations               []reviewsnapshots.Annotation
+	annotation                reviewsnapshots.Annotation
+	subscription              reviewsnapshots.AnnotationSubscription
+	createError               error
+	listError                 error
+	getError                  error
+	fileContentsError         error
+	deleteError               error
+	createAnnotationError     error
+	listAnnotationsError      error
+	deleteAnnotationError     error
+	subscribeAnnotationsError error
+	createdWorkspaceID        string
+	listedWorkspaceID         string
+	requestedSnapshotID       string
+	requestedFileID           string
+	requestedScope            reviewsnapshots.Scope
+	deletedSnapshotID         string
+	annotationRequest         reviewsnapshots.CreateAnnotationRequest
+	deletedAnnotationID       string
 }
 
 func (fake *fakeReviewSnapshotsModel) Create(_ context.Context, workspaceID string) (reviewsnapshots.ReviewSnapshot, error) {
 	fake.createdWorkspaceID = workspaceID
 	return fake.snapshot, fake.createError
+}
+func (fake *fakeReviewSnapshotsModel) List(_ context.Context, workspaceID string) ([]reviewsnapshots.ReviewSnapshot, error) {
+	fake.listedWorkspaceID = workspaceID
+	return append([]reviewsnapshots.ReviewSnapshot(nil), fake.snapshots...), fake.listError
 }
 func (fake *fakeReviewSnapshotsModel) Get(snapshotID string) (reviewsnapshots.ReviewSnapshot, error) {
 	fake.requestedSnapshotID = snapshotID
@@ -185,6 +201,24 @@ func (fake *fakeReviewSnapshotsModel) FileContents(_ context.Context, snapshotID
 func (fake *fakeReviewSnapshotsModel) Delete(snapshotID string) error {
 	fake.deletedSnapshotID = snapshotID
 	return fake.deleteError
+}
+func (fake *fakeReviewSnapshotsModel) CreateAnnotation(_ context.Context, snapshotID string, request reviewsnapshots.CreateAnnotationRequest) (reviewsnapshots.Annotation, error) {
+	fake.requestedSnapshotID = snapshotID
+	fake.annotationRequest = request
+	return fake.annotation, fake.createAnnotationError
+}
+func (fake *fakeReviewSnapshotsModel) ListAnnotations(snapshotID string) ([]reviewsnapshots.Annotation, error) {
+	fake.requestedSnapshotID = snapshotID
+	return append([]reviewsnapshots.Annotation(nil), fake.annotations...), fake.listAnnotationsError
+}
+func (fake *fakeReviewSnapshotsModel) DeleteAnnotation(snapshotID string, annotationID string) error {
+	fake.requestedSnapshotID = snapshotID
+	fake.deletedAnnotationID = annotationID
+	return fake.deleteAnnotationError
+}
+func (fake *fakeReviewSnapshotsModel) SubscribeAnnotations(snapshotID string) (reviewsnapshots.AnnotationSubscription, error) {
+	fake.requestedSnapshotID = snapshotID
+	return fake.subscription, fake.subscribeAnnotationsError
 }
 
 type fakeSettingsModel struct {

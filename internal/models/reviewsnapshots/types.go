@@ -14,6 +14,13 @@ const (
 )
 
 const (
+	// AnnotationSideOriginal targets the captured original comparison content.
+	AnnotationSideOriginal AnnotationSide = "original"
+	// AnnotationSideModified targets the captured modified comparison content.
+	AnnotationSideModified AnnotationSide = "modified"
+)
+
+const (
 	// StatusModified identifies a modified path.
 	StatusModified ChangeStatus = "modified"
 	// StatusAdded identifies an added path.
@@ -27,8 +34,43 @@ const (
 // Scope selects the comparison represented by requested file contents.
 type Scope string
 
+// AnnotationSide identifies one side of a captured comparison.
+type AnnotationSide string // @name ReviewAnnotationSide
+
 // ChangeStatus describes how a file changed between two states.
 type ChangeStatus string // @name ReviewChangeStatus
+
+// CreateAnnotationRequest describes one immutable annotation to attach to captured content.
+type CreateAnnotationRequest struct {
+	FileID    string         `json:"fileId"`
+	Scope     Scope          `json:"scope" enums:"working-tree,last-commit,pull-request"`
+	Side      AnnotationSide `json:"side" enums:"original,modified"`
+	StartLine int            `json:"startLine" minimum:"1"`
+	EndLine   int            `json:"endLine" minimum:"1"`
+	Summary   string         `json:"summary"`
+	Rationale *string        `json:"rationale" extensions:"x-nullable" binding:"optional"`
+	Author    *string        `json:"author" extensions:"x-nullable" binding:"optional"`
+} // @name CreateReviewAnnotationRequest
+
+// Annotation is an immutable agent-authored note attached to captured review content.
+type Annotation struct {
+	ID         string         `json:"id"`
+	SnapshotID string         `json:"snapshotId"`
+	FileID     string         `json:"fileId"`
+	Scope      Scope          `json:"scope" enums:"working-tree,last-commit,pull-request"`
+	Side       AnnotationSide `json:"side" enums:"original,modified"`
+	StartLine  int            `json:"startLine"`
+	EndLine    int            `json:"endLine"`
+	Summary    string         `json:"summary"`
+	Rationale  *string        `json:"rationale" extensions:"x-nullable"`
+	Author     *string        `json:"author" extensions:"x-nullable"`
+	CreatedAt  time.Time      `json:"createdAt"`
+} // @name ReviewAnnotation
+
+// AnnotationRevision identifies the current version of a snapshot's annotation collection.
+type AnnotationRevision struct {
+	Revision uint64 `json:"revision"`
+} // @name ReviewAnnotationRevision
 
 // FileComparison describes one file across a comparison scope.
 type FileComparison struct {
@@ -104,8 +146,12 @@ type pullRequest struct {
 }
 
 type snapshotRecord struct {
-	snapshot ReviewSnapshot
-	window   windowData
+	snapshot              ReviewSnapshot
+	window                windowData
+	annotations           []Annotation
+	annotationRevision    uint64
+	annotationSubscribers map[uint64]chan AnnotationRevision
+	nextSubscriberID      uint64
 }
 
 type changedPath struct {

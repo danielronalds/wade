@@ -25,7 +25,7 @@ const (
 	developmentEnvironmentVariable = "WADE_DEV"
 	developmentAddress             = "editor-dev.localhost:8090"
 	defaultAddress                 = "editor.localhost:8765"
-	apiCommandListPreamble         = `Use WADE's local HTTP API to automate workspaces, worktrees and terminals. WADE must be running; the daemon address is detected automatically, or use --address to override it. Commands are derived from the OpenAPI specification.
+	apiCommandListPreamble         = `Use WADE's local HTTP API to automate workspaces, worktrees, terminals and reviews. WADE must be running; the daemon address is detected automatically, or use --address to override it. Commands are derived from the OpenAPI specification.
 
 Examples
   # Create a repository worktree

@@ -24,6 +24,38 @@ export interface BranchList {
   items: Branch[];
 }
 
+export type CreateReviewAnnotationRequestScope = typeof CreateReviewAnnotationRequestScope[keyof typeof CreateReviewAnnotationRequestScope];
+
+
+export const CreateReviewAnnotationRequestScope = {
+  'working-tree': 'working-tree',
+  'last-commit': 'last-commit',
+  'pull-request': 'pull-request',
+} as const;
+
+export type CreateReviewAnnotationRequestSide = typeof CreateReviewAnnotationRequestSide[keyof typeof CreateReviewAnnotationRequestSide];
+
+
+export const CreateReviewAnnotationRequestSide = {
+  original: 'original',
+  modified: 'modified',
+} as const;
+
+export interface CreateReviewAnnotationRequest {
+  /** @nullable */
+  author?: string | null;
+  /** @minimum 1 */
+  endLine: number;
+  fileId: string;
+  /** @nullable */
+  rationale?: string | null;
+  scope: CreateReviewAnnotationRequestScope;
+  side: CreateReviewAnnotationRequestSide;
+  /** @minimum 1 */
+  startLine: number;
+  summary: string;
+}
+
 export interface CreateWorktreeRequest {
   branchRef: string;
 }
@@ -71,6 +103,51 @@ export interface Repository {
   remoteRepositoryId: string | null;
   workspaceIds: string[];
 }
+
+export type ReviewAnnotationScope = typeof ReviewAnnotationScope[keyof typeof ReviewAnnotationScope];
+
+
+export const ReviewAnnotationScope = {
+  'working-tree': 'working-tree',
+  'last-commit': 'last-commit',
+  'pull-request': 'pull-request',
+} as const;
+
+export type ReviewAnnotationSideProperty = typeof ReviewAnnotationSideProperty[keyof typeof ReviewAnnotationSideProperty];
+
+
+export const ReviewAnnotationSideProperty = {
+  original: 'original',
+  modified: 'modified',
+} as const;
+
+export interface ReviewAnnotation {
+  /** @nullable */
+  author: string | null;
+  createdAt: string;
+  endLine: number;
+  fileId: string;
+  id: string;
+  /** @nullable */
+  rationale: string | null;
+  scope: ReviewAnnotationScope;
+  side: ReviewAnnotationSideProperty;
+  snapshotId: string;
+  startLine: number;
+  summary: string;
+}
+
+export interface ReviewAnnotationList {
+  items: ReviewAnnotation[];
+}
+
+export type ReviewAnnotationSide = typeof ReviewAnnotationSide[keyof typeof ReviewAnnotationSide];
+
+
+export const ReviewAnnotationSide = {
+  AnnotationSideOriginal: 'original',
+  AnnotationSideModified: 'modified',
+} as const;
 
 export type ReviewChangeStatus = typeof ReviewChangeStatus[keyof typeof ReviewChangeStatus];
 
@@ -132,6 +209,10 @@ export interface ReviewSnapshot {
   id: string;
   pullRequest: ReviewSnapshotPullRequest | null;
   workspaceId: string;
+}
+
+export interface ReviewSnapshotList {
+  items: ReviewSnapshot[];
 }
 
 export type SettingsThemeAccentColor = typeof SettingsThemeAccentColor[keyof typeof SettingsThemeAccentColor];
@@ -267,6 +348,16 @@ export interface Worktree {
 export interface WorktreeList {
   items: Worktree[];
 }
+
+export type ReviewsnapshotsScope = typeof ReviewsnapshotsScope[keyof typeof ReviewsnapshotsScope];
+
+
+export const ReviewsnapshotsScope = {
+  ScopePullRequest: 'pull-request',
+  ScopeWorkingTree: 'working-tree',
+  ScopeLastCommit: 'last-commit',
+  ScopeCurrent: 'current',
+} as const;
 
 export type GetOpenAPISpec200 = { [key: string]: unknown };
 
@@ -552,6 +643,109 @@ export const deleteReviewSnapshot = async (snapshotId: string, options?: Paramet
 
 
 
+export const getListReviewAnnotationsUrl = (snapshotId: string,) => {
+
+
+
+
+  return `/api/v1/review-snapshots/${encodeURIComponent(String(snapshotId))}/annotations`
+}
+
+/**
+ * Returns annotations in creation order for the explicit review snapshot ID. Use list-workspace-review-snapshots to discover snapshots.
+ * @summary List review annotations
+ */
+export const listReviewAnnotations = async (snapshotId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<ReviewAnnotationList> => {
+
+  return wadeFetch<ReviewAnnotationList>(getListReviewAnnotationsUrl(snapshotId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getCreateReviewAnnotationUrl = (snapshotId: string,) => {
+
+
+
+
+  return `/api/v1/review-snapshots/${encodeURIComponent(String(snapshotId))}/annotations`
+}
+
+/**
+ * Create an agent note against exact captured comparison content. First run wade api list-workspace-review-snapshots --workspace-id <workspace-id>. If the items collection is empty, ask the reviewer to start a Review in WADE. If several snapshots exist, select an explicit snapshot ID or ask the reviewer which review is intended. Do not create another snapshot merely to obtain an ID because the browser will not be attached to it. Line numbers are one-based and startLine and endLine form an inclusive range. Revision is delete followed by create; there is no update operation.
+ * @summary Create an immutable review annotation
+ */
+export const createReviewAnnotation = async (snapshotId: string,
+    createReviewAnnotationRequest: CreateReviewAnnotationRequest, options?: Parameters<typeof wadeFetch>[1]): Promise<ReviewAnnotation> => {
+
+  return wadeFetch<ReviewAnnotation>(getCreateReviewAnnotationUrl(snapshotId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createReviewAnnotationRequest)
+  }
+);}
+
+
+
+export const getSubscribeReviewAnnotationEventsUrl = (snapshotId: string,) => {
+
+
+
+
+  return `/api/v1/review-snapshots/${encodeURIComponent(String(snapshotId))}/annotations/events`
+}
+
+/**
+ * Browser synchronisation transport. Each annotations-changed event contains the current collection revision; reload the annotation collection after every new revision.
+ * @summary Subscribe to review annotation changes
+ */
+export const subscribeReviewAnnotationEvents = async (snapshotId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<string> => {
+
+  return wadeFetch<string>(getSubscribeReviewAnnotationEventsUrl(snapshotId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getDeleteReviewAnnotationUrl = (snapshotId: string,
+    annotationId: string,) => {
+
+
+
+
+  return `/api/v1/review-snapshots/${encodeURIComponent(String(snapshotId))}/annotations/${encodeURIComponent(String(annotationId))}`
+}
+
+/**
+ * Deletes the annotation identified by annotationId beneath the explicit snapshotId. List annotations first if the annotation ID is not known. To revise a note, delete it and create a replacement.
+ * @summary Delete a review annotation
+ */
+export const deleteReviewAnnotation = async (snapshotId: string,
+    annotationId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<void> => {
+
+  return wadeFetch<void>(getDeleteReviewAnnotationUrl(snapshotId,annotationId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
 export const getGetReviewSnapshotFileContentsUrl = (snapshotId: string,
     fileId: string,
     params: GetReviewSnapshotFileContentsParams,) => {
@@ -728,6 +922,31 @@ export const getGetWorkspaceUrl = (workspaceId: string,) => {
 export const getWorkspace = async (workspaceId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<Workspace> => {
 
   return wadeFetch<Workspace>(getGetWorkspaceUrl(workspaceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getListWorkspaceReviewSnapshotsUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/v1/workspaces/${encodeURIComponent(String(workspaceId))}/review-snapshots`
+}
+
+/**
+ * Lists snapshots retained by the running WADE server, newest first. An empty items collection means no usable review is active; ask the reviewer to start a Review in WADE. If several snapshots exist, select an explicit snapshot ID or ask the reviewer which review is intended. Do not create another snapshot merely to obtain an ID because the browser will not be attached to it.
+ * @summary List workspace review snapshots
+ */
+export const listWorkspaceReviewSnapshots = async (workspaceId: string, options?: Parameters<typeof wadeFetch>[1]): Promise<ReviewSnapshotList> => {
+
+  return wadeFetch<ReviewSnapshotList>(getListWorkspaceReviewSnapshotsUrl(workspaceId),
   {
     ...options,
     method: 'GET'
