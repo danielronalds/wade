@@ -91,6 +91,8 @@ const {
 } = storeToRefs(workspaceSessionStore);
 const {
   annotations,
+  deleteAnnotation,
+  deletionErrors,
   errorMessage: annotationErrorMessage,
   retry: retryAnnotationSynchronisation,
   status: annotationStatus,
@@ -1359,8 +1361,10 @@ defineExpose({
           :annotations="visibleActiveFileAnnotations"
           :comments="activeFileInlineComments"
           :contents="activeContents"
+          :deletion-errors="deletionErrors"
           :is-loading="isActiveFileLoading"
           @add-line-comment="addLineComment"
+          @delete-annotation="deleteAnnotation"
           @delete-comment="deleteComment"
           @toggle-comment-kind="toggleCommentKind"
           @update-comment-body="updateCommentBody"
@@ -1370,6 +1374,7 @@ defineExpose({
           :annotations="visibleActiveFileAnnotations"
           :comments="activeFileInlineComments"
           :contents="activeContents"
+          :deletion-errors="deletionErrors"
           :file-path="activeFilePath"
           :hide-unchanged="hideUnchanged"
           :is-diff="Boolean(activeComparison)"
@@ -1378,6 +1383,7 @@ defineExpose({
           :scroll-key="reviewScrollKey"
           :wrap-lines="wrapLines"
           @add-line-comment="addLineComment"
+          @delete-annotation="deleteAnnotation"
           @delete-comment="deleteComment"
           @toggle-comment-kind="toggleCommentKind"
           @update-comment-body="updateCommentBody"

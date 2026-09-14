@@ -3,7 +3,7 @@
 import MarkdownIt from 'markdown-it';
 import { computed } from 'vue';
 import type { ReviewAnnotation } from '@/api/generated/wade';
-import type { CommentSide, ReviewComment, ReviewFileContents } from '@/types/review';
+import type { AnnotationDeletionDisplay, CommentSide, ReviewComment, ReviewFileContents } from '@/types/review';
 import MermaidDiagram from './MermaidDiagram.vue';
 import ReviewAgentAnnotation from './ReviewAgentAnnotation.vue';
 import ReviewCommentEditor from './ReviewCommentEditor.vue';
@@ -19,15 +19,20 @@ type MarkdownBlock = {
   isList: boolean;
 };
 
-const props = defineProps<{
-  annotations: ReviewAnnotation[];
-  comments: ReviewComment[];
-  contents: ReviewFileContents | null;
-  isLoading: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    annotations: ReviewAnnotation[];
+    comments: ReviewComment[];
+    contents: ReviewFileContents | null;
+    deletionErrors?: ReadonlyMap<string, string>;
+    isLoading: boolean;
+  }>(),
+  { deletionErrors: () => new Map() }
+);
 
 const emit = defineEmits<{
   addLineComment: [payload: { side: InlineCommentSide; lineNumber: number; endLine?: number }];
+  deleteAnnotation: [annotationID: string];
   deleteComment: [commentId: string];
   toggleCommentKind: [commentId: string];
   updateCommentBody: [payload: { commentId: string; body: string }];
@@ -154,6 +159,11 @@ const annotationsForBlock = (block: MarkdownBlock) =>
     (annotation) => annotation.side === 'modified' && blockForLine(annotation.startLine)?.id === block.id
   );
 
+const annotationDeletion = (annotationID: string): AnnotationDeletionDisplay => {
+  const message = props.deletionErrors.get(annotationID);
+  return message ? { status: 'failed', message } : { status: 'available' };
+};
+
 const commentLineRange = (comment: ReviewComment) =>
   comment.endLine != null && comment.endLine !== comment.startLine
     ? `${comment.startLine}-${comment.endLine}`
@@ -209,9 +219,11 @@ const handleBlockClick = (block: MarkdownBlock, event: MouseEvent) => {
             v-for="annotation in annotationsForBlock(block)"
             :key="annotation.id"
             :annotation="annotation"
+            :deletion="annotationDeletion(annotation.id)"
             :location-label="`Modified:${annotation.startLine}${
               annotation.endLine === annotation.startLine ? '' : `-${annotation.endLine}`
             }`"
+            @delete-annotation="emit('deleteAnnotation', $event)"
           />
         </section>
         <section

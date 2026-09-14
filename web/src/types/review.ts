@@ -24,6 +24,7 @@ export type ReviewCommentKind = (typeof reviewCommentKinds)[number];
 
 export type ReviewState = 'idle' | 'loading' | 'ready' | 'error';
 export type AnnotationSyncStatus = 'loading' | 'ready' | 'disconnected' | 'error';
+export type AnnotationDeletionDisplay = { status: 'available' } | { status: 'failed'; message: string };
 
 export interface DraftReviewComment {
   fileId: string;

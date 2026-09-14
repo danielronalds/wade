@@ -6,7 +6,9 @@ WADE lets a person inspect a point-in-time review snapshot and leave inline feed
 
 As a result, the reviewer must infer why a change exists from the code and terminal conversation. Useful context such as intent, trade-offs, risk areas, and non-obvious implementation decisions is separated from the diff where it is most useful.
 
-The agent already runs inside a WADE-managed terminal with enough environment information to call WADE's local HTTP API. The missing capability is an immutable annotation resource that the agent can create, read, and delete beneath an existing review snapshot, plus a way for the Review tab to display those resources as they change.
+Once an agent annotation is visible, the reviewer also needs to control whether it remains part of the review. Without a browser deletion action, an incorrect, stale, duplicated, or no-longer-useful annotation continues to occupy the diff until an agent removes it through the API. This interrupts the review workflow and leaves the reviewer unable to clean up the context in front of them.
+
+The agent already runs inside a WADE-managed terminal with enough environment information to call WADE's local HTTP API. The complete capability is an immutable annotation resource that the agent can create, read, and delete beneath an existing review snapshot, a way for the Review tab to display those resources as they change, and a direct reviewer action that uses the same deletion contract.
 
 ## Solution
 
@@ -14,7 +16,9 @@ Add agent-authored annotations as child resources of a review snapshot.
 
 An agent uses the existing `wade api` command to discover the workspace's in-memory review snapshots and create annotations against one exact snapshot file, comparison scope, side, and inclusive line range. The annotation endpoint supports create, read, and delete operations. It deliberately has no update operation. An agent revises a note by deleting it and creating a replacement.
 
-The Review tab subscribes to annotation-change notifications for its active snapshot, reloads the authoritative annotation collection, and displays annotations as read-only cards beside the relevant diff lines. Agent annotations remain distinct from editable human review comments and are never included in the feedback prompt sent to the agent.
+The Review tab subscribes to annotation-change notifications for its active snapshot, reloads the authoritative annotation collection, and displays annotations as content-read-only cards beside the relevant diff lines. Every rendered annotation card has an always-visible grey cross in its top-right corner. Activating the cross removes the card immediately and calls the existing server-side delete operation. A failed deletion restores the card with an inline error and leaves the cross available to retry. Deletion requires no confirmation and offers no undo action.
+
+Agent annotations remain distinct from editable human review comments and are never included in the feedback prompt sent to the agent. A reviewer can delete any displayed annotation regardless of its author metadata, in source diff and rendered Markdown views, and while the annotation event stream is disconnected.
 
 The endpoint's OpenAPI metadata is the agent documentation. `wade api <annotation-command> --help` explains snapshot discovery, the request body, valid values, line-number semantics, and a complete invocation example. No skill, MCP integration, or dedicated review command is introduced.
 
@@ -22,7 +26,9 @@ The endpoint's OpenAPI metadata is the agent documentation. `wade api <annotatio
 
 - A coding agent can attach concise explanations to exact lines in the review snapshot it has changed.
 - A reviewer sees agent rationale in the diff without searching the terminal conversation.
-- A reviewer can distinguish read-only agent annotations from their own editable feedback and questions.
+- A reviewer can distinguish content-read-only agent annotations from their own editable feedback and questions.
+- A reviewer can immediately remove any displayed agent annotation without leaving the Review tab or asking an agent to do it.
+- A reviewer can retry a failed deletion from the restored annotation and understand why it was not removed.
 - A coding agent can inspect and remove annotations through the same generated `wade api` interface used for other WADE automation.
 - A reviewer sees annotation changes without restarting or recreating the review.
 - Human review submission continues to send only human-authored feedback and questions to the selected agent.
@@ -33,6 +39,7 @@ The endpoint's OpenAPI metadata is the agent documentation. `wade api <annotatio
 ```mermaid
 flowchart TB
     Agent["Agent terminal: WADE_WORKSPACE_ID and wade api"]
+    Reviewer["Reviewer: annotation delete cross"]
     Discovery["1. Snapshot discovery: ReviewSnapshotList"]
     CLI["2. OpenAPI command dispatch: api.Operation"]
     HTTP["3. Annotation CRD transport: CreateAnnotationRequest and Annotation"]
@@ -40,10 +47,14 @@ flowchart TB
     Registry["Snapshot annotation collection: immutable Annotation values"]
     Events["5. Annotation revision stream: AnnotationRevision"]
     Browser["6. Review annotation state: AnnotationList"]
-    Viewer["7. Review presentation: read-only cards and ranges"]
+    Viewer["7. Review presentation: content-read-only cards and ranges"]
+    BrowserDelete["8. Browser deletion: ReviewAnnotationDeletion"]
 
     Agent --> Discovery --> CLI --> HTTP --> Model --> Registry
     Registry --> Events --> Browser --> Viewer
+    Reviewer --> BrowserDelete --> HTTP
+    BrowserDelete -. "optimistic removal" .-> Viewer
+    HTTP -. "failure: restore with inline error" .-> BrowserDelete
     Agent -. "GET collection" .-> CLI
     Agent -. "DELETE item" .-> CLI
     Model -. "Problem response" .-> HTTP
@@ -251,7 +262,7 @@ The invalid annotation detail identifies the rejected field or relationship with
 
 ### 5. Publish annotation collection revisions
 
-The Review tab needs prompt notification when an agent creates or deletes an annotation. The aggregate publishes collection revisions while the controller owns the server-sent event transport.
+The Review tab needs prompt notification when an annotation is created or deleted through either the agent or reviewer workflow. The aggregate publishes collection revisions while the controller owns the server-sent event transport.
 
 ```go
 type AnnotationRevision struct {
@@ -357,29 +368,100 @@ func PresentAnnotations(
 
 For source diffs, each annotation produces:
 
-- A read-only view-zone card anchored after `startLine` on the selected side.
+- A content-read-only view-zone card anchored after `startLine` on the selected side.
 - A whole-line decoration covering `startLine` through `endLine`.
 - A distinct agent-note glyph and colour that do not reuse feedback or question styling.
 - A label derived from the optional author, falling back to `Agent note`.
 - A displayed original or modified inclusive line range.
 - Plain-text summary and optional rationale.
+- An always-visible grey deletion cross in the top-right corner.
 
 Multiple annotations at the same side and start line share one view zone and retain creation order. View-zone height follows measured content so long rationale text is not clipped.
 
-For rendered Markdown, modified-side annotations are attached to the rendered block containing their first line, using the existing nearest-block fallback when no block directly contains the line. Original-side annotations are not shown in the rendered document because that view has no original content; they remain available in the source diff. Clicking or selecting an annotation card never opens a human comment draft.
+For rendered Markdown, modified-side annotations are attached to the rendered block containing their first line, using the existing nearest-block fallback when no block directly contains the line. Original-side annotations are not shown in the rendered document because that view has no original content; they remain available in the source diff. Clicking or selecting annotation content never opens a human comment draft. Activating its deletion control only starts annotation deletion.
 
-The file sidebar shows a separate agent-annotation count for each file in the active scope. A review-level toggle shows or hides agent annotation cards, decorations, and counts without deleting the underlying resources. The toggle is stored with the existing browser review checkpoint because it is a presentation preference, not annotation state.
+The source diff's accessibility-only annotation representation exposes the same labelled deletion action. The action is available for every displayed annotation in every supported review scope, regardless of author metadata. An original-side Markdown annotation can only be deleted after switching to the source viewer because rendered Markdown does not display that card.
+
+The file sidebar shows a separate agent-annotation count for each file in the active scope. A review-level toggle shows or hides agent annotation cards, decorations, deletion controls, and counts without deleting the underlying resources. Optimistic deletion updates cards, decorations, and counts immediately. The toggle is stored with the existing browser review checkpoint because it is a presentation preference, not annotation state.
 
 Invariants and policy:
 
-- Agent annotations are read-only in the browser. Create and delete remain API operations.
+- Annotation content remains read-only in the browser; the reviewer may delete the complete annotation resource.
+- The deletion cross remains visible at rest and gains a clear hover and keyboard-focus state.
+- The deletion cross is a native button with an accessible name and Enter and Space activation.
 - Agent annotations never become `ReviewComment` values.
 - Agent annotations do not make Finish available and are not included in the composed review prompt.
 - Existing human comments at the same line remain editable and render alongside agent notes.
-- Hiding agent annotations affects only presentation.
-- Annotation text enters the DOM through text content, not unsanitised HTML.
-- Annotation rendering does not change diff contents, scroll restoration, line wrapping, side-by-side mode, unchanged-region behaviour, or Markdown rendering semantics.
+- Hiding agent annotations affects only presentation and provides no separate deletion route.
+- Annotation text and deletion errors enter the DOM through text content, not unsanitised HTML.
+- Annotation rendering and deletion do not change diff contents, scroll restoration, line wrapping, side-by-side mode, unchanged-region behaviour, Markdown rendering semantics, or human comment focus and selection.
 - The source viewer remains the complete representation when the rendered Markdown view cannot display an original-side annotation.
+
+### 8. Delete annotations from the Review tab
+
+The shared annotation card emits one deletion intent. The source diff and rendered Markdown viewers forward that intent to the Review tab without owning server state.
+
+```ts
+type AnnotationDeletionDisplay =
+  { status: "available" } | { status: "failed"; message: string };
+
+type ReviewAgentAnnotationProps = {
+  annotation: ReviewAnnotation;
+  locationLabel: string;
+  deletion: AnnotationDeletionDisplay;
+  activateOnPointerdown: boolean;
+};
+
+type ReviewAgentAnnotationEmits = {
+  deleteAnnotation: [annotationID: string];
+};
+
+type ReviewAnnotationViewerEmits = {
+  deleteAnnotation: [annotationID: string];
+};
+```
+
+The card converts pointer or keyboard activation into `deleteAnnotation`. Source-diff view zones opt into pointer-down activation because Monaco may consume the later click. Normal Markdown and accessibility-only cards use standard button click and keyboard behaviour. Each physical action emits once; a pointer-down followed by click must not issue two requests.
+
+The Review tab calls the annotation synchronisation boundary that already owns the active snapshot and authoritative annotation collection.
+
+```ts
+interface ReviewAnnotationDeletion {
+  readonly annotations: Readonly<Ref<ReviewAnnotation[]>>;
+  readonly deletionErrors: Readonly<Ref<ReadonlyMap<string, string>>>;
+  deleteAnnotation(annotationID: string): Promise<void>;
+}
+
+function deleteReviewAnnotation(
+  snapshotID: string,
+  annotationID: string,
+): Promise<void>;
+```
+
+`deleteAnnotation` resolves the currently displayed resource, verifies that it belongs to the active snapshot, records its current collection position, clears any previous deletion error, and removes it from the visible collection before awaiting the generated API client. The generated client sends:
+
+```text
+DELETE /api/v1/review-snapshots/{snapshotId}/annotations/{annotationId}
+```
+
+A `204 No Content` leaves the annotation removed. The server increments the annotation collection revision, the existing `annotations-changed` event causes a full collection read, and the authoritative response confirms the deletion. A `404` is also a successful browser outcome because the annotation resource is already absent on the server.
+
+Any other failure restores the captured annotation into the active collection at its previous relative position and associates a plain-text error message with that annotation ID. The restored card displays the error inline. Its deletion cross remains enabled and repeats the same flow when activated again.
+
+Invariants and policy:
+
+- Deletion starts immediately without a confirmation prompt.
+- Successful deletion has no undo action because recreating an immutable annotation would produce a different ID and creation time.
+- Any displayed annotation can be deleted regardless of author metadata.
+- The event-stream connection status does not gate deletion. A direct request may succeed while EventSource is reconnecting.
+- At most one deletion request for an annotation ID is active at a time. Different annotations may be deleted concurrently.
+- Pending and successfully deleted IDs remain suppressed from collection responses until an authoritative response confirms that each resource is absent. An older in-flight collection response cannot make an optimistically removed card reappear.
+- A failed deletion restores only into the same active snapshot lifecycle. Switching reviews, cancelling, finishing, or unmounting clears deletion state, and late responses cannot contaminate a later review, including a reopened review with the same snapshot ID.
+- A failed deletion does not alter annotation revision state, event-stream status, or collection-read retry state.
+- Retrying clears the previous inline error before removing the card again.
+- Immediate removal updates the file count, line decorations, glyphs, view zones, and Markdown cards through the existing reactive presentation flow.
+- Annotation deletion does not mutate human comments, reviewed-file state, active file, active scope, display preferences, or the generated feedback prompt.
+- The existing generated API client, HTTP contract, model operation, and event publication are reused without backend or OpenAPI changes.
 
 ## Testing Decisions
 
@@ -459,9 +541,29 @@ Tests verify externally observable contracts and domain invariants rather than p
 - Modified Markdown annotations attach to the expected rendered block.
 - Original annotations do not appear in rendered Markdown and reappear in source view.
 - Annotation text is rendered as text rather than executable markup.
-- Hiding annotations removes cards, decorations, glyphs, and counts without deleting state.
+- Hiding annotations removes cards, deletion controls, decorations, glyphs, and counts without deleting state.
 - Agent annotations never enable Finish and never appear in the feedback prompt.
 - Frontend tests use a DOM-capable Vue component runner for presentation behaviour, while the normal typecheck and production build remain required.
+
+### Browser deletion boundary
+
+- Every source-diff and rendered Markdown annotation card has an always-visible grey deletion cross in its top-right corner.
+- The control has an accessible name, supports Enter and Space, exposes visible focus, and emits one deletion intent for each pointer or keyboard activation.
+- Monaco pointer-down handling does not cause a duplicate request when the subsequent click occurs.
+- Both viewers, including the source diff's accessibility-only annotation representation, forward the selected annotation ID without changing human comment behaviour.
+- Activating deletion removes the card, count, range decoration, glyph, and annotation-only view zone before the HTTP request settles.
+- The generated client receives the annotation's exact snapshot ID and annotation ID.
+- A successful deletion keeps the annotation absent while the resulting SSE revision and collection read reconcile authoritative state.
+- An older in-flight collection response cannot reinsert a pending or successfully deleted annotation.
+- A failed request restores the annotation in its previous relative position with a plain-text inline error and a working retry action.
+- A retry removes the restored card immediately, clears the old error, and can complete successfully.
+- A `404` leaves the annotation removed because the server-side resource is already absent.
+- Deletion works while EventSource is disconnected and does not change its reconnection state.
+- Multiple annotations can be deleted concurrently without one result restoring or suppressing another.
+- Late success and failure results from an abandoned snapshot lifecycle do not alter the current review, including when the same snapshot ID is reopened.
+- Deleting annotations of different authors and in each displayed supported scope follows the same path.
+- Annotation deletion leaves human comments, reviewed files, navigation, display preferences, Finish availability, and feedback prompt composition unchanged.
+- Prior art is the human comment editor's Monaco-safe action handling, annotation synchronisation tests for stale snapshot responses, and the existing source-diff and Markdown annotation presentation tests.
 
 The completed change must pass formatting, OpenAPI reproducibility checks, frontend typechecking and build, Go tests with the race detector, and the repository's complete `mise run test` task.
 
@@ -469,7 +571,9 @@ The completed change must pass formatting, OpenAPI reproducibility checks, front
 
 - Updating an existing annotation with PUT or PATCH.
 - Batch annotation creation or deletion.
-- Creating or editing annotations from the browser.
+- Creating or editing annotation content from the browser.
+- Confirmation prompts before deleting an annotation.
+- Undoing or restoring a successfully deleted annotation.
 - Persisting annotations after their parent snapshot is deleted or the WADE server restarts.
 - Agent annotations for the live `current` scope.
 - Automatically selecting one snapshot when several exist for a workspace.
@@ -487,7 +591,9 @@ The completed change must pass formatting, OpenAPI reproducibility checks, front
 
 Hunk's current live-session annotation workflow is useful prior art, particularly its separation of agent notes from human review comments, exact old/new-side anchors, immutable comment identity, CLI discoverability, and full-state refresh after live notifications. WADE should adopt those product properties through its existing HTTP API rather than depending on Hunk or reproducing its local daemon.
 
-The annotation collection is mutable even though each annotation and the parent snapshot contents are immutable. This preserves the snapshot's point-in-time review semantics while allowing collaboration around that fixed content.
+The annotation collection is mutable even though each annotation and the parent snapshot contents are immutable. This preserves the snapshot's point-in-time review semantics while allowing collaboration around that fixed content. Browser deletion changes collection membership but does not make annotation content editable.
+
+The existing deletion endpoint is sufficient for both agent and reviewer workflows. The browser action is therefore a frontend extension of the established local API trust boundary rather than a new transport or authorisation model.
 
 Excluding the `current` scope is intentional. That scope reads live filesystem content and therefore cannot uphold the line-anchor guarantee in this specification. Supporting it later depends on either immutable captured current contents or an explicit annotation re-anchoring policy.
 

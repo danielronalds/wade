@@ -13,7 +13,7 @@ import {
   watch
 } from 'vue';
 import type { ReviewAnnotation } from '@/api/generated/wade';
-import type { CommentSide, ReviewComment, ReviewFileContents } from '@/types/review';
+import type { AnnotationDeletionDisplay, CommentSide, ReviewComment, ReviewFileContents } from '@/types/review';
 import ReviewAgentAnnotation from './ReviewAgentAnnotation.vue';
 import ReviewCommentEditor from './ReviewCommentEditor.vue';
 
@@ -116,27 +116,34 @@ declare global {
   }
 }
 
-const props = defineProps<{
-  annotations: ReviewAnnotation[];
-  comments: ReviewComment[];
-  contents: ReviewFileContents | null;
-  filePath: string;
-  hideUnchanged: boolean;
-  isDiff: boolean;
-  isLoading: boolean;
-  renderSideBySide: boolean;
-  scrollKey: string;
-  wrapLines: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    annotations: ReviewAnnotation[];
+    comments: ReviewComment[];
+    contents: ReviewFileContents | null;
+    deletionErrors?: ReadonlyMap<string, string>;
+    filePath: string;
+    hideUnchanged: boolean;
+    isDiff: boolean;
+    isLoading: boolean;
+    renderSideBySide: boolean;
+    scrollKey: string;
+    wrapLines: boolean;
+  }>(),
+  { deletionErrors: () => new Map() }
+);
 
 const emit = defineEmits<{
   addLineComment: [payload: { side: InlineCommentSide; lineNumber: number }];
+  deleteAnnotation: [annotationID: string];
   deleteComment: [commentId: string];
   toggleCommentKind: [commentId: string];
   updateCommentBody: [payload: { commentId: string; body: string }];
 }>();
 
 const editorElement = ref<HTMLElement | null>(null);
+const accessibleAnnotationsElement = ref<HTMLElement | null>(null);
+const isAccessibleAnnotationsFocused = ref(false);
 const monaco = shallowRef<MonacoApi | null>(null);
 const statusMessage = ref('Loading editor');
 const hasEditorError = ref(false);
@@ -380,9 +387,15 @@ const inlineContentSignature = () =>
   [
     ...inlineComments().map((comment) => `comment:${comment.id}:${comment.side}:${comment.startLine}`),
     ...props.annotations.map(
-      (annotation) => `annotation:${annotation.id}:${annotation.side}:${annotation.startLine}:${annotation.endLine}`
+      (annotation) =>
+        `annotation:${annotation.id}:${annotation.side}:${annotation.startLine}:${annotation.endLine}:${props.deletionErrors.get(annotation.id) ?? ''}`
     )
   ].join('|');
+
+const annotationDeletion = (annotationID: string): AnnotationDeletionDisplay => {
+  const message = props.deletionErrors.get(annotationID);
+  return message ? { status: 'failed', message } : { status: 'available' };
+};
 
 const sideLabel = (side: InlineCommentSide) => (side === 'original' ? 'Original' : 'Modified');
 
@@ -424,6 +437,19 @@ const groupedInlineContent = (side: InlineCommentSide) => {
 
 const stopEditorEvent = (event: Event) => {
   event.stopPropagation();
+};
+
+const handleAccessibleAnnotationsFocus = () => {
+  isAccessibleAnnotationsFocused.value = true;
+};
+
+const handleAccessibleAnnotationsFocusout = (event: FocusEvent) => {
+  const nextFocusedElement = event.relatedTarget;
+  if (nextFocusedElement instanceof Node && accessibleAnnotationsElement.value?.contains(nextFocusedElement)) {
+    return;
+  }
+
+  isAccessibleAnnotationsFocused.value = false;
 };
 
 const protectInteractiveElement = (element: HTMLElement) => {
@@ -507,8 +533,11 @@ const renderInlineContent = (
       ...annotations.map((annotation) =>
         h(ReviewAgentAnnotation, {
           key: `annotation:${annotation.id}`,
+          activateOnPointerdown: true,
           annotation,
-          locationLabel: annotationLocationLabel(annotation)
+          deletion: annotationDeletion(annotation.id),
+          locationLabel: annotationLocationLabel(annotation),
+          onDeleteAnnotation: (annotationID: string) => emit('deleteAnnotation', annotationID)
         })
       ),
       ...comments.map((comment) =>
@@ -863,7 +892,7 @@ watch(inlineContentSignature, () => {
   syncInlineReviewUI();
 });
 
-watch([() => props.comments, () => props.annotations], () => {
+watch([() => props.comments, () => props.annotations, () => props.deletionErrors], () => {
   syncInlineZoneContent();
 });
 
@@ -888,12 +917,21 @@ onBeforeUnmount(() => {
   <section class="review-diff-viewer" aria-label="Review diff viewer">
     <div v-if="placeholderText" class="review-diff-placeholder">{{ placeholderText }}</div>
     <section ref="editorElement" class="review-diff-editor" :data-hidden="String(Boolean(placeholderText))"></section>
-    <section class="review-diff-accessible-annotations" aria-label="Agent annotations">
+    <section
+      ref="accessibleAnnotationsElement"
+      class="review-diff-accessible-annotations"
+      :data-focus-within="String(isAccessibleAnnotationsFocused)"
+      aria-label="Agent annotations"
+      @focusin="handleAccessibleAnnotationsFocus"
+      @focusout="handleAccessibleAnnotationsFocusout"
+    >
       <ReviewAgentAnnotation
         v-for="annotation in props.annotations"
         :key="annotation.id"
         :annotation="annotation"
+        :deletion="annotationDeletion(annotation.id)"
         :location-label="annotationLocationLabel(annotation)"
+        @delete-annotation="emit('deleteAnnotation', $event)"
       />
     </section>
   </section>
@@ -997,13 +1035,36 @@ onBeforeUnmount(() => {
 
 .review-diff-accessible-annotations {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   padding: 0;
   margin: -1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
+}
+
+.review-diff-accessible-annotations:focus-within,
+.review-diff-accessible-annotations[data-focus-within='true'] {
+  top: 8px;
+  right: 8px;
+  bottom: 8px;
+  left: auto;
+  width: min(360px, calc(100% - 16px));
+  height: auto;
+  max-height: calc(100% - 16px);
+  padding: 8px;
+  margin: 0;
+  overflow-y: auto;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+  border: 1px solid var(--text);
+  background: var(--window);
+  z-index: 20;
 }
 </style>
