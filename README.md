@@ -33,7 +33,17 @@ the mouse.
 
 ## Install
 
-WADE is currently installed from source. You will need:
+WADE can be installed via homebrew on MacOS and Linux
+
+```sh
+brew install danielronalds/tap/wade
+
+```
+
+<details>
+<summary><b>Install from source</b></summary>
+
+You will need:
 
 - macOS or another Unix-like environment
 - [Git](https://git-scm.com/)
@@ -52,6 +62,7 @@ mise run build:install
 
 The final command installs `wade` into Go's binary directory. If your shell
 cannot find it, add `$(go env GOPATH)/bin` to your `PATH`.
+</details>
 
 ## Get started
 
