@@ -88,10 +88,34 @@ Use `mise run fmt` to format Go and frontend files. Frontend component and
 composable tests can be run with `npm --prefix web test`. The complete required
 checks are defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
+Release configuration and workflow changes also require:
+
+```sh
+mise run lint:release
+mise run release:snapshot
+```
+
+Snapshot builds write archives to `dist/` without creating tags or uploading
+releases. Use `mise run release:smoke <archive> <checksums.txt> <version>` to test
+the archive matching your machine.
+
 Changes to daemon lifecycle behaviour also require an isolated smoke test using
 a temporary `XDG_STATE_HOME` and port. Exercise `wade start`, `wade status` and
 `wade stop`; confirm foreground mode creates no control socket and no stale WADE
 process remains.
+
+## Releases
+
+Push a version tag from a commit on `main` to create a draft release. See
+[`.github/workflows/release.yml`](.github/workflows/release.yml) for the checks
+and [`.goreleaser.yaml`](.goreleaser.yaml) for packaging configuration.
+
+Wait for the complete workflow, including **Release ready**, before manually
+publishing the draft. Keep beta releases marked as prereleases and never
+replace a published release or move its tag.
+
+For zero-spend operation, set an Actions budget of zero with **Stop usage when
+budget limit is reached** enabled in GitHub's billing settings.
 
 ## Pull requests
 

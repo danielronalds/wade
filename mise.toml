@@ -3,6 +3,9 @@ go = "1.26.3"
 # Latest Node LTS for stability.
 node = "24.18.0"
 air = "latest"
+goreleaser = "2.18.1"
+actionlint = "1.7.12"
+shellcheck = "0.11.0"
 "go:gotest.tools/gotestsum" = "latest"
 "go:github.com/swaggo/swag/cmd/swag" = "1.16.6"
 
@@ -56,4 +59,16 @@ run = "mise run gen:openapi && mise run gen:embed && go vet ./..."
 
 [tasks.test]
 description = "Runs tests"
-run = "mise run gen:openapi && mise run gen:embed && gotestsum -- -race ./..."
+run = "mise run gen:openapi && mise run gen:embed && gotestsum -- -race ./... && bash .github/scripts/test-release.sh"
+
+[tasks."lint:release"]
+description = "Checks release configuration, workflows and shell scripts"
+run = "goreleaser check && actionlint && shellcheck .github/scripts/*.sh"
+
+[tasks."release:snapshot"]
+description = "Builds release archives locally without publishing or creating tags"
+run = "goreleaser release --snapshot --clean"
+
+[tasks."release:smoke"]
+description = "Tests a native release archive: <archive> <checksums.txt> <version>"
+run = "bash .github/scripts/smoke-release.sh"

@@ -1,0 +1,74 @@
+version: 2
+
+project_name: wade
+
+before:
+  hooks:
+    - npm --prefix web ci
+    - mise run gen:openapi
+    - npm --prefix web run build
+
+builds:
+  - main: ./cmd/wade
+    binary: wade
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - arm64
+      - amd64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X wade/internal/buildinfo.releaseVersion=v{{ .Version }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - src: README.md
+        info:
+          mtime: "{{ .CommitDate }}"
+      - src: LICENSE
+        info:
+          mtime: "{{ .CommitDate }}"
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ .Version }}-snapshot.{{ .ShortCommit }}"
+
+changelog:
+  sort: asc
+
+release:
+  github:
+    owner: danielronalds
+    name: wade
+  draft: true
+  prerelease: auto
+  make_latest: false
+  replace_existing_draft: true
+  target_commitish: "{{ .Commit }}"
+  preflight:
+    fail_on_error: true
+  header: |
+    WADE is under active development. Beta releases are not production-stable.
+
+    **Maintainer checkpoint:** publish this draft only after the complete Release
+    workflow, including all four native smoke tests, has passed for this tag.
+  footer: |
+    ## Installation
+
+    Download the archive for your operating system and architecture, and verify
+    it against `checksums.txt` before extracting it. The frontend is included in
+    the binary; Go, Node.js and mise are not required to run WADE.
+
+    macOS downloads are not Developer ID signed or notarised and may trigger
+    Gatekeeper warnings. See the [installation instructions](https://github.com/danielronalds/wade/tree/{{ .Tag }}#install).

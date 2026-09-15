@@ -1,0 +1,167 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  validate:
+    name: Validate release tag
+    if: github.repository == 'danielronalds/wade' && !github.event.repository.private
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out tagged commit and history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate version, ancestry and publication state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/check-release.sh "$GITHUB_REF_NAME"
+
+  quality:
+    name: Release quality checks
+    needs: validate
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: Build draft release
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    outputs:
+      release-id: ${{ steps.draft.outputs.release-id }}
+      release-url: ${{ steps.draft.outputs.release-url }}
+      checksums-sha256: ${{ steps.draft.outputs.checksums-sha256 }}
+    steps:
+      - name: Check out tagged commit and history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install pinned toolchain
+        uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+        with:
+          cache: true
+
+      - name: Recheck tag and publication state before uploading
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/check-release.sh "$GITHUB_REF_NAME"
+
+      - name: Build archives and create draft
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: goreleaser release --clean
+
+      - name: Record draft identity and checksum manifest
+        id: draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --json databaseId,isDraft,url > "$RUNNER_TEMP/draft.json"
+          jq -e '.isDraft == true' "$RUNNER_TEMP/draft.json"
+          {
+            printf 'release-id=%s\n' "$(jq -r '.databaseId' "$RUNNER_TEMP/draft.json")"
+            printf 'release-url=%s\n' "$(jq -r '.url' "$RUNNER_TEMP/draft.json")"
+            printf 'checksums-sha256=%s\n' "$(sha256sum dist/checksums.txt | awk '{print $1}')"
+          } >> "$GITHUB_OUTPUT"
+          printf 'Draft created. Do not publish until all four smoke tests and the Release ready job pass.\n' >> "$GITHUB_STEP_SUMMARY"
+
+  smoke:
+    name: Smoke test (${{ matrix.os }}/${{ matrix.arch }})
+    needs: build
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    permissions:
+      # GitHub requires push access even when only reading draft releases.
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            runner: ubuntu-24.04
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - os: darwin
+            arch: amd64
+            runner: macos-15-intel
+          - os: darwin
+            arch: arm64
+            runner: macos-15
+    steps:
+      - name: Check out smoke test
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Download the exact draft archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ needs.build.outputs.release-id }}
+          CHECKSUMS_SHA256: ${{ needs.build.outputs.checksums-sha256 }}
+          TARGET_OS: ${{ matrix.os }}
+          TARGET_ARCH: ${{ matrix.arch }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --json databaseId,isDraft > "$RUNNER_TEMP/draft.json"
+          jq -e --arg id "$RELEASE_ID" \
+            '.isDraft == true and (.databaseId | tostring) == $id' "$RUNNER_TEMP/draft.json"
+          archive="wade_${GITHUB_REF_NAME#v}_${TARGET_OS}_${TARGET_ARCH}.tar.gz"
+          download_directory="$RUNNER_TEMP/release"
+          mkdir -p "$download_directory"
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --pattern "$archive" --pattern checksums.txt --dir "$download_directory"
+          printf '%s  %s\n' "$CHECKSUMS_SHA256" "$download_directory/checksums.txt" | shasum -a 256 --check
+
+      - name: Smoke-test packaged binary without release credentials
+        env:
+          TARGET_OS: ${{ matrix.os }}
+          TARGET_ARCH: ${{ matrix.arch }}
+        run: |
+          unset GH_TOKEN GITHUB_TOKEN
+          archive="wade_${GITHUB_REF_NAME#v}_${TARGET_OS}_${TARGET_ARCH}.tar.gz"
+          bash .github/scripts/smoke-release.sh "$RUNNER_TEMP/release/$archive" \
+            "$RUNNER_TEMP/release/checksums.txt" "$GITHUB_REF_NAME"
+
+  ready:
+    name: Release ready
+    needs: [build, smoke]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Report successful validation
+        env:
+          RELEASE_URL: ${{ needs.build.outputs.release-url }}
+          CHECKSUMS_SHA256: ${{ needs.build.outputs.checksums-sha256 }}
+        run: |
+          {
+            printf '## Ready for manual publication\n\n'
+            printf 'All quality checks and four native smoke tests passed for **%s**.\n\n' "$GITHUB_REF_NAME"
+            printf 'Tested commit: %s\n\n' "$GITHUB_SHA"
+            printf 'Checksum manifest SHA-256: %s\n\n' "$CHECKSUMS_SHA256"
+            printf '[Review the draft release](%s), edit its notes and publish when ready.\n' "$RELEASE_URL"
+            printf 'Beta releases must remain marked as prereleases. This workflow never publishes automatically.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
